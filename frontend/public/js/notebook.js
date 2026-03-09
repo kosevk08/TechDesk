@@ -11,7 +11,7 @@ const mathsSubjectNames = ['maths', 'mathematics'];
 
 async function loadNotebook() {
     try {
-        const subjectRes = await fetch(`http://localhost:8080/api/subject/${subjectId}`);
+        const subjectRes = await fetch(`https://techdesk-backend.onrender.com/api/subject/${subjectId}`);
         const subject = await subjectRes.json();
         document.getElementById('subjectTitle').textContent = subject.name;
 
@@ -19,7 +19,7 @@ async function loadNotebook() {
         const notebook = document.getElementById('notebook');
         notebook.classList.add(isMaths ? 'squared' : 'lined');
 
-        const notebookRes = await fetch(`http://localhost:8080/api/notebook/student/${user.egn}`);
+        const notebookRes = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${user.egn}`);
         const notebooks = await notebookRes.json();
         const found = notebooks.find(n => n.subject === subject.name);
 
@@ -42,7 +42,7 @@ function setColor(color) {
 
 async function saveNotebook() {
     const content = document.getElementById('notebookText').value;
-    const subjectRes = await fetch(`http://localhost:8080/api/subject/${subjectId}`);
+    const subjectRes = await fetch(`https://techdesk-backend.onrender.com/api/subject/${subjectId}`);
     const subject = await subjectRes.json();
 
     const body = {
@@ -56,8 +56,8 @@ async function saveNotebook() {
     };
 
     const url = notebookId
-        ? `http://localhost:8080/api/notebook/update/${notebookId}`
-        : `http://localhost:8080/api/notebook/create`;
+        ? `https://techdesk-backend.onrender.com/api/notebook/update/${notebookId}`
+        : `https://techdesk-backend.onrender.com/api/notebook/create`;
 
     const method = notebookId ? 'PUT' : 'POST';
 

@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = '/';
 
@@ -34,8 +34,7 @@ if (user.role === 'TEACHER') backLink.innerHTML = '<a href="/teacher">← Back</
 else if (user.role === 'STUDENT') backLink.innerHTML = '<a href="/student">← Back</a>';
 else if (user.role === 'PARENT') backLink.innerHTML = '<a href="/parent">← Back</a>';
 
-let currentChat = null; // { type: 'private', otherEgn } or { type: 'group' }
-let conversations = []; // list of unique people we've talked to
+let currentChat = null;
 
 function formatTime(dateStr) {
     return new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -49,21 +48,16 @@ function getInitials(name) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
 
-// Load sidebar conversations
 async function loadSidebar() {
     try {
         const [inboxRes, outboxRes] = await Promise.all([
-            fetch(`http://localhost:8080/api/message/inbox/${user.egn}`),
-            fetch(`http://localhost:8080/api/message/outbox/${user.egn}`)
+            fetch(`https://techdesk-backend.onrender.com/api/message/inbox/${user.egn}`),
+            fetch(`https://techdesk-backend.onrender.com/api/message/outbox/${user.egn}`)
         ]);
         const inbox = await inboxRes.json();
         const outbox = await outboxRes.json();
 
-        const allMessages = [...inbox, ...outbox].filter(m => m.receiverEgn !== 'GROUP' && m.senderEgn !== 'GROUP' || m.receiverEgn === 'GROUP');
-
         const convMap = {};
-
-        // Private conversations
         [...inbox, ...outbox].forEach(msg => {
             if (msg.receiverEgn === 'GROUP') return;
             const otherEgn = msg.senderEgn === user.egn ? msg.receiverEgn : msg.senderEgn;
@@ -75,7 +69,6 @@ async function loadSidebar() {
         const list = document.getElementById('conversationList');
         list.innerHTML = '';
 
-        // Group chat always at top
         const groupItem = document.createElement('div');
         groupItem.className = 'convo-item' + (currentChat?.type === 'group' ? ' active' : '');
         groupItem.innerHTML = `
@@ -85,7 +78,6 @@ async function loadSidebar() {
         groupItem.onclick = () => openGroupChat();
         list.appendChild(groupItem);
 
-        // Private convos sorted by latest
         Object.entries(convMap)
             .sort((a, b) => new Date(b[1].sentAt) - new Date(a[1].sentAt))
             .forEach(([egn, lastMsg]) => {
@@ -114,7 +106,6 @@ function showPeopleList() {
     const list = document.getElementById('peopleList');
     list.innerHTML = '';
 
-    // Group chat
     const groupItem = document.createElement('div');
     groupItem.className = 'person-item';
     groupItem.innerHTML = `
@@ -127,7 +118,6 @@ function showPeopleList() {
     groupItem.onclick = () => openGroupChat();
     list.appendChild(groupItem);
 
-    // All people except self
     Object.entries(shortNames).forEach(([egn, name]) => {
         if (egn === user.egn) return;
         const item = document.createElement('div');
@@ -168,7 +158,7 @@ async function openGroupChat() {
 
 async function loadPrivateMessages() {
     try {
-        const res = await fetch(`http://localhost:8080/api/message/conversation/${user.egn}/${currentChat.otherEgn}`);
+        const res = await fetch(`https://techdesk-backend.onrender.com/api/message/conversation/${user.egn}/${currentChat.otherEgn}`);
         const messages = await res.json();
         renderMessages(messages, 'private');
     } catch (err) {
@@ -178,7 +168,7 @@ async function loadPrivateMessages() {
 
 async function loadGroupMessages() {
     try {
-        const res = await fetch(`http://localhost:8080/api/message/group`);
+        const res = await fetch(`https://techdesk-backend.onrender.com/api/message/group`);
         const messages = await res.json();
         renderMessages(messages, 'group');
     } catch (err) {
@@ -244,7 +234,7 @@ async function sendCurrentMessage() {
     const receiverEgn = currentChat.type === 'group' ? 'GROUP' : currentChat.otherEgn;
 
     try {
-        const res = await fetch('http://localhost:8080/api/message/send', {
+        const res = await fetch('https://techdesk-backend.onrender.com/api/message/send', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ senderEgn: user.egn, receiverEgn, content })
@@ -281,7 +271,6 @@ function backToList() {
     loadSidebar();
 }
 
-// Socket.io live message listeners
 socket.on('private-message', (msg) => {
     if (currentChat?.type === 'private' &&
         (msg.senderEgn === currentChat.otherEgn || msg.receiverEgn === currentChat.otherEgn)) {
@@ -297,5 +286,4 @@ socket.on('group-message', (msg) => {
     loadSidebar();
 });
 
-// Init
 loadSidebar();

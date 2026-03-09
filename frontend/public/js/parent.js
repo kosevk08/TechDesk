@@ -23,7 +23,7 @@ const MAX_PAGES = 20;
 async function loadNotebooks() {
     try {
         document.getElementById('attendanceSection').style.display = 'none';
-        const response = await fetch(`http://localhost:8080/api/notebook/student/${user.studentEgn}?t=${Date.now()}`);
+        const response = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${user.studentEgn}?t=${Date.now()}`);
         const notebooks = await response.json();
 
         const uniqueNotebooks = [];
@@ -93,7 +93,7 @@ function viewNotebook(studentEgn, subject) {
 
 async function loadPage() {
     try {
-        const res = await fetch(`http://localhost:8080/api/notebook/student/${currentStudentEgn}/${encodeURIComponent(currentSubject)}/${currentPage}?t=${Date.now()}`);
+        const res = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${currentStudentEgn}/${encodeURIComponent(currentSubject)}/${currentPage}?t=${Date.now()}`);
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();

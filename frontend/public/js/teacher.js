@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
 
 if (!user || user.role !== 'TEACHER') {
@@ -76,7 +76,7 @@ socket.on('page-change', (data) => {
 
 async function loadTeacherPage() {
     try {
-        const res = await fetch(`http://localhost:8080/api/notebook/student/${currentViewEgn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
+        const res = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${currentViewEgn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -98,7 +98,7 @@ async function loadTeacherPage() {
 
 async function loadNotebooks() {
     try {
-        const response = await fetch(`http://localhost:8080/api/notebook/all?t=${Date.now()}`);
+        const response = await fetch(`https://techdesk-backend.onrender.com/api/notebook/all?t=${Date.now()}`);
         const notebooks = await response.json();
 
         const uniqueNotebooks = [];

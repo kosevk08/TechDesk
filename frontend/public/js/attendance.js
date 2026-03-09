@@ -55,7 +55,7 @@ async function loadStudentsForDate() {
 
     let existingRecords = [];
     try {
-        const res = await fetch(`http://localhost:8080/api/attendance/date/${date}`);
+        const res = await fetch(`https://techdesk-backend.onrender.com/api/attendance/date/${date}`);
         if (res.ok) existingRecords = await res.json();
     } catch (e) {}
 
@@ -98,7 +98,7 @@ function setStatus(egn, status, btn) {
 async function saveAll() {
     const date = document.getElementById('attendanceDate').value;
     const promises = Object.entries(attendanceMap).map(([egn, status]) =>
-        fetch('http://localhost:8080/api/attendance/mark', {
+        fetch('https://techdesk-backend.onrender.com/api/attendance/mark', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ studentEgn: egn, date, status })
@@ -112,7 +112,7 @@ async function saveAll() {
 
 async function loadStudentAttendance(egn, containerId) {
     try {
-        const res = await fetch(`http://localhost:8080/api/attendance/student/${egn}`);
+        const res = await fetch(`https://techdesk-backend.onrender.com/api/attendance/student/${egn}`);
         const records = await res.json();
         const container = document.getElementById(containerId);
 

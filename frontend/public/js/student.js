@@ -24,7 +24,7 @@ document.getElementById('studentClass').textContent = '11D';
 
 async function loadSubjects() {
     try {
-        const response = await fetch('http://localhost:8080/api/subject/all');
+        const response = await fetch('https://techdesk-backend.onrender.com/api/subject/all');
         const subjects = await response.json();
         const grid = document.getElementById('subjectsGrid');
         grid.innerHTML = '';

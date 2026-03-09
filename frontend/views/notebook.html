@@ -221,7 +221,7 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io('https://techdesk-frontend.onrender.com');
         const user = JSON.parse(localStorage.getItem('user'));
         if (!user) window.location.href = '/';
 
@@ -274,7 +274,7 @@
 
         async function loadSubject() {
             try {
-                const res = await fetch(`http://localhost:8080/api/subject/${subjectId}`);
+                const res = await fetch(`https://techdesk-backend.onrender.com/api/subject/${subjectId}`);
                 const subject = await res.json();
                 currentSubjectName = subject.name;
                 document.getElementById('subjectName').textContent = subject.name;
@@ -307,7 +307,7 @@
 
         async function loadPage(subjectName, page) {
             try {
-                const res = await fetch(`http://localhost:8080/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`);
+                const res = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`);
                 if (res.ok) {
                     const notebook = await res.json();
                     if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
@@ -366,7 +366,7 @@
         async function saveNotebook(silent = false) {
             const imageData = canvas.toDataURL();
             try {
-                await fetch('http://localhost:8080/api/notebook/save', {
+                await fetch('https://techdesk-backend.onrender.com/api/notebook/save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
