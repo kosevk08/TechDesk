@@ -1,0 +1,51 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
+app.get('/student', (req, res) => res.sendFile(path.join(__dirname, 'views', 'student.html')));
+app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'teacher.html')));
+app.get('/parent', (req, res) => res.sendFile(path.join(__dirname, 'views', 'parent.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'admin.html')));
+app.get('/notebook', (req, res) => res.sendFile(path.join(__dirname, 'views', 'notebook.html')));
+app.get('/attendance', (req, res) => res.sendFile(path.join(__dirname, 'views', 'attendance.html')));
+app.get('/messages', (req, res) => res.sendFile(path.join(__dirname, 'views', 'messages.html')));
+
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    socket.on('draw-stroke', (data) => {
+        socket.broadcast.emit('draw-stroke', data);
+    });
+
+    socket.on('clear-canvas', (data) => {
+        socket.broadcast.emit('clear-canvas', data);
+    });
+
+    socket.on('page-change', (data) => {
+        socket.broadcast.emit('page-change', data);
+    });
+
+    socket.on('private-message', (data) => {
+        socket.broadcast.emit('private-message', data);
+    });
+
+    socket.on('group-message', (data) => {
+        socket.broadcast.emit('group-message', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+    });
+});
+
+server.listen(3000, () => {
+    console.log('Frontend running on http://localhost:3000');
+});

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDesk - Attendance</title>
+    <link rel="stylesheet" href="/css/attendance.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>TechDesk</h1>
+        <div class="nav-right">
+            <span id="backLink"></span>
+            <a href="/" class="logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="greeting">
+            <h2>📋 Attendance</h2>
+            <p id="greetingText"></p>
+        </div>
+
+        <!-- TEACHER VIEW -->
+        <div id="teacherView" style="display:none;">
+            <div class="date-picker-row">
+                <label>Select Date:</label>
+                <input type="date" id="attendanceDate" />
+                <button class="action-btn" onclick="loadStudentsForDate()">Load Students</button>
+            </div>
+            <div id="studentAttendanceList"></div>
+            <button class="save-btn" id="saveAllBtn" style="display:none;" onclick="saveAll()">💾 Save Attendance</button>
+            <span class="saved-msg" id="savedMsg">Saved!</span>
+        </div>
+
+        <!-- STUDENT VIEW -->
+        <div id="studentView" style="display:none;">
+            <div id="attendanceRecords"></div>
+        </div>
+
+        <!-- PARENT VIEW -->
+        <div id="parentView" style="display:none;">
+            <div id="parentAttendanceRecords"></div>
+        </div>
+    </div>
+
+    <script src="/js/attendance.js"></script>
+</body>
+</html>

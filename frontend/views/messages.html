@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDesk - Messages</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/messages.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>TechDesk</h1>
+        <div class="nav-right">
+            <span id="backLink"></span>
+            <a href="/" class="logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="messages-layout">
+        <!-- LEFT SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>💬 Messages</h3>
+                <button class="new-chat-btn" onclick="showPeopleList()">✏️ New</button>
+            </div>
+
+            <div class="conversation-list" id="conversationList"></div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-empty" id="chatEmpty">
+                <p>👈 Select a conversation or start a new one</p>
+            </div>
+
+            <!-- PEOPLE PICKER -->
+            <div class="people-picker" id="peoplePicker" style="display:none;">
+                <div class="people-header">
+                    <h3>Start a conversation</h3>
+                </div>
+                <div class="people-list" id="peopleList"></div>
+            </div>
+
+            <!-- CHAT VIEW -->
+            <div class="chat-view" id="chatView" style="display:none;">
+                <div class="chat-header">
+                    <button class="back-to-list" onclick="backToList()">←</button>
+                    <h3 id="chatTitle">Chat</h3>
+                    <span class="live-indicator">🟢 Live</span>
+                </div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <textarea id="chatInput" placeholder="Type a message..." rows="1" onkeydown="handleKey(event)"></textarea>
+                    <button class="send-btn" onclick="sendCurrentMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/messages.js"></script>
+</body>
+</html>

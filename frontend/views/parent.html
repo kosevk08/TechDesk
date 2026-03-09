@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDesk - Parent</title>
+    <link rel="stylesheet" href="/css/parent.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>TechDesk</h1>
+        <a href="/" class="logout">Logout</a>
+    </nav>
+
+    <div class="container">
+        <div class="greeting">
+            <h2>Hello, <span id="parentName">Parent</span></h2>
+            <p>Viewing progress for: <strong><span id="studentName">-</span></strong></p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>📓 Notebooks</h3>
+                <p>View your child's notebook work</p>
+                <button class="action-btn" onclick="loadNotebooks()">View Notebooks</button>
+            </div>
+            <div class="card">
+                <h3>📋 Attendance</h3>
+                <p>Check attendance records</p>
+                <button class="action-btn" onclick="loadAttendance()">View Attendance</button>
+            </div>
+            <div class="card">
+                <h3>💬 Messages</h3>
+                <p>Contact teachers</p>
+                <button class="action-btn" onclick="window.location.href='/messages'">Open Messages</button>
+            </div>
+        </div>
+
+        <div id="notebooksSection" style="display:none;">
+            <h3 class="section-title">📓 Notebooks</h3>
+            <div id="notebooksList"></div>
+        </div>
+
+        <div id="notebookViewer" style="display:none;">
+            <div class="notebook-header">
+                <button class="back-btn" onclick="backToList()">← Back</button>
+                <h3 id="notebookTitle">Notebook</h3>
+            </div>
+            <div class="notebook-canvas-wrapper" id="notebookCanvasWrapper">
+                <img id="notebookImage" src="" style="position:absolute; top:0; left:0; width:100%; height:100%;" />
+            </div>
+            <div class="page-controls">
+                <button id="prevBtn" onclick="changePage(-1)" disabled>◀ Prev</button>
+                <span class="page-indicator" id="pageIndicator">Page 1 / 20</span>
+                <button id="nextBtn" onclick="changePage(1)">Next ▶</button>
+            </div>
+        </div>
+
+        <div id="attendanceSection" style="display:none;">
+            <h3 class="section-title">📋 Attendance</h3>
+            <div id="attendanceList"></div>
+        </div>
+    </div>
+
+    <script src="/js/parent.js"></script>
+</body>
+</html>

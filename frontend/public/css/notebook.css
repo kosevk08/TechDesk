@@ -1,0 +1,145 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: #f0f2f5;
+    min-height: 100vh;
+}
+
+.navbar {
+    background: #0d1b3e;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar h1 {
+    color: #ffffff;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.back-btn {
+    background: transparent;
+    border: 1px solid #ffffff;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 30px;
+}
+
+.notebook-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.notebook-toolbar h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0d1b3e;
+}
+
+.color-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-picker label {
+    color: #555;
+    font-size: 0.95rem;
+}
+
+.color-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: border 0.2s;
+}
+
+.color-btn.blue { background: #1a56db; }
+.color-btn.black { background: #111111; }
+
+.color-btn.active {
+    border: 3px solid #0d1b3e;
+    outline: 2px solid #ccc;
+}
+
+/* LINED notebook */
+.notebook {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #d0d5dd;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    min-height: 600px;
+    position: relative;
+    overflow: hidden;
+}
+
+.notebook.lined {
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 31px,
+        #c8d8e8 31px,
+        #c8d8e8 32px
+    );
+    background-size: 100% 32px;
+    background-position: 0 8px;
+}
+
+/* SQUARED notebook for Maths */
+.notebook.squared {
+    background-image:
+        linear-gradient(to right, #c8d8e8 1px, transparent 1px),
+        linear-gradient(to bottom, #c8d8e8 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+
+#notebookText {
+    width: 100%;
+    min-height: 600px;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 16px 20px;
+    font-size: 1rem;
+    line-height: 32px;
+    color: #1a56db;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.save-btn {
+    margin-top: 20px;
+    padding: 12px 28px;
+    background: #0d1b3e;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 40px;
+}
+
+.save-btn:hover {
+    background: #162d5e;
+}

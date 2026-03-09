@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDesk - Student</title>
+    <link rel="stylesheet" href="/css/student.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>TechDesk</h1>
+        <a href="/" class="logout">Logout</a>
+    </nav>
+
+    <div class="container">
+        <div class="greeting">
+            <h2>Hello, <span id="studentName">Student</span></h2>
+            <p>Class: <span id="studentClass">-</span></p>
+        </div>
+
+        <div class="subjects-grid" id="subjectsGrid">
+        </div>
+
+        <div class="card upcoming-tests">
+            <h3>📝 Upcoming Tests</h3>
+            <ul id="testsList">
+                <li>No upcoming tests</li>
+            </ul>
+        </div>
+
+        <button class="feedback-btn" onclick="window.location.href='/messages'">
+            💬 Messages
+        </button>
+    </div>
+
+    <script src="/js/student.js"></script>
+</body>
+</html>
