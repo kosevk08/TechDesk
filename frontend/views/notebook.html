@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TechDesk - Notebook</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; touch-action: none; }
 
         .navbar {
             background: #1a1a2e;
@@ -74,6 +74,7 @@
             display: flex;
             gap: 8px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .notebook-toolbar button {
@@ -130,6 +131,7 @@
         canvas {
             display: block;
             cursor: crosshair;
+            touch-action: none;
         }
 
         .save-btn {
@@ -178,6 +180,11 @@
             font-size: 0.85rem;
             min-width: 80px;
             text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .textbook-panel { display: none; }
+            .notebook-panel { width: 100%; }
         }
     </style>
 </head>
@@ -321,6 +328,35 @@
             }
         }
 
+        // ── Drawing logic ──────────────────────────────────────────
+        function draw(x0, y0, x1, y1) {
+            const strokeData = {
+                x0, y0, x1, y1,
+                color: tool === 'eraser' ? null : currentColor,
+                size: document.getElementById('sizeSlider').value,
+                tool,
+                studentEgn: user.egn,
+                subject: currentSubjectName,
+                page: currentPage
+            };
+
+            if (tool === 'eraser') {
+                ctx.clearRect(x1 - 15, y1 - 15, 30, 30);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(x0, y0);
+                ctx.lineTo(x1, y1);
+                ctx.strokeStyle = currentColor;
+                ctx.lineWidth = document.getElementById('sizeSlider').value;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            }
+
+            socket.emit('draw-stroke', strokeData);
+        }
+
+        // ── Mouse events ───────────────────────────────────────────
         canvas.addEventListener('mousedown', (e) => {
             drawing = true;
             [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -328,36 +364,38 @@
 
         canvas.addEventListener('mousemove', (e) => {
             if (!drawing) return;
-            const strokeData = {
-                x0: lastX, y0: lastY,
-                x1: e.offsetX, y1: e.offsetY,
-                color: tool === 'eraser' ? null : currentColor,
-                size: document.getElementById('sizeSlider').value,
-                tool: tool,
-                studentEgn: user.egn,
-                subject: currentSubjectName,
-                page: currentPage
-            };
-
-            if (tool === 'eraser') {
-                ctx.clearRect(e.offsetX - 10, e.offsetY - 10, 20, 20);
-            } else {
-                ctx.beginPath();
-                ctx.moveTo(lastX, lastY);
-                ctx.lineTo(e.offsetX, e.offsetY);
-                ctx.strokeStyle = currentColor;
-                ctx.lineWidth = document.getElementById('sizeSlider').value;
-                ctx.lineCap = 'round';
-                ctx.stroke();
-            }
-
-            socket.emit('draw-stroke', strokeData);
+            draw(lastX, lastY, e.offsetX, e.offsetY);
             [lastX, lastY] = [e.offsetX, e.offsetY];
         });
 
         canvas.addEventListener('mouseup', () => drawing = false);
         canvas.addEventListener('mouseout', () => drawing = false);
 
+        // ── Touch events (finger + Apple Pencil) ───────────────────
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            drawing = true;
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!drawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            draw(lastX, lastY, x, y);
+            [lastX, lastY] = [x, y];
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', () => drawing = false);
+        canvas.addEventListener('touchcancel', () => drawing = false);
+
+        // ── Other ──────────────────────────────────────────────────
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             socket.emit('clear-canvas', { studentEgn: user.egn, subject: currentSubjectName, page: currentPage });
