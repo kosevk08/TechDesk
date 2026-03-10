@@ -31,7 +31,6 @@ public class TeacherServiceImpl implements TeacherService {
 
     @Override
     public void markAttendance(String studentEgn, boolean present) {
-        // Will be implemented when Attendance entity is added
     }
 
     @Override
