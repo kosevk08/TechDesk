@@ -42,7 +42,6 @@ body {
     overflow: hidden;
 }
 
-/* SIDEBAR */
 .sidebar {
     width: 300px;
     background: white;
@@ -125,7 +124,7 @@ body {
     margin-left: 6px;
 }
 
-/* CHAT PANEL */
+
 .chat-panel {
     flex: 1;
     display: flex;
@@ -142,7 +141,7 @@ body {
     font-size: 1rem;
 }
 
-/* PEOPLE PICKER */
+
 .people-picker {
     flex: 1;
     overflow-y: auto;
@@ -198,7 +197,6 @@ body {
     font-size: 0.8rem;
 }
 
-/* CHAT VIEW */
 .chat-view {
     flex: 1;
     display: flex;

@@ -16,7 +16,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             const user = await response.json();
             localStorage.setItem('user', JSON.stringify(user));
 
-            // Redirect based on role
             if (user.role === 'TEACHER') {
                 window.location.href = '/teacher';
             } else if (user.role === 'STUDENT') {

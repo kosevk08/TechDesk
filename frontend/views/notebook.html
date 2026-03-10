@@ -328,7 +328,6 @@
             }
         }
 
-        // ── Drawing logic ──────────────────────────────────────────
         function draw(x0, y0, x1, y1) {
             const strokeData = {
                 x0, y0, x1, y1,
@@ -356,7 +355,6 @@
             socket.emit('draw-stroke', strokeData);
         }
 
-        // ── Mouse events ───────────────────────────────────────────
         canvas.addEventListener('mousedown', (e) => {
             drawing = true;
             [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -371,7 +369,6 @@
         canvas.addEventListener('mouseup', () => drawing = false);
         canvas.addEventListener('mouseout', () => drawing = false);
 
-        // ── Touch events (finger + Apple Pencil) ───────────────────
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -395,7 +392,7 @@
         canvas.addEventListener('touchend', () => drawing = false);
         canvas.addEventListener('touchcancel', () => drawing = false);
 
-        // ── Other ──────────────────────────────────────────────────
+
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             socket.emit('clear-canvas', { studentEgn: user.egn, subject: currentSubjectName, page: currentPage });
