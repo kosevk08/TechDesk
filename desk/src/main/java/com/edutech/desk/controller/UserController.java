@@ -10,11 +10,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin("http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "https://techdesk-frontend.onrender.com"})
 public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
+    }
 
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody User loginUser) {
