@@ -91,15 +91,25 @@ body {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.1rem;
     padding: 0;
-    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     user-select: none;
     -webkit-user-select: none;
 }
 
 .eye-btn:focus {
     outline: none;
+}
+
+.eye-btn svg {
+    pointer-events: none;
+    transition: stroke 0.2s;
+}
+
+.eye-btn:hover svg {
+    stroke: #0d1b3e;
 }
 
 .login-btn {
