@@ -6,132 +6,186 @@
 }
 
 body {
-    background: #f0f2f5;
     height: 100vh;
-    display: flex;
-    flex-direction: column;
+    overflow: hidden;
+    background: #f4f6fb;
 }
 
-.navbar {
+#bgCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.page-wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    height: 100vh;
+}
+
+/* LEFT PANEL */
+.left-panel {
+    width: 45%;
     background: #0d1b3e;
-    padding: 15px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.navbar h1 {
-    color: #ffffff;
-    font-size: 1.4rem;
-    font-weight: 600;
-}
-
-.navbar a {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 0.95rem;
-}
-
-.login-container {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: column;
+    padding: 40px;
+}
+
+.brand {
+    text-align: center;
+    color: white;
+}
+
+.logo-img {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 20px rgba(0,200,180,0.3));
+}
+
+.brand h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.brand p {
+    color: #a0aec0;
+    font-size: 1rem;
+    letter-spacing: 1px;
+}
+
+/* RIGHT PANEL */
+.right-panel {
+    width: 55%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
 }
 
 .login-box {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 40px;
-    width: 420px;
-    border: 1px solid #d0d5dd;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 400px;
 }
 
 .login-box h2 {
     color: #0d1b3e;
-    font-size: 1.8rem;
+    font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 25px;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #888;
+    font-size: 0.95rem;
+    margin-bottom: 35px;
 }
 
 .input-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #0d1b3e;
+    margin-bottom: 7px;
+    letter-spacing: 0.5px;
 }
 
 .input-group input {
     width: 100%;
-    padding: 11px 14px;
-    border: 1px solid #d0d5dd;
-    border-radius: 8px;
+    padding: 13px 16px;
+    border: 1.5px solid #d0d5dd;
+    border-radius: 10px;
     font-size: 0.95rem;
     color: #333;
     outline: none;
-    transition: border 0.2s;
+    transition: border 0.2s, box-shadow 0.2s;
+    background: white;
 }
 
 .input-group input:focus {
-    border: 1px solid #0d1b3e;
+    border-color: #0d1b3e;
+    box-shadow: 0 0 0 3px rgba(13, 27, 62, 0.08);
 }
 
 .password-group {
     position: relative;
-    display: flex;
-    align-items: center;
 }
 
 .password-group input {
-    width: 100%;
     padding-right: 45px;
 }
 
 .eye-btn {
     position: absolute;
-    right: 10px;
+    right: 14px;
+    bottom: 13px;
     background: none;
     border: none;
     cursor: pointer;
     padding: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
     user-select: none;
     -webkit-user-select: none;
 }
 
-.eye-btn:focus {
-    outline: none;
-}
-
-.eye-btn svg {
-    pointer-events: none;
-    transition: stroke 0.2s;
-}
-
-.eye-btn:hover svg {
-    stroke: #0d1b3e;
-}
+.eye-btn:focus { outline: none; }
+.eye-btn svg { pointer-events: none; }
+.eye-btn:hover svg { stroke: #0d1b3e; }
 
 .login-btn {
-    padding: 11px 20px;
+    width: 100%;
+    padding: 13px;
     background: #0d1b3e;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     color: white;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    float: right;
-    transition: background 0.2s;
+    margin-top: 10px;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.5px;
 }
 
 .login-btn:hover {
     background: #162d5e;
+    transform: translateY(-1px);
+}
+
+.login-btn:active {
+    transform: translateY(0);
 }
 
 .error-msg {
     color: #e94560;
-    margin-top: 15px;
-    font-size: 0.9rem;
-    clear: both;
+    margin-top: 12px;
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.footer-text {
+    color: #bbb;
+    font-size: 0.8rem;
+    text-align: center;
+    margin-top: 40px;
+}
+
+@media (max-width: 768px) {
+    .left-panel { display: none; }
+    .right-panel { width: 100%; padding: 30px 25px; }
 }
