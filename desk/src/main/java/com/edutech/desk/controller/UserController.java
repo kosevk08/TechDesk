@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/user")
@@ -16,17 +19,58 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    // Rate limiting - max 5 failed attempts per IP
+    private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
+    private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
+    private static final int MAX_ATTEMPTS = 5;
+    private static final long BLOCK_DURATION = 5 * 60 * 1000L; // 5 minutes
+
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("OK");
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestBody User loginUser) {
-        User user = userService.login(loginUser.getEmail(), loginUser.getPassword());
+    public ResponseEntity<User> login(@RequestBody User loginUser,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String forwarded,
+            jakarta.servlet.http.HttpServletRequest request) {
+
+        String ip = forwarded != null ? forwarded.split(",")[0].trim() : request.getRemoteAddr();
+
+        // Check if IP is blocked
+        if (blockedIps.containsKey(ip)) {
+            long blockedAt = blockedIps.get(ip);
+            if (System.currentTimeMillis() - blockedAt < BLOCK_DURATION) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+            } else {
+                blockedIps.remove(ip);
+                failedAttempts.remove(ip);
+            }
+        }
+
+        // Input sanitization
+        String email = loginUser.getEmail();
+        String password = loginUser.getPassword();
+
+        if (email == null || password == null ||
+            email.contains("<") || email.contains(">") ||
+            email.contains("'") || email.contains("--") ||
+            email.length() > 100 || password.length() > 100) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        User user = userService.login(email, password);
         if (user != null) {
+            failedAttempts.remove(ip);
             return ResponseEntity.ok(user);
         }
+
+        // Track failed attempts
+        failedAttempts.computeIfAbsent(ip, k -> new AtomicInteger(0)).incrementAndGet();
+        if (failedAttempts.get(ip).get() >= MAX_ATTEMPTS) {
+            blockedIps.put(ip, System.currentTimeMillis());
+        }
+
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
@@ -46,12 +90,21 @@ public class UserController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<User>> getAllUsers() {
+    public ResponseEntity<List<User>> getAllUsers(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        if (!"techdesk-secret-2026".equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/setup")
-    public ResponseEntity<String> setupUsers() {
+    public ResponseEntity<String> setupUsers(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        if (!"techdesk-secret-2026".equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         String[][] users = {
             {"1000000001", "v.kolev-student@edu-school.bg", "password123", "STUDENT"},
             {"1000000002", "k.kosev-student@edu-school.bg", "password123", "STUDENT"},
