@@ -19,11 +19,10 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // Rate limiting - max 5 failed attempts per IP
     private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
-    private static final long BLOCK_DURATION = 5 * 60 * 1000L; // 5 minutes
+    private static final long BLOCK_DURATION = 5 * 60 * 1000L;
 
     @GetMapping("/health")
     public ResponseEntity<String> health() {
@@ -37,7 +36,6 @@ public class UserController {
 
         String ip = forwarded != null ? forwarded.split(",")[0].trim() : request.getRemoteAddr();
 
-        // Check if IP is blocked
         if (blockedIps.containsKey(ip)) {
             long blockedAt = blockedIps.get(ip);
             if (System.currentTimeMillis() - blockedAt < BLOCK_DURATION) {
@@ -48,7 +46,6 @@ public class UserController {
             }
         }
 
-        // Input sanitization
         String email = loginUser.getEmail();
         String password = loginUser.getPassword();
 
@@ -65,7 +62,6 @@ public class UserController {
             return ResponseEntity.ok(user);
         }
 
-        // Track failed attempts
         failedAttempts.computeIfAbsent(ip, k -> new AtomicInteger(0)).incrementAndGet();
         if (failedAttempts.get(ip).get() >= MAX_ATTEMPTS) {
             blockedIps.put(ip, System.currentTimeMillis());
