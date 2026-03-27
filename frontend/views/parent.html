@@ -34,6 +34,42 @@
                 <p>Contact teachers</p>
                 <button class="action-btn" onclick="window.location.href='/messages'">Open Messages</button>
             </div>
+            <div class="card">
+                <h3>AI Progress</h3>
+                <p>See learning progress, weak subjects, and next support steps.</p>
+                <button class="action-btn" onclick="loadAiProgress()">Open AI Progress</button>
+            </div>
+        </div>
+
+        <div id="aiProgressSection" style="display:none;">
+            <div class="section-header">
+                <h3 class="section-title">AI Progress Overview</h3>
+                <button class="action-btn secondary-btn" onclick="loadAiProgress()">Refresh</button>
+            </div>
+
+            <div class="ai-metrics-grid" id="parentAiOverview"></div>
+
+            <div class="ai-panels">
+                <div class="ai-panel">
+                    <h4>Weak Subjects</h4>
+                    <div id="parentWeakSubjects"></div>
+                </div>
+                <div class="ai-panel">
+                    <h4>Strengths</h4>
+                    <div id="parentStrengths"></div>
+                </div>
+            </div>
+
+            <div class="ai-panels">
+                <div class="ai-panel">
+                    <h4>Parent Actions</h4>
+                    <div id="parentActions"></div>
+                </div>
+                <div class="ai-panel">
+                    <h4>Attendance Snapshot</h4>
+                    <div id="parentAttendanceSummary"></div>
+                </div>
+            </div>
         </div>
 
         <div id="notebooksSection" style="display:none;">

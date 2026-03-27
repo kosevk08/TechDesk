@@ -1,9 +1,11 @@
-const socket = io('https://techdesk-frontend.onrender.com');
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+const socket = io();
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = '/';
 
 const shortNames = {
-    '1000000001': 'Viktor Kolev',
+    '1000000001': 'Victor Kolev',
     '1000000002': 'Konstantin Kosev',
     '1000000003': 'Ivan Ivanov',
     '1000000004': 'John Doe',
@@ -51,8 +53,8 @@ function getInitials(name) {
 async function loadSidebar() {
     try {
         const [inboxRes, outboxRes] = await Promise.all([
-            fetch(`https://techdesk-backend.onrender.com/api/message/inbox/${user.egn}`),
-            fetch(`https://techdesk-backend.onrender.com/api/message/outbox/${user.egn}`)
+            fetch(`${BACKEND_BASE_URL}/api/message/inbox/${user.egn}`),
+            fetch(`${BACKEND_BASE_URL}/api/message/outbox/${user.egn}`)
         ]);
         const inbox = await inboxRes.json();
         const outbox = await outboxRes.json();
@@ -158,7 +160,7 @@ async function openGroupChat() {
 
 async function loadPrivateMessages() {
     try {
-        const res = await fetch(`https://techdesk-backend.onrender.com/api/message/conversation/${user.egn}/${currentChat.otherEgn}`);
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/conversation/${user.egn}/${currentChat.otherEgn}`);
         const messages = await res.json();
         renderMessages(messages, 'private');
     } catch (err) {
@@ -168,7 +170,7 @@ async function loadPrivateMessages() {
 
 async function loadGroupMessages() {
     try {
-        const res = await fetch(`https://techdesk-backend.onrender.com/api/message/group`);
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/group`);
         const messages = await res.json();
         renderMessages(messages, 'group');
     } catch (err) {
@@ -234,7 +236,7 @@ async function sendCurrentMessage() {
     const receiverEgn = currentChat.type === 'group' ? 'GROUP' : currentChat.otherEgn;
 
     try {
-        const res = await fetch('https://techdesk-backend.onrender.com/api/message/send', {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/send`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ senderEgn: user.egn, receiverEgn, content })

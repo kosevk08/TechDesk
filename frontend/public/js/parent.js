@@ -20,9 +20,18 @@ let currentStudentEgn = '';
 let currentPage = 1;
 const MAX_PAGES = 20;
 
+function showSection(sectionId) {
+    ['aiProgressSection', 'notebooksSection', 'notebookViewer', 'attendanceSection'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = id === sectionId ? 'block' : 'none';
+        }
+    });
+}
+
 async function loadNotebooks() {
     try {
-        document.getElementById('attendanceSection').style.display = 'none';
+        showSection('notebooksSection');
         const response = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${user.studentEgn}?t=${Date.now()}`);
         const notebooks = await response.json();
 
@@ -132,11 +141,113 @@ function backToList() {
 }
 
 async function loadAttendance() {
-    document.getElementById('notebooksSection').style.display = 'none';
-    document.getElementById('notebookViewer').style.display = 'none';
-
     const section = document.getElementById('attendanceSection');
     const list = document.getElementById('attendanceList');
+    showSection('attendanceSection');
     section.style.display = 'block';
-    list.innerHTML = '<p>Attendance records will appear here once the teacher marks them.</p>';
+    list.innerHTML = '';
+
+    try {
+        const response = await fetch(`https://techdesk-backend.onrender.com/api/attendance/student/${user.studentEgn}?t=${Date.now()}`);
+        const records = await response.json();
+
+        if (!records.length) {
+            list.innerHTML = '<p>No attendance records yet.</p>';
+            return;
+        }
+
+        list.innerHTML = records.map((record) => `
+            <div class="attendance-card">
+                <div>
+                    <h4>${record.date}</h4>
+                    <p>Status recorded by school</p>
+                </div>
+                <span class="${String(record.status).toLowerCase() === 'present' ? 'present' : 'absent'}">${record.status}</span>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Could not load attendance:', error);
+        list.innerHTML = '<p>Attendance could not be loaded.</p>';
+    }
+}
+
+function renderTagList(elementId, values, emptyMessage) {
+    const container = document.getElementById(elementId);
+    if (!values || !values.length) {
+        container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+        return;
+    }
+
+    container.innerHTML = values.map((value) => `<span class="insight-tag">${value}</span>`).join('');
+}
+
+function renderMetricCards(data) {
+    const container = document.getElementById('parentAiOverview');
+    const metrics = [
+        { label: 'Accuracy', value: `${Number(data.accuracyRate || 0).toFixed(1)}%` },
+        { label: 'Average Time', value: `${Math.round(data.averageTimeSpentSeconds || 0)}s` },
+        { label: 'Average Attempts', value: Number(data.averageAttempts || 0).toFixed(1) },
+        { label: 'Trend', value: String(data.progressTrend || 'UNKNOWN').replaceAll('_', ' ') },
+        { label: 'Engagement', value: data.engagementLevel || 'UNKNOWN' },
+        { label: 'Skipped Tasks', value: data.skippedTasks || 0 }
+    ];
+
+    container.innerHTML = metrics.map((metric) => `
+        <div class="metric-card">
+            <span class="metric-label">${metric.label}</span>
+            <strong class="metric-value">${metric.value}</strong>
+        </div>
+    `).join('');
+}
+
+function renderParentActions(actions) {
+    const container = document.getElementById('parentActions');
+    if (!actions || !actions.length) {
+        container.innerHTML = '<p class="empty-state">No actions suggested yet.</p>';
+        return;
+    }
+
+    container.innerHTML = actions.map((action) => `<div class="insight-card"><p>${action}</p></div>`).join('');
+}
+
+function renderAttendanceSummary(attendance) {
+    const container = document.getElementById('parentAttendanceSummary');
+    if (!attendance) {
+        container.innerHTML = '<p class="empty-state">No attendance summary available.</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="insight-card">
+            <p><strong>Total records:</strong> ${attendance.totalRecords}</p>
+            <p><strong>Present:</strong> ${attendance.presentCount}</p>
+            <p><strong>Absent:</strong> ${attendance.absentCount}</p>
+            <p><strong>Latest status:</strong> ${attendance.latestStatus}</p>
+        </div>
+    `;
+}
+
+async function loadAiProgress() {
+    try {
+        const response = await fetch(`https://techdesk-backend.onrender.com/api/ai/parent/${user.studentEgn}?t=${Date.now()}`);
+        if (!response.ok) {
+            throw new Error(`AI progress request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        showSection('aiProgressSection');
+        renderMetricCards(data);
+        renderTagList('parentWeakSubjects', data.weakSubjects, 'No weak subjects flagged yet.');
+        renderTagList('parentStrengths', data.strengths, 'No strengths identified yet.');
+        renderParentActions(data.parentActions);
+        renderAttendanceSummary(data.attendance);
+    } catch (error) {
+        console.error('Could not load AI progress:', error);
+        showSection('aiProgressSection');
+        document.getElementById('parentAiOverview').innerHTML = '';
+        document.getElementById('parentWeakSubjects').innerHTML = '<p class="empty-state">AI progress could not be loaded.</p>';
+        document.getElementById('parentStrengths').innerHTML = '';
+        document.getElementById('parentActions').innerHTML = '';
+        document.getElementById('parentAttendanceSummary').innerHTML = '';
+    }
 }

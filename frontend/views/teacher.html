@@ -9,31 +9,86 @@
 </head>
 <body>
     <nav class="navbar">
-        <h1>TechDesk</h1>
+        <div class="brand-block">
+            <div class="brand-lockup">
+                <span class="logo-shell nav-logo-shell">
+                    <img src="/logo-tech-throne.png" alt="Tech Throne logo" class="brand-logo">
+                </span>
+                <div class="brand-copy">
+                    <span class="brand-kicker">Learning Intelligence</span>
+                    <h1>TechDesk</h1>
+                </div>
+            </div>
+        </div>
         <a href="/" class="logout">Logout</a>
     </nav>
 
     <div class="container">
-        <div class="greeting">
-            <h2>Hello, <span id="teacherName">Teacher</span></h2>
-            <p>Teacher Dashboard</p>
-        </div>
+        <section class="hero-panel">
+            <div class="greeting">
+                <span class="section-eyebrow">Teacher Workspace</span>
+                <h2>Hello, <span id="teacherName">Teacher</span></h2>
+                <p>Track notebooks, monitor classroom signals, and surface AI-backed learning interventions in one place.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-pill">Live classroom tools</div>
+                <div class="hero-stat">
+                    <span class="hero-stat-label">AI status</span>
+                    <strong id="aiStatusText">Ready to analyze</strong>
+                </div>
+            </div>
+        </section>
 
         <div class="dashboard-grid">
             <div class="card">
-                <h3>📓 Student Notebooks</h3>
+                <h3>Notebook Review</h3>
                 <p>View and correct student work</p>
                 <button class="action-btn" onclick="loadNotebooks()">View Notebooks</button>
             </div>
             <div class="card">
-                <h3>📋 Mark Attendance</h3>
+                <h3>Attendance</h3>
                 <p>Record student attendance</p>
                 <button class="action-btn" onclick="window.location.href='/attendance'">Mark Attendance</button>
             </div>
             <div class="card">
-                <h3>💬 Messages</h3>
+                <h3>Messages</h3>
                 <p>Contact students and parents</p>
                 <button class="action-btn" onclick="window.location.href='/messages'">Open Messages</button>
+            </div>
+            <div class="card card-highlight">
+                <h3>AI Insights</h3>
+                <p>Monitor struggle, difficulty, engagement, and adaptive recommendations.</p>
+                <button class="action-btn" onclick="loadAiInsights()">Open AI Dashboard</button>
+            </div>
+        </div>
+
+        <div id="aiInsightsSection" style="display:none;">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Intelligence Layer</span>
+                    <h3 class="section-title">AI Learning Insights</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadAiInsights()">Refresh</button>
+            </div>
+
+            <div id="aiStatusBanner" class="ai-status-banner" style="display:none;"></div>
+
+            <div class="ai-metrics-grid" id="aiOverviewGrid"></div>
+
+            <div class="ai-panels">
+                <div class="ai-panel">
+                    <h4>Students Needing Attention</h4>
+                    <div id="aiStudentsList"></div>
+                </div>
+                <div class="ai-panel">
+                    <h4>Teacher Alerts</h4>
+                    <div id="aiAlertsList"></div>
+                </div>
+            </div>
+
+            <div class="ai-panel">
+                <h4>Topic Difficulty Analysis</h4>
+                <div id="aiTopicsList"></div>
             </div>
         </div>
 

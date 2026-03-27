@@ -1,4 +1,4 @@
-INSERT IGNORE INTO subjects (name, description) VALUES
+MERGE INTO subjects (name, description) KEY(name) VALUES
 ('Bulgarian Language and Literature', 'Bulgarian language and literature studies'),
 ('English', 'English language studies'),
 ('Chemistry', 'Chemistry studies'),
@@ -12,7 +12,7 @@ INSERT IGNORE INTO subjects (name, description) VALUES
 ('Spanish (A1)', 'Spanish language for beginners'),
 ('Philosophy', 'Philosophy studies');
 
-INSERT IGNORE INTO users (egn, email, password, role, student_egn) VALUES
+MERGE INTO users (egn, email, password, role, student_egn) KEY(egn) VALUES
 ('1000000001', 'v.kolev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', NULL),
 ('1000000002', 'k.kosev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', NULL),
 ('1000000003', 'i.ivanov-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', NULL),
@@ -29,7 +29,21 @@ INSERT IGNORE INTO users (egn, email, password, role, student_egn) VALUES
 ('2000000002', 'a.popescu-teacher@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'TEACHER', NULL),
 ('3000000001', 'l.navarro-parent@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'PARENT', '1000000002');
 
-INSERT IGNORE INTO notebooks (student_egn, subject, school_year, format, style, color, content, page_number) VALUES
+MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(egn) VALUES
+('1000000001', 'Victor', 'Kolev', 'v.kolev-student@edu-school.bg', '10', '10A'),
+('1000000002', 'Konstantin', 'Kosev', 'k.kosev-student@edu-school.bg', '10', '10A'),
+('1000000003', 'Ivan', 'Ivanov', 'i.ivanov-student@edu-school.bg', '10', '10A'),
+('1000000004', 'John', 'Doe', 'j.doe-student@edu-school.bg', '10', '10B'),
+('1000000005', 'Daniel', 'Kovacs', 'd.kovacs-student@edu-school.bg', '10', '10B'),
+('1000000006', 'Sofia', 'Martinez', 's.martinez-student@edu-school.bg', '10', '10B'),
+('1000000007', 'Marcus', 'Bennett', 'm.bennett-student@edu-school.bg', '11', '11A'),
+('1000000008', 'Elena', 'Petrova', 'e.petrova-student@edu-school.bg', '11', '11A'),
+('1000000009', 'Liam', 'OConnor', 'l.oconnor-student@edu-school.bg', '11', '11A'),
+('1000000010', 'Victor', 'Ivanov', 'v.ivanov-student@edu-school.bg', '11', '11B'),
+('1000000011', 'Natalie', 'Fischer', 'n.fischer-student@edu-school.bg', '11', '11B'),
+('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B');
+
+MERGE INTO notebooks (student_egn, subject, school_year, format, style, color, content, page_number) KEY(student_egn, subject, school_year, page_number) VALUES
 ('1000000001', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000001', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000001', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),

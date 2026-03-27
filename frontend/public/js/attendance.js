@@ -1,8 +1,10 @@
 const user = JSON.parse(localStorage.getItem('user'));
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 if (!user) window.location.href = '/';
 
 const allNames = {
-    '1000000001': 'Viktor Kolev',
+    '1000000001': 'Victor Kolev',
     '1000000002': 'Konstantin Kosev',
     '1000000003': 'Ivan Ivanov',
     '1000000004': 'John Doe',
@@ -55,7 +57,7 @@ async function loadStudentsForDate() {
 
     let existingRecords = [];
     try {
-        const res = await fetch(`https://techdesk-backend.onrender.com/api/attendance/date/${date}`);
+        const res = await fetch(`${BACKEND_BASE_URL}/api/attendance/date/${date}`);
         if (res.ok) existingRecords = await res.json();
     } catch (e) {}
 
@@ -98,7 +100,7 @@ function setStatus(egn, status, btn) {
 async function saveAll() {
     const date = document.getElementById('attendanceDate').value;
     const promises = Object.entries(attendanceMap).map(([egn, status]) =>
-        fetch('https://techdesk-backend.onrender.com/api/attendance/mark', {
+        fetch(`${BACKEND_BASE_URL}/api/attendance/mark`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ studentEgn: egn, date, status })
@@ -112,7 +114,7 @@ async function saveAll() {
 
 async function loadStudentAttendance(egn, containerId) {
     try {
-        const res = await fetch(`https://techdesk-backend.onrender.com/api/attendance/student/${egn}`);
+        const res = await fetch(`${BACKEND_BASE_URL}/api/attendance/student/${egn}`);
         const records = await res.json();
         const container = document.getElementById(containerId);
 

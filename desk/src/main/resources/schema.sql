@@ -22,13 +22,15 @@ CREATE TABLE IF NOT EXISTS notebooks (
     color VARCHAR(20) NOT NULL,
     content LONGTEXT,
     page_number INT DEFAULT 1,
-    last_updated DATETIME
+    last_updated TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS students (
     egn VARCHAR(20) PRIMARY KEY,
     first_name VARCHAR(50),
     last_name VARCHAR(50),
+    email VARCHAR(100) NOT NULL UNIQUE,
+    grade VARCHAR(20) NOT NULL,
     class_name VARCHAR(20)
 );
 
@@ -56,7 +58,7 @@ CREATE TABLE IF NOT EXISTS messages (
     sender_egn VARCHAR(20) NOT NULL,
     receiver_egn VARCHAR(20) NOT NULL,
     content TEXT NOT NULL,
-    sent_at DATETIME
+    sent_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS conversations (
@@ -71,4 +73,19 @@ CREATE TABLE IF NOT EXISTS lessons (
     teacher_egn VARCHAR(20),
     date DATE,
     content TEXT
+);
+
+CREATE TABLE IF NOT EXISTS ai_task_data (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL,
+    task_id VARCHAR(100) NOT NULL,
+    subject_name VARCHAR(255) NULL,
+    concept_name VARCHAR(255) NULL,
+    time_spent_seconds BIGINT NOT NULL,
+    attempts INT NOT NULL,
+    correct BOOLEAN NOT NULL,
+    corrections INT NULL,
+    completed BOOLEAN NULL,
+    skipped BOOLEAN NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
