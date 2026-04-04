@@ -7,7 +7,8 @@ if (!user || user.role !== 'TEACHER') {
 
 const teacherNames = {
     'h.schmidt-teacher@edu-school.bg': 'Miss Schmidt',
-    'a.popescu-teacher@edu-school.bg': 'Mr Popescu'
+    'a.popescu-teacher@edu-school.bg': 'Mr Popescu',
+    'e.vasileva-teacher@edu-school.bg': 'Mrs Vasileva'
 };
 
 document.getElementById('teacherName').textContent = teacherNames[user.email] || user.email;
@@ -24,7 +25,8 @@ const egnToName = {
     '1000000009': 'Liam O\'Connor',
     '1000000010': 'Victor Ivanov',
     '1000000011': 'Natalie Fischer',
-    '1000000012': 'Carlos Mendes'
+    '1000000012': 'Carlos Mendes',
+    '9000000001': 'Radoslav Paskalev'
 };
 
 let currentViewEgn = null;

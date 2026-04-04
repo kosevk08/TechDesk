@@ -16,7 +16,8 @@ const egnToName = {
     '1000000009': 'Liam',
     '1000000010': 'Victor',
     '1000000011': 'Natalie',
-    '1000000012': 'Carlos'
+    '1000000012': 'Carlos',
+    '9000000001': 'Radoslav'
 };
 
 document.getElementById('studentName').textContent = egnToName[user.egn] || user.email.split('@')[0];

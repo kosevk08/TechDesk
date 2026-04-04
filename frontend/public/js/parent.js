@@ -5,11 +5,13 @@ if (!user || user.role !== 'PARENT') {
 }
 
 const parentNames = {
-    'l.navarro-parent@edu-school.bg': 'Mr Navarro'
+    'l.navarro-parent@edu-school.bg': 'Mr Navarro',
+    'p.stoyanov-parent@edu-school.bg': 'Mr Stoyanov'
 };
 
 const egnToName = {
-    '1000000002': 'Konstantin Kosev'
+    '1000000002': 'Konstantin Kosev',
+    '9000000001': 'Radoslav Paskalev'
 };
 
 document.getElementById('parentName').textContent = parentNames[user.email] || user.email;
