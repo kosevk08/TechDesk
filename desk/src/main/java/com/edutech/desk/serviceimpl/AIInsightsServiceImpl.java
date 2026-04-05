@@ -11,6 +11,7 @@ import com.edutech.desk.repository.AttendanceRepository;
 import com.edutech.desk.repository.AiTaskDataRepository;
 import com.edutech.desk.repository.StudentRepository;
 import com.edutech.desk.service.AIInsightsService;
+import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.serviceimpl.ai.AiParentInsightsAssembler;
 import com.edutech.desk.serviceimpl.ai.AiStudentGuidanceBuilder;
 import com.edutech.desk.serviceimpl.ai.AiTeacherInsightsAssembler;
@@ -29,37 +30,48 @@ public class AIInsightsServiceImpl implements AIInsightsService {
     private final AiTeacherInsightsAssembler teacherInsightsAssembler;
     private final AiParentInsightsAssembler parentInsightsAssembler;
     private final AiStudentGuidanceBuilder studentGuidanceBuilder;
+    private final NameLookupService nameLookupService;
 
     public AIInsightsServiceImpl(AiTaskDataRepository aiTaskDataRepository,
                                  StudentRepository studentRepository,
                                  AttendanceRepository attendanceRepository,
                                  AiTeacherInsightsAssembler teacherInsightsAssembler,
                                  AiParentInsightsAssembler parentInsightsAssembler,
-                                 AiStudentGuidanceBuilder studentGuidanceBuilder) {
+                                 AiStudentGuidanceBuilder studentGuidanceBuilder,
+                                 NameLookupService nameLookupService) {
         this.aiTaskDataRepository = aiTaskDataRepository;
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
         this.teacherInsightsAssembler = teacherInsightsAssembler;
         this.parentInsightsAssembler = parentInsightsAssembler;
         this.studentGuidanceBuilder = studentGuidanceBuilder;
+        this.nameLookupService = nameLookupService;
     }
 
     @Override
     public AiTeacherDashboardResponse buildTeacherDashboard() {
         List<AiTaskData> tasks = aiTaskDataRepository.findAll();
         Map<String, Student> studentsById = studentRepository.findAll().stream()
-                .collect(Collectors.toMap(Student::getEgn, student -> student));
+                .collect(Collectors.toMap(Student::getEgn, student -> student, (a, b) -> a));
+        studentRepository.findAll().forEach(student -> {
+            studentsById.putIfAbsent(nameLookupService.studentName(student.getEgn()), student);
+        });
         return teacherInsightsAssembler.build(tasks, studentsById);
     }
 
     @Override
     public AiParentDashboardResponse buildParentDashboard(String studentId) {
+        String studentEgn = nameLookupService.studentEgnByName(studentId);
+        if (studentEgn == null && studentRepository.findById(studentId).isPresent()) {
+            studentEgn = studentId;
+        }
+        String studentKey = studentEgn != null ? nameLookupService.studentName(studentEgn) : studentId;
         List<AiTaskData> records = aiTaskDataRepository.findAll().stream()
-                .filter(task -> studentId.equals(task.getStudentId()))
+                .filter(task -> studentKey.equals(task.getStudentId()))
                 .toList();
-        Student student = studentRepository.findById(studentId).orElse(null);
-        List<Attendance> attendanceRecords = attendanceRepository.findByStudentEgn(studentId);
-        return parentInsightsAssembler.build(studentId, student, records, attendanceRecords);
+        Student student = studentEgn != null ? studentRepository.findById(studentEgn).orElse(null) : null;
+        List<Attendance> attendanceRecords = studentEgn != null ? attendanceRepository.findByStudentEgn(studentEgn) : List.of();
+        return parentInsightsAssembler.build(studentKey, student, records, attendanceRecords);
     }
 
     @Override

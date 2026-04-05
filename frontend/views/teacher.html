@@ -60,6 +60,23 @@
                 <p>Monitor struggle, difficulty, engagement, and adaptive recommendations.</p>
                 <button class="action-btn" onclick="loadAiInsights()">Open AI Dashboard</button>
             </div>
+            <div class="card">
+                <h3>Tests</h3>
+                <p>Create, assign, and grade class tests.</p>
+                <button class="action-btn" onclick="loadTests()">Manage Tests</button>
+            </div>
+            <div class="card">
+                <h3>Grades</h3>
+                <p>Enter grades and track class performance.</p>
+                <button class="action-btn" onclick="loadGrades()">Manage Grades</button>
+            </div>
+        </div>
+
+        <div class="ai-panel">
+            <h4>Notifications</h4>
+            <div id="teacherNotifications">
+                <p class="empty-state">No notifications yet.</p>
+            </div>
         </div>
 
         <div id="aiInsightsSection" style="display:none;">
@@ -97,6 +114,72 @@
             <div id="notebooksList"></div>
         </div>
 
+        <div id="testsSection" style="display:none;">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Assessment Studio</span>
+                    <h3 class="section-title">Tests</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadTests()">Refresh</button>
+            </div>
+
+            <div class="ai-panel">
+                <h4>Create a Test</h4>
+                <div class="test-form">
+                    <input type="text" id="testTitle" placeholder="Test title">
+                    <input type="text" id="testSubject" placeholder="Subject (optional)">
+                    <textarea id="testDescription" placeholder="Short description"></textarea>
+                    <textarea id="testQuestions" placeholder="Enter one question per line"></textarea>
+                    <div class="test-row">
+                        <input type="number" id="testPoints" placeholder="Total points">
+                        <select id="testClass"></select>
+                        <input type="date" id="testDueDate">
+                        <button class="action-btn" onclick="createTest()">Create + Assign</button>
+                    </div>
+                    <div class="test-status" id="testStatus">Ready</div>
+                </div>
+            </div>
+
+            <div class="ai-panel">
+                <h4>Assigned Tests</h4>
+                <div id="testsList"></div>
+            </div>
+
+            <div class="ai-panel" id="submissionsPanel" style="display:none;">
+                <h4>Submissions</h4>
+                <div id="submissionsList"></div>
+            </div>
+        </div>
+
+        <div id="gradesSection" style="display:none;">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Digital Gradebook</span>
+                    <h3 class="section-title">Grades</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadGrades()">Refresh</button>
+            </div>
+
+            <div class="ai-panel">
+                <h4>Add Grade</h4>
+                <div class="test-form">
+                    <select id="gradeStudent"></select>
+                    <input type="text" id="gradeSubject" placeholder="Subject">
+                    <input type="number" step="0.01" id="gradeValue" placeholder="Grade">
+                    <textarea id="gradeComment" placeholder="Comment (optional)"></textarea>
+                    <div class="test-row">
+                        <button class="action-btn" onclick="addGrade()">Save Grade</button>
+                        <div class="test-status" id="gradeStatus">Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-panel">
+                <h4>Student Grade History</h4>
+                <div id="gradeHistoryList"></div>
+            </div>
+        </div>
+
         <div id="notebookViewer" style="display:none;">
             <div class="notebook-header">
                 <button class="back-btn" onclick="backToList()">← Back</button>
@@ -110,6 +193,7 @@
         </div>
     </div>
 
+    <script src="/js/demo-data.js"></script>
     <script src="/js/teacher.js"></script>
 </body>
 </html>

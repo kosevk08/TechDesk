@@ -4,35 +4,143 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TechDesk - Student</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/teacher.css">
     <link rel="stylesheet" href="/css/student.css">
 </head>
 <body>
     <nav class="navbar">
-        <h1>TechDesk</h1>
+        <div class="brand-block">
+            <div class="brand-lockup">
+                <span class="logo-shell nav-logo-shell">
+                    <img src="/logo-tech-throne.png" alt="Tech Throne logo" class="brand-logo">
+                </span>
+                <div class="brand-copy">
+                    <span class="brand-kicker">Learning Intelligence</span>
+                    <h1>TechDesk</h1>
+                </div>
+            </div>
+        </div>
         <a href="/" class="logout">Logout</a>
     </nav>
 
     <div class="container">
-        <div class="greeting">
-            <h2>Hello, <span id="studentName">Student</span></h2>
-            <p>Class: <span id="studentClass">-</span></p>
+        <section class="hero-panel">
+            <div class="greeting">
+                <span class="section-eyebrow">Student Workspace</span>
+                <h2>Hello, <span id="studentName">Student</span></h2>
+                <p>Class: <span id="studentClass">-</span></p>
+                <p>Track your lessons, write live notes, and stay connected with your teacher.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-pill">Live study tools</div>
+                <div class="hero-stat">
+                    <span class="hero-stat-label">Attendance</span>
+                    <strong id="attendanceSummary">Loading...</strong>
+                </div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>Subjects</h3>
+                <p>Open a subject to access your textbook and notebook.</p>
+                <button class="action-btn" onclick="document.getElementById('subjectsSection').scrollIntoView({ behavior: 'smooth' })">Browse Subjects</button>
+            </div>
+            <div class="card">
+                <h3>Attendance</h3>
+                <p>Check your attendance history.</p>
+                <button class="action-btn" onclick="window.location.href='/attendance'">View Attendance</button>
+            </div>
+            <div class="card">
+                <h3>Messages</h3>
+                <p>Contact your teacher and classmates.</p>
+                <button class="action-btn" onclick="window.location.href='/messages'">Open Messages</button>
+            </div>
+            <div class="card">
+                <h3>Tests</h3>
+                <p>See assigned tests and submit your answers.</p>
+                <button class="action-btn" onclick="document.getElementById('testsSection').scrollIntoView({ behavior: 'smooth' })">Open Tests</button>
+            </div>
         </div>
 
-        <div class="subjects-grid" id="subjectsGrid">
+        <div class="card section-card" id="attendanceSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Attendance Snapshot</span>
+                    <h3 class="section-title">Your Attendance</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="window.location.href='/attendance'">Open Details</button>
+            </div>
+            <div class="attendance-grid">
+                <div class="metric-card">
+                    <span class="metric-label">Total Records</span>
+                    <strong class="metric-value" id="attendanceTotal">-</strong>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Present</span>
+                    <strong class="metric-value" id="attendancePresent">-</strong>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Absent</span>
+                    <strong class="metric-value" id="attendanceAbsent">-</strong>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Latest Status</span>
+                    <strong class="metric-value" id="attendanceLatest">-</strong>
+                </div>
+            </div>
         </div>
 
-        <div class="card upcoming-tests">
-            <h3>📝 Upcoming Tests</h3>
+        <div class="ai-panel section-card">
+            <h4>Notifications</h4>
+            <div id="studentNotifications">
+                <p class="empty-state">No notifications yet.</p>
+            </div>
+        </div>
+
+        <div class="card section-card" id="subjectsSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Lesson Library</span>
+                    <h3 class="section-title">Subjects</h3>
+                </div>
+            </div>
+            <div class="subjects-grid" id="subjectsGrid"></div>
+        </div>
+
+        <div class="card section-card" id="gradesSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Digital Gradebook</span>
+                    <h3 class="section-title">Grades</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadStudentGrades()">Refresh</button>
+            </div>
+            <div id="studentGradesList"></div>
+            <div class="attendance-grid" id="studentAverages"></div>
+        </div>
+
+        <div class="card section-card" id="testsSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Assessment Center</span>
+                    <h3 class="section-title">Assigned Tests</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadStudentTests()">Refresh</button>
+            </div>
+            <div id="studentTestsList"></div>
+        </div>
+
+        <div class="card section-card upcoming-tests">
+            <h3>Upcoming Tests</h3>
             <ul id="testsList">
                 <li>No upcoming tests</li>
             </ul>
         </div>
-
-        <button class="feedback-btn" onclick="window.location.href='/messages'">
-            💬 Messages
-        </button>
     </div>
 
+    <script src="/js/demo-data.js"></script>
     <script src="/js/student.js"></script>
 </body>
 </html>

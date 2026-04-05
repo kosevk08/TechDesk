@@ -133,8 +133,10 @@ body {
 
 .status-btn.present-btn { color: #38a169; border-color: #38a169; }
 .status-btn.absent-btn { color: #e53e3e; border-color: #e53e3e; }
+.status-btn.late-btn { color: #d97706; border-color: #d97706; }
 .status-btn.present-btn.active { background: #38a169; color: white; }
 .status-btn.absent-btn.active { background: #e53e3e; color: white; }
+.status-btn.late-btn.active { background: #d97706; color: white; }
 
 .save-btn {
     padding: 12px 30px;

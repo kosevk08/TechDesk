@@ -1,31 +1,20 @@
 const user = JSON.parse(localStorage.getItem('user'));
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+const socket = io();
+const token = localStorage.getItem('token');
+const demoData = window.DemoData;
+const isDemo = Boolean(user && user.demo);
+
+function authHeaders(extra = {}) {
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
 if (!user) window.location.href = '/';
 
-const allNames = {
-    '1000000001': 'Victor Kolev',
-    '1000000002': 'Konstantin Kosev',
-    '1000000003': 'Ivan Ivanov',
-    '1000000004': 'John Doe',
-    '1000000005': 'Daniel Kovacs',
-    '1000000006': 'Sofia Martinez',
-    '1000000007': 'Marcus Bennett',
-    '1000000008': 'Elena Petrova',
-    '1000000009': 'Liam O\'Connor',
-    '1000000010': 'Victor Ivanov',
-    '1000000011': 'Natalie Fischer',
-    '1000000012': 'Carlos Mendes',
-    '2000000001': 'Miss Schmidt',
-    '2000000002': 'Mr Popescu',
-    '3000000001': 'Mr Navarro'
-};
-
-const studentEgns = [
-    '1000000001','1000000002','1000000003','1000000004',
-    '1000000005','1000000006','1000000007','1000000008',
-    '1000000009','1000000010','1000000011','1000000012'
-];
+let studentNames = [];
+if (isDemo && demoData) {
+    studentNames = [demoData.student.name];
+}
 
 const backLink = document.getElementById('backLink');
 const role = user.role;
@@ -41,12 +30,12 @@ if (role === 'TEACHER') {
     backLink.innerHTML = '<a href="/student">← Back</a>';
     document.getElementById('greetingText').textContent = 'Your attendance record';
     document.getElementById('studentView').style.display = 'block';
-    loadStudentAttendance(user.egn, 'attendanceRecords');
+    loadStudentAttendance('attendanceRecords');
 } else if (role === 'PARENT') {
     backLink.innerHTML = '<a href="/parent">← Back</a>';
-    document.getElementById('greetingText').textContent = `Attendance record for ${allNames[user.studentEgn] || user.studentEgn}`;
+    document.getElementById('greetingText').textContent = `Attendance record for ${user.childName || 'Student'}`;
     document.getElementById('parentView').style.display = 'block';
-    loadStudentAttendance(user.studentEgn, 'parentAttendanceRecords');
+    loadStudentAttendance('parentAttendanceRecords');
 }
 
 const attendanceMap = {};
@@ -57,41 +46,63 @@ async function loadStudentsForDate() {
 
     let existingRecords = [];
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/attendance/date/${date}`);
-        if (res.ok) existingRecords = await res.json();
+        if (isDemo && demoData) {
+            existingRecords = demoData.attendance.map(record => ({
+                studentName: demoData.student.name,
+                status: record.status,
+                date: record.date
+            }));
+        } else {
+            const res = await fetch(`${BACKEND_BASE_URL}/api/attendance/date/${date}`, {
+                headers: authHeaders()
+            });
+            if (res.ok) existingRecords = await res.json();
+        }
     } catch (e) {}
 
     const existingMap = {};
-    existingRecords.forEach(r => existingMap[r.studentEgn] = r.status);
+    existingRecords.forEach(r => existingMap[r.studentName] = r.status);
+
+    if (!isDemo && studentNames.length === 0) {
+        try {
+            const res = await fetch(`${BACKEND_BASE_URL}/api/student/names`, { headers: authHeaders() });
+            studentNames = res.ok ? (await res.json()).map(s => s.fullName) : [];
+        } catch (e) {
+            studentNames = [];
+        }
+    }
 
     const list = document.getElementById('studentAttendanceList');
     list.innerHTML = '';
     document.getElementById('saveAllBtn').style.display = 'inline-block';
 
-    studentEgns.forEach(egn => {
-        const status = existingMap[egn] || null;
-        if (status) attendanceMap[egn] = status;
+    studentNames.forEach(name => {
+        const status = existingMap[name] || null;
+        if (status) attendanceMap[name] = status;
 
         const row = document.createElement('div');
         row.className = 'student-row';
         row.innerHTML = `
             <div>
-                <h4>${allNames[egn]}</h4>
-                <p>EGN: ${egn}</p>
+                <h4>${name}</h4>
             </div>
             <div class="status-btns">
                 <button class="status-btn present-btn ${status === 'PRESENT' ? 'active' : ''}"
-                    onclick="setStatus('${egn}', 'PRESENT', this)">✅ Present</button>
-                <button class="status-btn absent-btn ${status === 'ABSENT' ? 'active' : ''}"
-                    onclick="setStatus('${egn}', 'ABSENT', this)">❌ Absent</button>
+                    onclick="setStatus('${name}', 'PRESENT', this)">Present</button>
+                <button class="status-btn absent-btn ${status === 'ABSENT_UNEXCUSED' ? 'active' : ''}"
+                    onclick="setStatus('${name}', 'ABSENT_UNEXCUSED', this)">Absent (Unexcused)</button>
+                <button class="status-btn absent-btn ${status === 'ABSENT_EXCUSED' ? 'active' : ''}"
+                    onclick="setStatus('${name}', 'ABSENT_EXCUSED', this)">Absent (Excused)</button>
+                <button class="status-btn late-btn ${status === 'LATE' ? 'active' : ''}"
+                    onclick="setStatus('${name}', 'LATE', this)">Late</button>
             </div>
         `;
         list.appendChild(row);
     });
 }
 
-function setStatus(egn, status, btn) {
-    attendanceMap[egn] = status;
+function setStatus(studentName, status, btn) {
+    attendanceMap[studentName] = status;
     const row = btn.closest('.status-btns');
     row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -99,23 +110,40 @@ function setStatus(egn, status, btn) {
 
 async function saveAll() {
     const date = document.getElementById('attendanceDate').value;
-    const promises = Object.entries(attendanceMap).map(([egn, status]) =>
-        fetch(`${BACKEND_BASE_URL}/api/attendance/mark`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ studentEgn: egn, date, status })
-        })
-    );
-    await Promise.all(promises);
+    if (isDemo && demoData) {
+        demoData.attendance = Object.entries(attendanceMap).map(([name, status]) => ({
+            date,
+            status
+        }));
+    } else {
+        const promises = Object.entries(attendanceMap).map(([studentName, status]) =>
+            fetch(`${BACKEND_BASE_URL}/api/attendance/mark`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ studentName, date, status })
+            })
+        );
+        await Promise.all(promises);
+        Object.entries(attendanceMap).forEach(([studentName, status]) => {
+            socket.emit('attendance-updated', { studentName, status, date });
+        });
+    }
     const msg = document.getElementById('savedMsg');
     msg.style.display = 'inline';
     setTimeout(() => msg.style.display = 'none', 2000);
 }
 
-async function loadStudentAttendance(egn, containerId) {
+async function loadStudentAttendance(containerId) {
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/attendance/student/${egn}`);
-        const records = await res.json();
+        let records = [];
+        if (isDemo && demoData) {
+            records = demoData.attendance;
+        } else {
+            const res = await fetch(`${BACKEND_BASE_URL}/api/attendance/${role === 'PARENT' ? 'child' : 'me'}`, {
+                headers: authHeaders()
+            });
+            records = await res.json();
+        }
         const container = document.getElementById(containerId);
 
         if (records.length === 0) {
@@ -124,7 +152,8 @@ async function loadStudentAttendance(egn, containerId) {
         }
 
         const present = records.filter(r => r.status === 'PRESENT').length;
-        const absent = records.filter(r => r.status === 'ABSENT').length;
+        const absent = records.filter(r => r.status === 'ABSENT_UNEXCUSED' || r.status === 'ABSENT_EXCUSED').length;
+        const late = records.filter(r => r.status === 'LATE').length;
 
         container.innerHTML = `
             <div class="summary">
@@ -140,6 +169,10 @@ async function loadStudentAttendance(egn, containerId) {
                     <h3>${absent}</h3>
                     <p>Absent</p>
                 </div>
+                <div class="summary-item">
+                    <h3>${late}</h3>
+                    <p>Late</p>
+                </div>
             </div>
         `;
 
@@ -151,7 +184,10 @@ async function loadStudentAttendance(egn, containerId) {
                     <h4>${new Date(record.date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
                 </div>
                 <span class="${record.status === 'PRESENT' ? 'badge-present' : 'badge-absent'}">
-                    ${record.status === 'PRESENT' ? '✅ Present' : '❌ Absent'}
+                    ${record.status === 'PRESENT' ? 'Present' :
+                        record.status === 'LATE' ? 'Late' :
+                        record.status === 'ABSENT_EXCUSED' ? 'Absent (Excused)' :
+                        'Absent (Unexcused)'}
                 </span>
             `;
             container.appendChild(div);

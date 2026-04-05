@@ -19,6 +19,9 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
+    @Column(nullable = false)
+    private boolean demo = false;
+
     @Column
     private String studentEgn;
 
@@ -32,6 +35,8 @@ public class User {
     public void setPassword(String password) { this.password = password; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public boolean isDemo() { return demo; }
+    public void setDemo(boolean demo) { this.demo = demo; }
     public String getStudentEgn() { return studentEgn; }
     public void setStudentEgn(String studentEgn) { this.studentEgn = studentEgn; }
 }
