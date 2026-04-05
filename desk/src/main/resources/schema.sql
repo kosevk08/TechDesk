@@ -150,4 +150,4 @@ ALTER TABLE students MODIFY COLUMN grade VARCHAR(20) NULL DEFAULT NULL;
 ALTER TABLE students MODIFY COLUMN email VARCHAR(100) NULL DEFAULT NULL;
 ALTER TABLE parents MODIFY COLUMN first_name VARCHAR(50) NULL DEFAULT NULL;
 ALTER TABLE parents MODIFY COLUMN last_name VARCHAR(50) NULL DEFAULT NULL;
-ALTER TABLE lessons ADD UNIQUE IF NOT EXISTS idx_lessons_subject_teacher (subject_id, teacher_egn);
+ALTER TABLE lessons ADD UNIQUE idx_lessons_subject_teacher (subject_id, teacher_egn);
