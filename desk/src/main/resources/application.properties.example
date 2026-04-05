@@ -1,17 +1,24 @@
 spring.application.name=desk
-spring.datasource.url=jdbc:mysql://localhost:3306/techdesk?createDatabaseIfNotExist=true
-spring.datasource.username=root
-spring.datasource.password=YOUR_PASSWORD_HERE
+
+spring.datasource.url=${DB_URL}
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
 spring.jpa.open-in-view=false
+
 server.port=8080
 logging.level.org.springframework.security=DEBUG
+
 spring.sql.init.mode=always
 spring.sql.init.schema-locations=classpath:schema.sql
 spring.sql.init.data-locations=classpath:data.sql
+
+# JWT settings
+jwt.secret=${JWT_SECRET:change-me-please-change-me-please}
+jwt.expiration-ms=${JWT_EXPIRATION_MS:86400000}
 
 techdesk.ai.risk.high-accuracy-below=45
 techdesk.ai.risk.medium-accuracy-below=70
@@ -23,7 +30,6 @@ techdesk.ai.risk.high-skipped-at-least=2
 techdesk.ai.risk.medium-skipped-at-least=1
 techdesk.ai.risk.increase-difficulty-accuracy-at-least=85
 techdesk.ai.risk.increase-difficulty-attempts-at-most=1.5
-
 techdesk.ai.difficulty.medium-time-seconds-at-least=480
 techdesk.ai.difficulty.difficult-time-seconds-at-least=780
 techdesk.ai.difficulty.medium-attempts-at-least=2.5
@@ -32,7 +38,6 @@ techdesk.ai.difficulty.medium-accuracy-below=70
 techdesk.ai.difficulty.difficult-accuracy-below=45
 techdesk.ai.difficulty.medium-score-at-least=2
 techdesk.ai.difficulty.difficult-score-at-least=5
-
 techdesk.ai.guidance.medium-time-seconds-at-least=420
 techdesk.ai.guidance.medium-attempts-at-least=3
 techdesk.ai.guidance.high-attempts-at-least=5
