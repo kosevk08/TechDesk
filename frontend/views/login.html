@@ -3,67 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechDesk - Login</title>
+    <title>TechDesk</title>
     <link rel="stylesheet" href="/css/login.css">
 </head>
 <body>
-    <nav class="navbar">
-        <a href="/" class="brand-lockup">
-            <span class="logo-shell nav-logo-shell">
-                <img src="/logo-tech-throne.png" alt="Tech Throne logo" class="brand-logo">
-            </span>
-            <span class="brand-copy">
-                <span class="brand-kicker">Tech Throne</span>
-                <span class="brand-name">TechDesk</span>
-            </span>
-        </a>
-    </nav>
-    <div class="login-container">
-        <section class="brand-panel">
-            <div class="brand-panel-card">
-                <div class="logo-stage">
-                    <div class="logo-orbit"></div>
-                    <span class="logo-shell hero-logo-shell">
-                        <img src="/logo-tech-throne.png" alt="Tech Throne logo" class="brand-logo hero-logo">
-                    </span>
-                </div>
-                <div class="brand-panel-copy">
-                    <span class="panel-kicker">Classroom Intelligence</span>
-                    <h2>Tech Throne</h2>
-                    <p>Structured learning support for students, sharp insight for teachers, and clear visibility for parents.</p>
+    <div class="page-wrapper">
+        <div class="left-panel">
+            <div class="left-content">
+                <img src="/logo.png" alt="TechDesk" class="logo-img">
+                <h1>TechDesk</h1>
+                <p>Smart Educational Platform</p>
+                <div class="shapes">
+                    <div class="shape s1"></div>
+                    <div class="shape s2"></div>
+                    <div class="shape s3"></div>
+                    <div class="shape s4"></div>
                 </div>
             </div>
-        </section>
-        <div class="login-box">
-            <span class="login-kicker">Welcome Back</span>
-            <h2>Login</h2>
-            <p class="login-subtitle">Sign in to open your TechDesk workspace.</p>
-            <form id="loginForm">
-                <div class="input-group">
-                    <input type="email" id="email" placeholder="Email" required>
-                </div>
-                <div class="input-group password-group">
-                    <input type="password" id="password" placeholder="Password" required>
-                    <button type="button" id="togglePassword" aria-label="Show password">👁</button>
-                </div>
-                <button type="submit" class="login-btn">Login</button>
-                <p id="errorMsg" class="error-msg"></p>
-            </form>
+        </div>
+
+        <div class="right-panel">
+            <div class="login-box">
+                <h2>Welcome back</h2>
+                <p class="subtitle">Sign in to continue</p>
+
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="email" placeholder="Email" required>
+                    </div>
+                    <div class="input-group password-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Password" required oninput="handlePasswordInput()">
+                        <button type="button" id="eyeBtn" class="eye-btn" style="display:none;"
+                            onmousedown="showPassword()" onmouseup="hidePassword()"
+                            onmouseleave="hidePassword()" ontouchstart="showPassword()" ontouchend="hidePassword()">
+                            <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button type="submit" class="login-btn">Sign In</button>
+                    <p id="errorMsg" class="error-msg"></p>
+                </form>
+            </div>
         </div>
     </div>
+
     <script src="/js/login.js"></script>
     <script>
         function handlePasswordInput() {
             const val = document.getElementById('password').value;
             document.getElementById('eyeBtn').style.display = val.length > 0 ? 'flex' : 'none';
         }
-
         function showPassword() {
             document.getElementById('password').type = 'text';
             document.getElementById('eyeOpen').style.display = 'none';
             document.getElementById('eyeClosed').style.display = 'block';
         }
-
         function hidePassword() {
             document.getElementById('password').type = 'password';
             document.getElementById('eyeOpen').style.display = 'block';
