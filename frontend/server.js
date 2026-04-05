@@ -7,6 +7,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use((req, res, next) => {
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'self' https://techdesk-backend.onrender.com wss://techdesk-frontend.onrender.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+    next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));

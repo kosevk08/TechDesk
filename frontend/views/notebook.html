@@ -153,6 +153,15 @@
             display: none;
         }
 
+        .demo-badge {
+            background: #e9a100;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
         .page-controls {
             background: #1a1a2e;
             padding: 6px 15px;
@@ -192,7 +201,10 @@
     <nav class="navbar">
         <h1>TechDesk</h1>
         <span class="subject-name" id="subjectName">Subject</span>
-        <a href="/student">← Back</a>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <span id="demoBadge" class="demo-badge" style="display:none;">🧪 DEMO</span>
+            <a href="/student">← Back</a>
+        </div>
     </nav>
 
     <div class="split-container">
@@ -239,6 +251,11 @@
         const authHeaders = (extra = {}) => token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
         if (!user) window.location.href = '/';
 
+        // Demo account detection
+        const DEMO_EGNS = ['9000000001', '9000000002', '9000000003'];
+        const isDemo = DEMO_EGNS.includes(user.egn);
+        if (isDemo) document.getElementById('demoBadge').style.display = 'inline';
+
         const subjectId = localStorage.getItem('currentSubject');
         const canvas = document.getElementById('notebookCanvas');
         const ctx = canvas.getContext('2d');
@@ -273,6 +290,31 @@
             document.getElementById('nextBtn').disabled = currentPage === MAX_PAGES;
         }
 
+        // ── Demo localStorage helpers ──────────────────────────────
+        function demoKey(subject, page) {
+            return `demo_notebook_${user.egn}_${subject}_${page}`;
+        }
+
+        function demoSave(silent = false) {
+            const imageData = canvas.toDataURL();
+            localStorage.setItem(demoKey(currentSubjectName, currentPage), imageData);
+            if (!silent) {
+                const msg = document.getElementById('savedMsg');
+                msg.style.display = 'inline';
+                setTimeout(() => msg.style.display = 'none', 2000);
+            }
+        }
+
+        function demoLoad(subjectName, page) {
+            const data = localStorage.getItem(demoKey(subjectName, page));
+            if (data && data.startsWith('data:image')) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = data;
+            }
+        }
+
+        // ── Page navigation ────────────────────────────────────────
         async function changePage(direction) {
             await saveNotebook(true);
             currentPage += direction;
@@ -363,6 +405,7 @@
             }
         }
 
+        // ── Drawing logic ──────────────────────────────────────────
         function draw(x0, y0, x1, y1) {
             const strokeData = {
                 x0, y0, x1, y1,
@@ -393,6 +436,7 @@
             scheduleAutoSave();
         }
 
+        // ── Mouse events ───────────────────────────────────────────
         canvas.addEventListener('mousedown', (e) => {
             drawing = true;
             [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -407,6 +451,7 @@
         canvas.addEventListener('mouseup', () => drawing = false);
         canvas.addEventListener('mouseout', () => drawing = false);
 
+        // ── Touch events (finger + Apple Pencil) ───────────────────
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -430,7 +475,7 @@
         canvas.addEventListener('touchend', () => drawing = false);
         canvas.addEventListener('touchcancel', () => drawing = false);
 
-
+        // ── Other ──────────────────────────────────────────────────
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (!isDemo) {
@@ -447,6 +492,10 @@
         }
 
         async function saveNotebook(silent = false) {
+            if (isDemo) {
+                demoSave(silent);
+                return;
+            }
             const imageData = canvas.toDataURL();
             try {
                 if (isDemo) {

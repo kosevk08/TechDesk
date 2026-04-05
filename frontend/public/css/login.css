@@ -5,6 +5,7 @@
     font-family: "Trebuchet MS", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+
 body {
     min-height: 100vh;
     display: flex;
@@ -15,6 +16,7 @@ body {
         linear-gradient(180deg, #05080f 0%, #0c1528 100%);
 }
 
+
 .navbar {
     background: rgba(5, 8, 15, 0.76);
     backdrop-filter: blur(16px);
@@ -24,61 +26,20 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.brand-lockup {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    text-decoration: none;
+
+.navbar h1 {
+    color: #ffffff;
+    font-size: 1.4rem;
+    font-weight: 600;
 }
 
-.logo-shell {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 24px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(48, 170, 186, 0.16));
-    box-shadow:
-        0 12px 36px rgba(0, 0, 0, 0.28),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-    transition: transform 0.28s ease, box-shadow 0.28s ease;
-}
 
-.nav-logo-shell {
-    width: 64px;
-    height: 64px;
-}
-
-.brand-logo {
-    width: 72%;
-    height: 72%;
-    object-fit: contain;
-    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.25));
-}
-
-.brand-copy {
-    display: flex;
-    flex-direction: column;
-}
-
-.brand-kicker,
-.login-kicker,
-.panel-kicker {
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-size: 0.72rem;
-    font-weight: 700;
-}
-
-.brand-kicker {
-    color: rgba(255, 255, 255, 0.62);
-}
-
-.brand-name {
+.navbar a {
     color: #ffffff;
     font-size: 1.45rem;
     font-weight: 800;
 }
+
 
 .login-container {
     flex: 1;
@@ -89,11 +50,7 @@ body {
     padding: 40px 28px;
 }
 
-.brand-panel {
-    width: min(460px, 46vw);
-}
 
-.brand-panel-card,
 .login-box {
     border-radius: 26px;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -180,6 +137,7 @@ body {
     width: 420px;
 }
 
+
 .login-box h2 {
     color: #0d1b3e;
     font-size: 1.8rem;
@@ -198,13 +156,11 @@ body {
     line-height: 1.55;
 }
 
+
 .input-group {
     margin-bottom: 15px;
 }
 
-.password-group {
-    position: relative;
-}
 
 .input-group input {
     width: 100%;
@@ -216,6 +172,7 @@ body {
     outline: none;
     transition: border 0.2s, box-shadow 0.2s;
 }
+
 
 .input-group input:focus {
     border: 1px solid #1b5a70;
@@ -239,6 +196,51 @@ body {
     color: #1b5a70;
 }
 
+
+.password-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+
+.password-group input {
+    width: 100%;
+    padding-right: 45px;
+}
+
+
+.eye-btn {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+
+.eye-btn:focus {
+    outline: none;
+}
+
+
+.eye-btn svg {
+    pointer-events: none;
+    transition: stroke 0.2s;
+}
+
+
+.eye-btn:hover svg {
+    stroke: #0d1b3e;
+}
+
+
 .login-btn {
     padding: 12px 20px;
     background: linear-gradient(135deg, #0d1b3e, #1f4f67);
@@ -253,10 +255,12 @@ body {
     box-shadow: 0 14px 28px rgba(13, 27, 62, 0.18);
 }
 
+
 .login-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 18px 32px rgba(13, 27, 62, 0.24);
 }
+
 
 .error-msg {
     color: #e94560;
@@ -265,63 +269,3 @@ body {
     clear: both;
 }
 
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@media (max-width: 980px) {
-    .login-container {
-        flex-direction: column;
-    }
-
-    .brand-panel {
-        width: min(560px, 100%);
-    }
-
-    .login-box {
-        width: min(460px, 100%);
-    }
-}
-
-@media (max-width: 640px) {
-    .navbar {
-        padding: 16px 18px;
-    }
-
-    .nav-logo-shell {
-        width: 54px;
-        height: 54px;
-    }
-
-    .brand-name {
-        font-size: 1.22rem;
-    }
-
-    .login-container {
-        padding: 24px 16px;
-    }
-
-    .brand-panel-card,
-    .login-box {
-        padding: 26px;
-    }
-
-    .logo-stage {
-        min-height: 240px;
-    }
-
-    .hero-logo-shell {
-        width: 210px;
-        height: 210px;
-    }
-
-    .logo-orbit {
-        width: 200px;
-        height: 200px;
-    }
-}
