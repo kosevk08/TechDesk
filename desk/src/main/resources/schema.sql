@@ -143,3 +143,5 @@ CREATE TABLE IF NOT EXISTS test_submissions (
     feedback TEXT,
     graded_at TIMESTAMP
 );
+
+ALTER TABLE teachers MODIFY COLUMN email VARCHAR(100) NULL DEFAULT NULL;
