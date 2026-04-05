@@ -239,9 +239,16 @@
         </div>
     </div>
 
+    <script src="/js/demo-data.js"></script>
     <script>
-        const socket = io('https://techdesk-frontend.onrender.com');
+        const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+        const socket = io();
         const user = JSON.parse(localStorage.getItem('user'));
+        const token = localStorage.getItem('token');
+        const demoData = window.DemoData;
+        const isDemo = Boolean(user && user.demo);
+        const authHeaders = (extra = {}) => token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
         if (!user) window.location.href = '/';
 
         // Demo account detection
@@ -314,17 +321,26 @@
             updatePageControls();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             await loadPage(currentSubjectName, currentPage);
-            socket.emit('page-change', {
-                studentEgn: user.egn,
-                subject: currentSubjectName,
-                page: currentPage
-            });
+            if (!isDemo) {
+                socket.emit('page-change', {
+                    studentName: user.displayName || 'Student',
+                    subject: currentSubjectName,
+                    page: currentPage
+                });
+            }
         }
 
         async function loadSubject() {
             try {
-                const res = await fetch(`https://techdesk-backend.onrender.com/api/subject/${subjectId}`);
-                const subject = await res.json();
+                let subject = null;
+                if (isDemo && demoData) {
+                    subject = demoData.subjects.find(s => String(s.id) === String(subjectId)) || demoData.subjects[0];
+                } else {
+                    const res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`, {
+                        headers: authHeaders()
+                    });
+                    subject = await res.json();
+                }
                 currentSubjectName = subject.name;
                 document.getElementById('subjectName').textContent = subject.name;
                 document.title = `TechDesk - ${subject.name}`;
@@ -357,10 +373,25 @@
         async function loadPage(subjectName, page) {
             try {
                 if (isDemo) {
-                    demoLoad(subjectName, page);
+                    const key = `demo-notebook-${user.displayName || 'Student'}-${subjectName}-page-${page}`;
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const img = new Image();
+                        img.onload = () => ctx.drawImage(img, 0, 0);
+                        img.src = stored;
+                    } else {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#1b1b1b';
+                        ctx.font = '18px sans-serif';
+                        ctx.fillText('Demo notebook page', 20, 40);
+                        ctx.font = '14px sans-serif';
+                        ctx.fillText('Draw here to add your own notes.', 20, 70);
+                    }
                     return;
                 }
-                const res = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`);
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/me/${encodeURIComponent(subjectName)}/${page}`, {
+                    headers: authHeaders()
+                });
                 if (res.ok) {
                     const notebook = await res.json();
                     if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
@@ -381,7 +412,7 @@
                 color: tool === 'eraser' ? null : currentColor,
                 size: document.getElementById('sizeSlider').value,
                 tool,
-                studentEgn: user.egn,
+                studentName: user.displayName || 'Student',
                 subject: currentSubjectName,
                 page: currentPage
             };
@@ -399,7 +430,10 @@
                 ctx.stroke();
             }
 
-            socket.emit('draw-stroke', strokeData);
+            if (!isDemo) {
+                socket.emit('draw-stroke', strokeData);
+            }
+            scheduleAutoSave();
         }
 
         // ── Mouse events ───────────────────────────────────────────
@@ -444,7 +478,17 @@
         // ── Other ──────────────────────────────────────────────────
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            socket.emit('clear-canvas', { studentEgn: user.egn, subject: currentSubjectName, page: currentPage });
+            if (!isDemo) {
+                socket.emit('clear-canvas', { studentName: user.displayName || 'Student', subject: currentSubjectName, page: currentPage });
+            }
+            scheduleAutoSave();
+        }
+
+        let autosaveTimer = null;
+
+        function scheduleAutoSave() {
+            if (autosaveTimer) clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(() => saveNotebook(true), 800);
         }
 
         async function saveNotebook(silent = false) {
@@ -454,20 +498,24 @@
             }
             const imageData = canvas.toDataURL();
             try {
-                await fetch('https://techdesk-backend.onrender.com/api/notebook/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        studentEgn: user.egn,
-                        subject: currentSubjectName,
-                        schoolYear: '2025-2026',
-                        format: 'A4',
-                        style: 'lined',
-                        color: currentColor,
-                        content: imageData,
-                        pageNumber: currentPage
-                    })
-                });
+                if (isDemo) {
+                    const key = `demo-notebook-${user.displayName || 'Student'}-${currentSubjectName}-page-${currentPage}`;
+                    localStorage.setItem(key, imageData);
+                } else {
+                    await fetch(`${BACKEND_BASE_URL}/api/notebook/save/me`, {
+                        method: 'POST',
+                        headers: authHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({
+                            subject: currentSubjectName,
+                            schoolYear: '2025-2026',
+                            format: 'A4',
+                            style: 'lined',
+                            color: currentColor,
+                            content: imageData,
+                            pageNumber: currentPage
+                        })
+                    });
+                }
                 if (!silent) {
                     const msg = document.getElementById('savedMsg');
                     msg.style.display = 'inline';

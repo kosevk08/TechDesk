@@ -8,5 +8,7 @@ public interface MessageService {
     List<Message> getOutbox(String egn);
     List<Message> getConversation(String egn1, String egn2);
     List<Message> getGroupMessages();
+    List<Message> getClassMessages(String className);
+    List<Message> getAnnouncements();
     Message sendMessage(Message message);
 }

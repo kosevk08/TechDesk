@@ -17,4 +17,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT m FROM Message m WHERE m.receiverEgn = 'GROUP' ORDER BY m.sentAt ASC")
     List<Message> findGroupMessages();
+
+    @Query("SELECT m FROM Message m WHERE m.receiverEgn = :receiver ORDER BY m.sentAt ASC")
+    List<Message> findByReceiverCustom(@Param("receiver") String receiver);
 }

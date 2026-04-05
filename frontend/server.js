@@ -49,6 +49,34 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('group-message', data);
     });
 
+    socket.on('class-message', (data) => {
+        socket.broadcast.emit('class-message', data);
+    });
+
+    socket.on('announcement', (data) => {
+        socket.broadcast.emit('announcement', data);
+    });
+
+    socket.on('attendance-updated', (data) => {
+        socket.broadcast.emit('attendance-updated', data);
+    });
+
+    socket.on('test-assigned', (data) => {
+        socket.broadcast.emit('test-assigned', data);
+    });
+
+    socket.on('test-submitted', (data) => {
+        socket.broadcast.emit('test-submitted', data);
+    });
+
+    socket.on('test-graded', (data) => {
+        socket.broadcast.emit('test-graded', data);
+    });
+
+    socket.on('grade-updated', (data) => {
+        socket.broadcast.emit('grade-updated', data);
+    });
+
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });

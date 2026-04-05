@@ -1,33 +1,19 @@
-const socket = io('https://techdesk-frontend.onrender.com');
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+const socket = io();
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = '/';
+const token = localStorage.getItem('token');
+const demoData = window.DemoData;
+const isDemo = Boolean(user && user.demo);
 
-const shortNames = {
-    '1000000001': 'Viktor Kolev',
-    '1000000002': 'Konstantin Kosev',
-    '1000000003': 'Ivan Ivanov',
-    '1000000004': 'John Doe',
-    '1000000005': 'Daniel Kovacs',
-    '1000000006': 'Sofia Martinez',
-    '1000000007': 'Marcus Bennett',
-    '1000000008': 'Elena Petrova',
-    '1000000009': 'Liam O\'Connor',
-    '1000000010': 'Victor Ivanov',
-    '1000000011': 'Natalie Fischer',
-    '1000000012': 'Carlos Mendes',
-    '2000000001': 'Miss Schmidt',
-    '2000000002': 'Mr Popescu',
-    '3000000001': 'Mr Navarro'
-};
+function authHeaders(extra = {}) {
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
 
-const roleLabel = {
-    '1000000001': 'Student', '1000000002': 'Student', '1000000003': 'Student',
-    '1000000004': 'Student', '1000000005': 'Student', '1000000006': 'Student',
-    '1000000007': 'Student', '1000000008': 'Student', '1000000009': 'Student',
-    '1000000010': 'Student', '1000000011': 'Student', '1000000012': 'Student',
-    '2000000001': 'Teacher', '2000000002': 'Teacher',
-    '3000000001': 'Parent'
-};
+let userClassName = null;
+let teacherClasses = [];
+let peopleList = [];
 
 const backLink = document.getElementById('backLink');
 if (user.role === 'TEACHER') backLink.innerHTML = '<a href="/teacher">← Back</a>';
@@ -35,6 +21,26 @@ else if (user.role === 'STUDENT') backLink.innerHTML = '<a href="/student">← B
 else if (user.role === 'PARENT') backLink.innerHTML = '<a href="/parent">← Back</a>';
 
 let currentChat = null;
+
+async function resolveUserClass() {
+    if (isDemo && demoData) {
+        userClassName = demoData.messages.className;
+        teacherClasses = [demoData.messages.className];
+        return;
+    }
+    if (user.role === 'STUDENT') {
+        userClassName = user.className || null;
+    } else if (user.role === 'PARENT') {
+        userClassName = user.childClassName || null;
+    } else if (user.role === 'TEACHER') {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/classes`, {
+            headers: authHeaders()
+        });
+        if (res.ok) {
+            teacherClasses = await res.json();
+        }
+    }
+}
 
 function formatTime(dateStr) {
     return new Date(dateStr).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -48,48 +54,112 @@ function getInitials(name) {
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
 
+async function loadPeople() {
+    if (isDemo) return;
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/people`, { headers: authHeaders() });
+        peopleList = res.ok ? await res.json() : [];
+    } catch (err) {
+        peopleList = [];
+    }
+}
+
 async function loadSidebar() {
     try {
+        if (isDemo && demoData) {
+            const list = document.getElementById('conversationList');
+            list.innerHTML = '';
+
+            if (userClassName) {
+                const classItem = document.createElement('div');
+                classItem.className = 'convo-item' + (currentChat?.type === 'class' ? ' active' : '');
+                classItem.innerHTML = `
+                    <h4>Class ${userClassName} <span class="group-badge">CLASS</span></h4>
+                    <p>Classroom announcements & messages</p>
+                `;
+                classItem.onclick = () => openClassChat(userClassName);
+                list.appendChild(classItem);
+            }
+
+            if (user.role === 'TEACHER') {
+                const annItem = document.createElement('div');
+                annItem.className = 'convo-item' + (currentChat?.type === 'announcement' ? ' active' : '');
+                annItem.innerHTML = `
+                    <h4>School Announcements <span class="group-badge">INFO</span></h4>
+                    <p>Send to all students and parents</p>
+                `;
+                annItem.onclick = () => openAnnouncementChat();
+                list.appendChild(annItem);
+            }
+
+            demoData.messages.threads.forEach(thread => {
+                const lastMsg = thread.messages[thread.messages.length - 1];
+                const item = document.createElement('div');
+                item.className = 'convo-item' + (currentChat?.type === 'private' && currentChat?.otherName === thread.otherName ? ' active' : '');
+                const preview = lastMsg.content;
+                item.innerHTML = `
+                    <span class="convo-time">${formatTime(lastMsg.sentAt)}</span>
+                    <h4>${thread.otherName}</h4>
+                    <p>${preview.substring(0, 40)}${preview.length > 40 ? '...' : ''}</p>
+                `;
+                item.onclick = () => openPrivateChat(thread.otherName);
+                list.appendChild(item);
+            });
+            return;
+        }
         const [inboxRes, outboxRes] = await Promise.all([
-            fetch(`https://techdesk-backend.onrender.com/api/message/inbox/${user.egn}`),
-            fetch(`https://techdesk-backend.onrender.com/api/message/outbox/${user.egn}`)
+            fetch(`${BACKEND_BASE_URL}/api/message/inbox/me`, { headers: authHeaders() }),
+            fetch(`${BACKEND_BASE_URL}/api/message/outbox/me`, { headers: authHeaders() })
         ]);
         const inbox = await inboxRes.json();
         const outbox = await outboxRes.json();
 
         const convMap = {};
         [...inbox, ...outbox].forEach(msg => {
-            if (msg.receiverEgn === 'GROUP') return;
-            const otherEgn = msg.senderEgn === user.egn ? msg.receiverEgn : msg.senderEgn;
-            if (!convMap[otherEgn] || new Date(msg.sentAt) > new Date(convMap[otherEgn].sentAt)) {
-                convMap[otherEgn] = msg;
+            const otherName = msg.mine ? msg.receiverName : msg.senderName;
+            if (!otherName) return;
+            if (!convMap[otherName] || new Date(msg.sentAt) > new Date(convMap[otherName].sentAt)) {
+                convMap[otherName] = msg;
             }
         });
 
         const list = document.getElementById('conversationList');
         list.innerHTML = '';
 
-        const groupItem = document.createElement('div');
-        groupItem.className = 'convo-item' + (currentChat?.type === 'group' ? ' active' : '');
-        groupItem.innerHTML = `
-            <h4>🏫 Class Group Chat <span class="group-badge">GROUP</span></h4>
-            <p>Miss Schmidt, Mr Popescu, students & parents</p>
-        `;
-        groupItem.onclick = () => openGroupChat();
-        list.appendChild(groupItem);
+        if (userClassName) {
+            const classItem = document.createElement('div');
+            classItem.className = 'convo-item' + (currentChat?.type === 'class' ? ' active' : '');
+            classItem.innerHTML = `
+                <h4>Class ${userClassName} <span class="group-badge">CLASS</span></h4>
+                <p>Classroom announcements & messages</p>
+            `;
+            classItem.onclick = () => openClassChat(userClassName);
+            list.appendChild(classItem);
+        }
+
+        if (user.role === 'TEACHER') {
+            const annItem = document.createElement('div');
+            annItem.className = 'convo-item' + (currentChat?.type === 'announcement' ? ' active' : '');
+            annItem.innerHTML = `
+                <h4>School Announcements <span class="group-badge">INFO</span></h4>
+                <p>Send to all students and parents</p>
+            `;
+            annItem.onclick = () => openAnnouncementChat();
+            list.appendChild(annItem);
+        }
 
         Object.entries(convMap)
             .sort((a, b) => new Date(b[1].sentAt) - new Date(a[1].sentAt))
-            .forEach(([egn, lastMsg]) => {
+            .forEach(([name, lastMsg]) => {
                 const item = document.createElement('div');
-                item.className = 'convo-item' + (currentChat?.type === 'private' && currentChat?.otherEgn === egn ? ' active' : '');
-                const preview = lastMsg.senderEgn === user.egn ? `You: ${lastMsg.content}` : lastMsg.content;
+                item.className = 'convo-item' + (currentChat?.type === 'private' && currentChat?.otherName === name ? ' active' : '');
+                const preview = lastMsg.mine ? `You: ${lastMsg.content}` : lastMsg.content;
                 item.innerHTML = `
                     <span class="convo-time">${formatTime(lastMsg.sentAt)}</span>
-                    <h4>${shortNames[egn] || egn}</h4>
+                    <h4>${name}</h4>
                     <p>${preview.substring(0, 40)}${preview.length > 40 ? '...' : ''}</p>
                 `;
-                item.onclick = () => openPrivateChat(egn);
+                item.onclick = () => openPrivateChat(name);
                 list.appendChild(item);
             });
 
@@ -106,40 +176,113 @@ function showPeopleList() {
     const list = document.getElementById('peopleList');
     list.innerHTML = '';
 
-    const groupItem = document.createElement('div');
-    groupItem.className = 'person-item';
-    groupItem.innerHTML = `
-        <div class="person-avatar group">🏫</div>
-        <div>
-            <h4>Class Group Chat</h4>
-            <p>Everyone in class 11D</p>
-        </div>
-    `;
-    groupItem.onclick = () => openGroupChat();
-    list.appendChild(groupItem);
+    if (isDemo && demoData) {
+        const classItem = document.createElement('div');
+        classItem.className = 'person-item';
+        classItem.innerHTML = `
+            <div class="person-avatar group">🏫</div>
+            <div>
+                <h4>Class ${demoData.messages.className} Chat</h4>
+                <p>Everyone in ${demoData.messages.className}</p>
+            </div>
+        `;
+        classItem.onclick = () => openClassChat(demoData.messages.className);
+        list.appendChild(classItem);
 
-    Object.entries(shortNames).forEach(([egn, name]) => {
-        if (egn === user.egn) return;
+        if (user.role === 'TEACHER') {
+            const annItem = document.createElement('div');
+            annItem.className = 'person-item';
+            annItem.innerHTML = `
+                <div class="person-avatar group">📢</div>
+                <div>
+                    <h4>School Announcement</h4>
+                    <p>Send to all</p>
+                </div>
+            `;
+            annItem.onclick = () => openAnnouncementChat();
+            list.appendChild(annItem);
+        }
+
+        demoData.messages.threads.forEach(thread => {
+            const item = document.createElement('div');
+            item.className = 'person-item';
+            item.innerHTML = `
+                <div class="person-avatar">${getInitials(thread.otherName)}</div>
+                <div>
+                    <h4>${thread.otherName}</h4>
+                    <p>User</p>
+                </div>
+            `;
+            item.onclick = () => openPrivateChat(thread.otherName);
+            list.appendChild(item);
+        });
+        return;
+    }
+
+    if (userClassName) {
+        const groupItem = document.createElement('div');
+        groupItem.className = 'person-item';
+        groupItem.innerHTML = `
+            <div class="person-avatar group">🏫</div>
+            <div>
+                <h4>Class ${userClassName} Chat</h4>
+                <p>Everyone in ${userClassName}</p>
+            </div>
+        `;
+        groupItem.onclick = () => openClassChat(userClassName);
+        list.appendChild(groupItem);
+    }
+
+    if (user.role === 'TEACHER') {
+        teacherClasses.forEach(cls => {
+            const item = document.createElement('div');
+            item.className = 'person-item';
+            item.innerHTML = `
+                <div class="person-avatar group">🏫</div>
+                <div>
+                    <h4>Class ${cls}</h4>
+                    <p>Send to class ${cls}</p>
+                </div>
+            `;
+            item.onclick = () => openClassChat(cls);
+            list.appendChild(item);
+        });
+
+        const annItem = document.createElement('div');
+        annItem.className = 'person-item';
+        annItem.innerHTML = `
+            <div class="person-avatar group">📢</div>
+            <div>
+                <h4>School Announcement</h4>
+                <p>Send to all</p>
+            </div>
+        `;
+        annItem.onclick = () => openAnnouncementChat();
+        list.appendChild(annItem);
+    }
+
+    peopleList.forEach(person => {
+        if (!person?.displayName) return;
         const item = document.createElement('div');
         item.className = 'person-item';
         item.innerHTML = `
-            <div class="person-avatar">${getInitials(name)}</div>
+            <div class="person-avatar">${getInitials(person.displayName)}</div>
             <div>
-                <h4>${name}</h4>
-                <p>${roleLabel[egn]}</p>
+                <h4>${person.displayName}</h4>
+                <p>${person.role || 'User'}</p>
             </div>
         `;
-        item.onclick = () => openPrivateChat(egn);
+        item.onclick = () => openPrivateChat(person.displayName);
         list.appendChild(item);
     });
 }
 
-async function openPrivateChat(otherEgn) {
-    currentChat = { type: 'private', otherEgn };
+async function openPrivateChat(otherName) {
+    currentChat = { type: 'private', otherName };
     document.getElementById('chatEmpty').style.display = 'none';
     document.getElementById('peoplePicker').style.display = 'none';
     document.getElementById('chatView').style.display = 'flex';
-    document.getElementById('chatTitle').textContent = shortNames[otherEgn] || otherEgn;
+    document.getElementById('chatTitle').textContent = otherName || 'User';
     document.getElementById('chatInput').focus();
     loadSidebar();
     await loadPrivateMessages();
@@ -156,9 +299,38 @@ async function openGroupChat() {
     await loadGroupMessages();
 }
 
+async function openClassChat(className) {
+    currentChat = { type: 'class', className };
+    document.getElementById('chatEmpty').style.display = 'none';
+    document.getElementById('peoplePicker').style.display = 'none';
+    document.getElementById('chatView').style.display = 'flex';
+    document.getElementById('chatTitle').textContent = `Class ${className}`;
+    document.getElementById('chatInput').focus();
+    loadSidebar();
+    await loadClassMessages(className);
+}
+
+async function openAnnouncementChat() {
+    currentChat = { type: 'announcement' };
+    document.getElementById('chatEmpty').style.display = 'none';
+    document.getElementById('peoplePicker').style.display = 'none';
+    document.getElementById('chatView').style.display = 'flex';
+    document.getElementById('chatTitle').textContent = 'School Announcements';
+    document.getElementById('chatInput').focus();
+    loadSidebar();
+    await loadAnnouncements();
+}
+
 async function loadPrivateMessages() {
     try {
-        const res = await fetch(`https://techdesk-backend.onrender.com/api/message/conversation/${user.egn}/${currentChat.otherEgn}`);
+        if (isDemo && demoData) {
+            const thread = demoData.messages.threads.find(t => t.otherName === currentChat.otherName);
+            renderMessages(thread ? thread.messages : [], 'private');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/conversation/name/${encodeURIComponent(currentChat.otherName)}`, {
+            headers: authHeaders()
+        });
         const messages = await res.json();
         renderMessages(messages, 'private');
     } catch (err) {
@@ -168,11 +340,49 @@ async function loadPrivateMessages() {
 
 async function loadGroupMessages() {
     try {
-        const res = await fetch(`https://techdesk-backend.onrender.com/api/message/group`);
+        if (isDemo && demoData) {
+            renderMessages(demoData.messages.classMessages, 'group');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/group`, {
+            headers: authHeaders()
+        });
         const messages = await res.json();
         renderMessages(messages, 'group');
     } catch (err) {
         console.error('Could not load group messages:', err);
+    }
+}
+
+async function loadClassMessages(className) {
+    try {
+        if (isDemo && demoData) {
+            renderMessages(demoData.messages.classMessages, 'class');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/class/${className}`, {
+            headers: authHeaders()
+        });
+        const messages = await res.json();
+        renderMessages(messages, 'class');
+    } catch (err) {
+        console.error('Could not load class messages:', err);
+    }
+}
+
+async function loadAnnouncements() {
+    try {
+        if (isDemo && demoData) {
+            renderMessages(demoData.messages.announcements, 'announcement');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/announcements`, {
+            headers: authHeaders()
+        });
+        const messages = await res.json();
+        renderMessages(messages, 'announcement');
+    } catch (err) {
+        console.error('Could not load announcements:', err);
     }
 }
 
@@ -192,12 +402,12 @@ function renderMessages(messages, type) {
         }
 
         const bubble = document.createElement('div');
-        const isMine = msg.senderEgn === user.egn;
+        const isMine = msg.senderName && user.displayName ? msg.senderName === user.displayName : Boolean(msg.mine);
         bubble.className = 'message-bubble ' + (isMine ? 'mine' : 'theirs');
 
         let html = '';
-        if (type === 'group' && !isMine) {
-            html += `<div class="bubble-sender">${shortNames[msg.senderEgn] || msg.senderEgn}</div>`;
+        if ((type === 'group' || type === 'class' || type === 'announcement') && !isMine) {
+            html += `<div class="bubble-sender">${msg.senderName || 'User'}</div>`;
         }
         html += `<div>${msg.content}</div>`;
         html += `<div class="bubble-time">${formatTime(msg.sentAt)}</div>`;
@@ -211,13 +421,13 @@ function renderMessages(messages, type) {
 function appendMessage(msg) {
     const container = document.getElementById('chatMessages');
     const bubble = document.createElement('div');
-    const isMine = msg.senderEgn === user.egn;
-    const isGroup = currentChat?.type === 'group';
+    const isMine = msg.senderName && user.displayName ? msg.senderName === user.displayName : Boolean(msg.mine);
+    const isGroup = currentChat?.type === 'group' || currentChat?.type === 'class' || currentChat?.type === 'announcement';
     bubble.className = 'message-bubble ' + (isMine ? 'mine' : 'theirs');
 
     let html = '';
     if (isGroup && !isMine) {
-        html += `<div class="bubble-sender">${shortNames[msg.senderEgn] || msg.senderEgn}</div>`;
+        html += `<div class="bubble-sender">${msg.senderName || 'User'}</div>`;
     }
     html += `<div>${msg.content}</div>`;
     html += `<div class="bubble-time">${formatTime(msg.sentAt)}</div>`;
@@ -231,13 +441,54 @@ async function sendCurrentMessage() {
     const content = input.value.trim();
     if (!content || !currentChat) return;
 
-    const receiverEgn = currentChat.type === 'group' ? 'GROUP' : currentChat.otherEgn;
+    const receiverType = currentChat.type === 'group'
+        ? 'GROUP'
+        : currentChat.type === 'class'
+            ? 'CLASS'
+            : currentChat.type === 'announcement'
+                ? 'ANNOUNCEMENT'
+                : 'PRIVATE';
+
+    const receiverName = currentChat.type === 'class'
+        ? currentChat.className
+        : currentChat.type === 'announcement'
+            ? 'School'
+            : currentChat.otherName;
 
     try {
-        const res = await fetch('https://techdesk-backend.onrender.com/api/message/send', {
+        if (isDemo && demoData) {
+            const savedMsg = {
+                senderName: user.displayName || 'You',
+                receiverName,
+                content,
+                sentAt: new Date().toISOString(),
+                mine: true
+            };
+            if (currentChat.type === 'class') {
+                demoData.messages.classMessages.push(savedMsg);
+            } else if (currentChat.type === 'announcement') {
+                demoData.messages.announcements.push(savedMsg);
+            } else {
+                let thread = demoData.messages.threads.find(t => t.otherName === currentChat.otherName);
+                if (!thread) {
+                    thread = {
+                        otherName: currentChat.otherName,
+                        messages: []
+                    };
+                    demoData.messages.threads.push(thread);
+                }
+                thread.messages.push(savedMsg);
+            }
+            appendMessage(savedMsg);
+            input.value = '';
+            input.style.height = 'auto';
+            loadSidebar();
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/message/send`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ senderEgn: user.egn, receiverEgn, content })
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ receiverType, receiverName, content })
         });
         const savedMsg = await res.json();
         appendMessage(savedMsg);
@@ -246,6 +497,10 @@ async function sendCurrentMessage() {
 
         if (currentChat.type === 'group') {
             socket.emit('group-message', savedMsg);
+        } else if (currentChat.type === 'class') {
+            socket.emit('class-message', savedMsg);
+        } else if (currentChat.type === 'announcement') {
+            socket.emit('announcement', savedMsg);
         } else {
             socket.emit('private-message', savedMsg);
         }
@@ -271,19 +526,35 @@ function backToList() {
     loadSidebar();
 }
 
-socket.on('private-message', (msg) => {
-    if (currentChat?.type === 'private' &&
-        (msg.senderEgn === currentChat.otherEgn || msg.receiverEgn === currentChat.otherEgn)) {
-        appendMessage(msg);
-    }
-    loadSidebar();
-});
+if (!isDemo) {
+    socket.on('private-message', (msg) => {
+        if (currentChat?.type === 'private' &&
+            (msg.senderName === currentChat.otherName || msg.receiverName === currentChat.otherName)) {
+            appendMessage(msg);
+        }
+        loadSidebar();
+    });
 
-socket.on('group-message', (msg) => {
-    if (currentChat?.type === 'group') {
-        appendMessage(msg);
-    }
-    loadSidebar();
-});
+    socket.on('group-message', (msg) => {
+        if (currentChat?.type === 'group') {
+            appendMessage(msg);
+        }
+        loadSidebar();
+    });
 
-loadSidebar();
+    socket.on('class-message', (msg) => {
+        if (currentChat?.type === 'class') {
+            appendMessage(msg);
+        }
+        loadSidebar();
+    });
+
+    socket.on('announcement', (msg) => {
+        if (currentChat?.type === 'announcement') {
+            appendMessage(msg);
+        }
+        loadSidebar();
+    });
+}
+
+Promise.all([resolveUserClass(), loadPeople()]).then(loadSidebar);

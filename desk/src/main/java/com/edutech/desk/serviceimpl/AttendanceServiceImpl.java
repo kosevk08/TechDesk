@@ -15,6 +15,12 @@ public class AttendanceServiceImpl implements AttendanceService {
     @Autowired
     private AttendanceRepository attendanceRepository;
 
+    @Autowired
+    private com.edutech.desk.service.NotificationService notificationService;
+
+    @Autowired
+    private com.edutech.desk.repository.UserRepository userRepository;
+
     @Override
     public List<Attendance> getByStudentEgn(String studentEgn) {
         return attendanceRepository.findByStudentEgn(studentEgn);
@@ -32,6 +38,16 @@ public class AttendanceServiceImpl implements AttendanceService {
         attendance.setStudentEgn(studentEgn);
         attendance.setDate(date);
         attendance.setStatus(status);
-        return attendanceRepository.save(attendance);
+        Attendance saved = attendanceRepository.save(attendance);
+
+        String message = "Attendance update: " + status + " on " + date;
+        notificationService.create(studentEgn, "ATTENDANCE", message);
+        com.edutech.desk.entities.User parent = userRepository.findByStudentEgn(studentEgn);
+        if (parent != null) {
+            notificationService.create(parent.getEgn(), "ATTENDANCE",
+                "Your child has " + status + " on " + date);
+        }
+
+        return saved;
     }
 }

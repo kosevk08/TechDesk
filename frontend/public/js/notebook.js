@@ -1,4 +1,11 @@
 const user = JSON.parse(localStorage.getItem('user'));
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+const token = localStorage.getItem('token');
+
+function authHeaders(extra = {}) {
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
 if (!user || user.role !== 'STUDENT') {
     window.location.href = '/';
 }
@@ -11,7 +18,9 @@ const mathsSubjectNames = ['maths', 'mathematics'];
 
 async function loadNotebook() {
     try {
-        const subjectRes = await fetch(`https://techdesk-backend.onrender.com/api/subject/${subjectId}`);
+        const subjectRes = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`, {
+            headers: authHeaders()
+        });
         const subject = await subjectRes.json();
         document.getElementById('subjectTitle').textContent = subject.name;
 
@@ -19,7 +28,9 @@ async function loadNotebook() {
         const notebook = document.getElementById('notebook');
         notebook.classList.add(isMaths ? 'squared' : 'lined');
 
-        const notebookRes = await fetch(`https://techdesk-backend.onrender.com/api/notebook/student/${user.egn}`);
+        const notebookRes = await fetch(`${BACKEND_BASE_URL}/api/notebook/me`, {
+            headers: authHeaders()
+        });
         const notebooks = await notebookRes.json();
         const found = notebooks.find(n => n.subject === subject.name);
 
@@ -42,11 +53,12 @@ function setColor(color) {
 
 async function saveNotebook() {
     const content = document.getElementById('notebookText').value;
-    const subjectRes = await fetch(`https://techdesk-backend.onrender.com/api/subject/${subjectId}`);
+    const subjectRes = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`, {
+        headers: authHeaders()
+    });
     const subject = await subjectRes.json();
 
     const body = {
-        studentEgn: user.egn,
         subject: subject.name,
         schoolYear: '2025-2026',
         format: 'A4',
@@ -55,15 +67,12 @@ async function saveNotebook() {
         content: content
     };
 
-    const url = notebookId
-        ? `https://techdesk-backend.onrender.com/api/notebook/update/${notebookId}`
-        : `https://techdesk-backend.onrender.com/api/notebook/create`;
-
-    const method = notebookId ? 'PUT' : 'POST';
+    const url = `${BACKEND_BASE_URL}/api/notebook/save/me`;
+    const method = 'POST';
 
     await fetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(body)
     });
 

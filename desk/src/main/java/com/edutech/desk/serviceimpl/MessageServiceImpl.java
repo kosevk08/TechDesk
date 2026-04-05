@@ -35,6 +35,16 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public List<Message> getClassMessages(String className) {
+        return messageRepository.findByReceiverCustom("CLASS:" + className);
+    }
+
+    @Override
+    public List<Message> getAnnouncements() {
+        return messageRepository.findByReceiverCustom("ANNOUNCEMENT");
+    }
+
+    @Override
     public Message sendMessage(Message message) {
         message.setSentAt(LocalDateTime.now());
         return messageRepository.save(message);
