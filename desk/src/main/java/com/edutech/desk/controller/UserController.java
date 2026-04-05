@@ -29,6 +29,12 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private NameLookupService nameLookupService;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
     private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
