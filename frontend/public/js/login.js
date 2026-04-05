@@ -15,11 +15,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            const payload = await response.json();
-            const user = payload.user;
-            const token = payload.token;
+            const user = await response.json();
             localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', token);
 
             if (user.role === 'TEACHER') {
                 window.location.href = '/teacher';
@@ -37,16 +34,3 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         errorMsg.textContent = 'Could not connect to server. Please try again.';
     }
 });
-
-// Toggle password visibility
-const toggleBtn = document.getElementById('togglePassword');
-const passwordInput = document.getElementById('password');
-
-if (toggleBtn && passwordInput) {
-    toggleBtn.addEventListener('click', () => {
-        const showing = passwordInput.type === 'text';
-        passwordInput.type = showing ? 'password' : 'text';
-        toggleBtn.textContent = showing ? '👁' : '🙈';
-        toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-    });
-}
