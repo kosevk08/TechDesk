@@ -34,3 +34,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         errorMsg.textContent = 'Could not connect to server. Please try again.';
     }
 });
+
+const toggleBtn = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener('click', () => {
+        const showing = passwordInput.type === 'text';
+        passwordInput.type = showing ? 'password' : 'text';
+        toggleBtn.textContent = showing ? '👁' : '🙈';
+        toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+}
