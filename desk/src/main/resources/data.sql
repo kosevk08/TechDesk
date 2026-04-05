@@ -41,9 +41,9 @@ INSERT INTO users (egn, email, password, role, demo, student_egn) VALUES
 ('2000000013', 'i.karaslavova-spanish@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'TEACHER', FALSE, NULL),
 ('2000000014', 'e.nikolova-anthro@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'TEACHER', FALSE, NULL),
 ('3000000001', 'l.navarro-parent@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'PARENT', FALSE, '1000000002'),
-('9000000001', 'r.paskalev-student@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'STUDENT', TRUE, NULL),
-('9000000002', 'e.vasileva-teacher@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'TEACHER', TRUE, NULL),
-('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'PARENT', TRUE, '9000000001')
+('9000000001', 'r.paskalev-student@edu-school.bg', '$2a$10$sLbo6Npo.RVqdTeLjLCbCO1gEhWtYDwg7uFOz5D38QnNTZJw.Hi6.', 'STUDENT', TRUE, NULL),
+('9000000002', 'e.vasileva-teacher@edu-school.bg', '$2a$10$sLbo6Npo.RVqdTeLjLCbCO1gEhWtYDwg7uFOz5D38QnNTZJw.Hi6.', 'TEACHER', TRUE, NULL),
+('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2a$10$sLbo6Npo.RVqdTeLjLCbCO1gEhWtYDwg7uFOz5D38QnNTZJw.Hi6.', 'PARENT', TRUE, '9000000001')
 ON DUPLICATE KEY UPDATE email = VALUES(email);
 
 INSERT INTO students (egn, first_name, last_name, email, grade, class_name) VALUES
@@ -78,53 +78,41 @@ INSERT INTO teachers (egn, first_name, last_name) VALUES
 ('2000000014', 'Elena', 'Nikolova')
 ON DUPLICATE KEY UPDATE first_name = VALUES(first_name);
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000003', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Maths'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000003', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Maths';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000004', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Physics'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000004', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Physics';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000005', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Chemistry'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000005', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Chemistry';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000006', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Biology'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000006', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Biology';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000007', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000007', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000008', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Bulgarian Language and Literature'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000008', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Bulgarian Language and Literature';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000009', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Geography'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000009', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Geography';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000010', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Philosophy'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000010', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Philosophy';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000011', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English Literature'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000011', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English Literature';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000012', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'German (A1)'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000012', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'German (A1)';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000013', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Spanish (A1)'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000013', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Spanish (A1)';
 
-INSERT INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000014', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Social Anthropology'
-ON DUPLICATE KEY UPDATE content = VALUES(content);
+INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000014', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Social Anthropology';
 
 INSERT INTO notebooks (student_egn, subject, school_year, format, style, color, content, page_number) VALUES
 ('1000000001', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
