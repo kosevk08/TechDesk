@@ -2,18 +2,17 @@ package com.edutech.desk.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Service
 public class JwtService {
 
-    private final Key signingKey;
+    private final SecretKey signingKey;
     private final long expirationMs;
 
     public JwtService(@Value("${jwt.secret}") String secret,
@@ -26,21 +25,21 @@ public class JwtService {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
-            .setSubject(username)
+            .subject(username)
             .claim("role", role)
             .claim("demo", demo)
-            .setIssuedAt(now)
-            .setExpiration(expiry)
-            .signWith(signingKey, SignatureAlgorithm.HS256)
+            .issuedAt(now)
+            .expiration(expiry)
+            .signWith(signingKey)
             .compact();
     }
 
     public Claims parseClaims(String token) {
-        return Jwts.parserBuilder()
-            .setSigningKey(signingKey)
+        return Jwts.parser()
+            .verifyWith(signingKey)
             .build()
-            .parseClaimsJws(token)
-            .getBody();
+            .parseSignedClaims(token)
+            .getPayload();
     }
 
     public String extractUsername(String token) {
