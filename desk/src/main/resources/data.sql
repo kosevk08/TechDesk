@@ -1,4 +1,4 @@
-MERGE INTO subjects (name, description) KEY(name) VALUES
+INSERT INTO subjects (name, description) VALUES
 ('Bulgarian Language and Literature', 'Bulgarian language and literature studies'),
 ('English', 'English language studies'),
 ('Chemistry', 'Chemistry studies'),
@@ -10,9 +10,10 @@ MERGE INTO subjects (name, description) KEY(name) VALUES
 ('English Literature', 'English literature studies'),
 ('German (A1)', 'German language for beginners'),
 ('Spanish (A1)', 'Spanish language for beginners'),
-('Philosophy', 'Philosophy studies');
+('Philosophy', 'Philosophy studies')
+ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-MERGE INTO users (egn, email, password, role, demo, student_egn) KEY(egn) VALUES
+INSERT INTO users (egn, email, password, role, demo, student_egn) VALUES
 ('1000000001', 'v.kolev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
 ('1000000002', 'k.kosev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
 ('1000000003', 'i.ivanov-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
@@ -42,9 +43,10 @@ MERGE INTO users (egn, email, password, role, demo, student_egn) KEY(egn) VALUES
 ('3000000001', 'l.navarro-parent@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'PARENT', FALSE, '1000000002'),
 ('9000000001', 'r.paskalev-student@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'STUDENT', TRUE, NULL),
 ('9000000002', 'e.vasileva-teacher@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'TEACHER', TRUE, NULL),
-('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'PARENT', TRUE, '9000000001');
+('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'PARENT', TRUE, '9000000001')
+ON DUPLICATE KEY UPDATE email = VALUES(email);
 
-MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(egn) VALUES
+INSERT INTO students (egn, first_name, last_name, email, grade, class_name) VALUES
 ('1000000001', 'Victor', 'Kolev', 'v.kolev-student@edu-school.bg', '10', '10A'),
 ('1000000002', 'Konstantin', 'Kosev', 'k.kosev-student@edu-school.bg', '10', '10A'),
 ('1000000003', 'Ivan', 'Ivanov', 'i.ivanov-student@edu-school.bg', '10', '10A'),
@@ -56,9 +58,10 @@ MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(e
 ('1000000009', 'Liam', 'OConnor', 'l.oconnor-student@edu-school.bg', '11', '11A'),
 ('1000000010', 'Victor', 'Ivanov', 'v.ivanov-student@edu-school.bg', '11', '11B'),
 ('1000000011', 'Natalie', 'Fischer', 'n.fischer-student@edu-school.bg', '11', '11B'),
-('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B');
+('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B')
+ON DUPLICATE KEY UPDATE first_name = VALUES(first_name);
 
-MERGE INTO teachers (egn, first_name, last_name) KEY(egn) VALUES
+INSERT INTO teachers (egn, first_name, last_name) VALUES
 ('2000000001', 'Helena', 'Schmidt'),
 ('2000000002', 'Andrei', 'Popescu'),
 ('2000000003', 'Maya', 'Ivanova'),
@@ -72,34 +75,58 @@ MERGE INTO teachers (egn, first_name, last_name) KEY(egn) VALUES
 ('2000000011', 'Nina', 'Koleva'),
 ('2000000012', 'Violeta', 'Georgieva'),
 ('2000000013', 'Ivana', 'Karaslavova'),
-('2000000014', 'Elena', 'Nikolova');
+('2000000014', 'Elena', 'Nikolova')
+ON DUPLICATE KEY UPDATE first_name = VALUES(first_name);
 
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000003', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Maths';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000004', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Physics';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000005', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Chemistry';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000006', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Biology';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000007', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000008', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Bulgarian Language and Literature';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000009', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Geography';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000010', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Philosophy';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000011', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English Literature';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000012', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'German (A1)';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000013', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Spanish (A1)';
-MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
-SELECT s.id, '2000000014', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Social Anthropology';
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000003', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Maths'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
 
-MERGE INTO notebooks (student_egn, subject, school_year, format, style, color, content, page_number) KEY(student_egn, subject, school_year, page_number) VALUES
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000004', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Physics'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000005', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Chemistry'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000006', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Biology'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000007', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000008', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Bulgarian Language and Literature'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000009', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Geography'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000010', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Philosophy'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000011', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'English Literature'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000012', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'German (A1)'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000013', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Spanish (A1)'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO lessons (subject_id, teacher_egn, date, content)
+SELECT s.id, '2000000014', '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Social Anthropology'
+ON DUPLICATE KEY UPDATE content = VALUES(content);
+
+INSERT INTO notebooks (student_egn, subject, school_year, format, style, color, content, page_number) VALUES
 ('1000000001', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000001', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000001', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
@@ -166,4 +193,5 @@ MERGE INTO notebooks (student_egn, subject, school_year, format, style, color, c
 ('1000000012', 'Philosophy', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000012', 'Spanish (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000012', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
-('1000000012', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1);
+('1000000012', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1)
+ON DUPLICATE KEY UPDATE content = VALUES(content);
