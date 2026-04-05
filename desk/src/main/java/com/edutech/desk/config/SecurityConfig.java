@@ -56,11 +56,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/user/login", "/api/user/register", "/api/user/health", "/api/demo/**").permitAll()
-                .requestMatchers("/api/tests/teacher/**", "/api/tests/classes", "/api/tests/submissions/**", "/api/tests/submission/**/grade").hasRole("TEACHER")
+                .requestMatchers("/api/tests/teacher/**", "/api/tests/classes", "/api/tests/submissions/**", "/api/tests/submission/*/grade").hasRole("TEACHER")
                 .requestMatchers("/api/attendance/mark", "/api/attendance/date/**").hasRole("TEACHER")
                 .requestMatchers("/api/grades").hasRole("TEACHER")
                 .requestMatchers("/api/grades/**", "/api/attendance/student/**", "/api/notifications/**").authenticated()
-                .requestMatchers("/api/tests/student/**", "/api/tests/**/submit").hasRole("STUDENT")
+                .requestMatchers("/api/tests/student/**", "/api/tests/*/submit").hasRole("STUDENT")
                 .requestMatchers("/api/tests/results/**", "/api/message/**", "/api/notebook/**", "/api/subject/**", "/api/student/**", "/api/parent/**", "/api/ai/**").authenticated()
                 .anyRequest().authenticated())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
