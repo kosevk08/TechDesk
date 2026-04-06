@@ -151,12 +151,12 @@ const aiStatusText = document.getElementById('aiStatusText');
 const aiStatusBanner = document.getElementById('aiStatusBanner');
 
 function showSection(sectionId) {
-    ['aiInsightsSection', 'notebooksSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
+    ['aiInsightsSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
         const element = document.getElementById(id);
-        if (element) {
-            element.style.display = id === sectionId ? 'block' : 'none';
-        }
+        if (element) element.style.display = 'none';
     });
+    const target = document.getElementById(sectionId);
+    if (target) target.style.display = 'block';
 }
 
 function subjectMatch(a, b) {
@@ -207,8 +207,7 @@ async function loadNotifications() {
     if (!container) return;
     try {
         if (isDemo && demoData) {
-            const notifications = demoData.notifications;
-            container.innerHTML = notifications.slice(0, 6).map(n => `
+            container.innerHTML = demoData.notifications.slice(0, 6).map(n => `
                 <div class="insight-card">
                     <div class="insight-top">
                         <h5>${n.type}</h5>
@@ -262,12 +261,10 @@ async function addGrade() {
     const subject = document.getElementById('gradeSubject').value.trim();
     const value = parseFloat(document.getElementById('gradeValue').value);
     const comment = document.getElementById('gradeComment').value.trim();
-
     if (!studentName || !subject || Number.isNaN(value)) {
         setGradeStatus('Student, subject, and grade are required.');
         return;
     }
-
     try {
         setGradeStatus('Saving grade...');
         if (isDemo && demoData) {
@@ -318,13 +315,10 @@ async function loadGrades() {
 }
 
 document.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'gradeStudent') {
-        loadGradeHistory();
-    }
+    if (e.target && e.target.id === 'gradeStudent') loadGradeHistory();
 });
 
 loadNotifications();
-
 async function loadTeacherPage() {
     try {
         if (isDemo && demoData) {
@@ -368,12 +362,12 @@ function renderDemoNotebookPage(notebook) {
 
 async function loadNotebooks() {
     try {
+        const section = document.getElementById('notebooksSection');
+        const list = document.getElementById('notebooksList');
+        section.style.display = 'block';
+        list.innerHTML = '';
+
         if (isDemo && demoData) {
-            const section = document.getElementById('notebooksSection');
-            const list = document.getElementById('notebooksList');
-            showSection('notebooksSection');
-            section.style.display = 'block';
-            list.innerHTML = '';
             demoData.notebooks.forEach(notebook => {
                 const card = document.createElement('div');
                 card.className = 'notebook-card';
@@ -411,12 +405,6 @@ async function loadNotebooks() {
                 uniqueNotebooks.push(n);
             }
         });
-
-        const section = document.getElementById('notebooksSection');
-        const list = document.getElementById('notebooksList');
-        showSection('notebooksSection');
-        section.style.display = 'block';
-        list.innerHTML = '';
 
         if (uniqueNotebooks.length === 0) {
             list.innerHTML = '<p>No notebooks found.</p>';
