@@ -26,19 +26,19 @@ function authHeaders(extra = {}) {
 }
 
 const SUBJECT_META = {
-    'maths': { icon: '📐', accent: '#6366f1', accentEnd: '#8b5cf6', iconBg: 'rgba(99,102,241,0.1)', iconBgEnd: 'rgba(139,92,246,0.08)' },
-    'mathematics': { icon: '📐', accent: '#6366f1', accentEnd: '#8b5cf6', iconBg: 'rgba(99,102,241,0.1)', iconBgEnd: 'rgba(139,92,246,0.08)' },
-    'physics': { icon: '⚛️', accent: '#3b82f6', accentEnd: '#06b6d4', iconBg: 'rgba(59,130,246,0.1)', iconBgEnd: 'rgba(6,182,212,0.08)' },
-    'chemistry': { icon: '🧪', accent: '#10b981', accentEnd: '#14b8a6', iconBg: 'rgba(16,185,129,0.1)', iconBgEnd: 'rgba(20,184,166,0.08)' },
-    'biology': { icon: '🧬', accent: '#22c55e', accentEnd: '#10b981', iconBg: 'rgba(34,197,94,0.1)', iconBgEnd: 'rgba(16,185,129,0.08)' },
-    'english': { icon: '🇬🇧', accent: '#f59e0b', accentEnd: '#f97316', iconBg: 'rgba(245,158,11,0.1)', iconBgEnd: 'rgba(249,115,22,0.08)' },
-    'bulgarian language and literature': { icon: '📝', accent: '#ec4899', accentEnd: '#f43f5e', iconBg: 'rgba(236,72,153,0.1)', iconBgEnd: 'rgba(244,63,94,0.08)' },
-    'english literature': { icon: '📚', accent: '#a855f7', accentEnd: '#d946ef', iconBg: 'rgba(168,85,247,0.1)', iconBgEnd: 'rgba(217,70,239,0.08)' },
-    'geography': { icon: '🌍', accent: '#06b6d4', accentEnd: '#0ea5e9', iconBg: 'rgba(6,182,212,0.1)', iconBgEnd: 'rgba(14,165,233,0.08)' },
-    'philosophy': { icon: '💭', accent: '#8b5cf6', accentEnd: '#a78bfa', iconBg: 'rgba(139,92,246,0.1)', iconBgEnd: 'rgba(167,139,250,0.08)' },
-    'social anthropology': { icon: '🏛️', accent: '#f43f5e', accentEnd: '#e11d48', iconBg: 'rgba(244,63,94,0.1)', iconBgEnd: 'rgba(225,29,72,0.08)' },
-    'german (a1)': { icon: '🇩🇪', accent: '#eab308', accentEnd: '#f59e0b', iconBg: 'rgba(234,179,8,0.1)', iconBgEnd: 'rgba(245,158,11,0.08)' },
-    'spanish (a1)': { icon: '🇪🇸', accent: '#ef4444', accentEnd: '#f97316', iconBg: 'rgba(239,68,68,0.1)', iconBgEnd: 'rgba(249,115,22,0.08)' },
+ 'maths': { icon: '📐', accent: '#6366f1', accentEnd: '#8b5cf6', iconBg: 'rgba(99,102,241,0.1)', iconBgEnd: 'rgba(139,92,246,0.08)' },
+ 'mathematics': { icon: '📐', accent: '#6366f1', accentEnd: '#8b5cf6', iconBg: 'rgba(99,102,241,0.1)', iconBgEnd: 'rgba(139,92,246,0.08)' },
+ 'physics': { icon: '⚛️', accent: '#3b82f6', accentEnd: '#06b6d4', iconBg: 'rgba(59,130,246,0.1)', iconBgEnd: 'rgba(6,182,212,0.08)' },
+ 'chemistry': { icon: '🧪', accent: '#10b981', accentEnd: '#14b8a6', iconBg: 'rgba(16,185,129,0.1)', iconBgEnd: 'rgba(20,184,166,0.08)' },
+ 'biology': { icon: '🧬', accent: '#22c55e', accentEnd: '#10b981', iconBg: 'rgba(34,197,94,0.1)', iconBgEnd: 'rgba(16,185,129,0.08)' },
+ 'english': { icon: '🇬🇧', accent: '#f59e0b', accentEnd: '#f97316', iconBg: 'rgba(245,158,11,0.1)', iconBgEnd: 'rgba(249,115,22,0.08)' },
+ 'bulgarian language and literature': { icon: '📝', accent: '#ec4899', accentEnd: '#f43f5e', iconBg: 'rgba(236,72,153,0.1)', iconBgEnd: 'rgba(244,63,94,0.08)' },
+ 'english literature': { icon: '📚', accent: '#a855f7', accentEnd: '#d946ef', iconBg: 'rgba(168,85,247,0.1)', iconBgEnd: 'rgba(217,70,239,0.08)' },
+ 'geography': { icon: '🌍', accent: '#06b6d4', accentEnd: '#0ea5e9', iconBg: 'rgba(6,182,212,0.1)', iconBgEnd: 'rgba(14,165,233,0.08)' },
+ 'philosophy': { icon: '💭', accent: '#8b5cf6', accentEnd: '#a78bfa', iconBg: 'rgba(139,92,246,0.1)', iconBgEnd: 'rgba(167,139,250,0.08)' },
+ 'social anthropology': { icon: '🏛️', accent: '#f43f5e', accentEnd: '#e11d48', iconBg: 'rgba(244,63,94,0.1)', iconBgEnd: 'rgba(225,29,72,0.08)' },
+ 'german (a1)': { icon: '🇩🇪', accent: '#eab308', accentEnd: '#f59e0b', iconBg: 'rgba(234,179,8,0.1)', iconBgEnd: 'rgba(245,158,11,0.08)' },
+ 'spanish (a1)': { icon: '🇪🇸', accent: '#ef4444', accentEnd: '#f97316', iconBg: 'rgba(239,68,68,0.1)', iconBgEnd: 'rgba(249,115,22,0.08)' },
 };
 
 function getSubjectMeta(name) {
