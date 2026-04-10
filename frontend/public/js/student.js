@@ -6,19 +6,19 @@ const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
 const egnToName = {
-    '1000000001': 'Viktor Kolev',
-    '1000000002': 'Konstantin Kosev',
-    '1000000003': 'Ivan Ivanov',
-    '1000000004': 'John Doe',
-    '1000000005': 'Daniel Kovacs',
-    '1000000006': 'Sofia Martinez',
-    '1000000007': 'Marcus Bennett',
-    '1000000008': 'Elena Petrova',
-    '1000000009': 'Liam O\'Connor',
-    '1000000010': 'Victor Ivanov',
-    '1000000011': 'Natalie Fischer',
-    '1000000012': 'Carlos Mendes',
-    '9000000001': 'Radoslav Paskalev'
+    '1000000001': 'Viktor',
+    '1000000002': 'Konstantin',
+    '1000000003': 'Ivan',
+    '1000000004': 'John',
+    '1000000005': 'Daniel',
+    '1000000006': 'Sofia',
+    '1000000007': 'Marcus',
+    '1000000008': 'Elena',
+    '1000000009': 'Liam',
+    '1000000010': 'Victor',
+    '1000000011': 'Natalie',
+    '1000000012': 'Carlos',
+    '9000000001': 'Radoslav'
 };
 
 function authHeaders(extra = {}) {
@@ -340,11 +340,7 @@ function renderStudentTests(tests) {
     list.innerHTML = tests.map(test => {
         let questions = [];
         if (test.questionsJson) {
-            try {
-                questions = JSON.parse(test.questionsJson);
-            } catch (e) {
-                questions = [];
-            }
+            try { questions = JSON.parse(test.questionsJson); } catch (e) { questions = []; }
         }
         const due = test.dueDate ? `Due ${test.dueDate}` : 'No deadline';
         const status = test.status || 'ASSIGNED';
@@ -405,10 +401,7 @@ async function submitTest(testId) {
     try {
         if (isDemo && demoData) {
             const test = demoData.tests.find(t => t.testId === testId);
-            if (test) {
-                test.status = 'SUBMITTED';
-                test.feedback = 'Submission received (demo).';
-            }
+            if (test) { test.status = 'SUBMITTED'; test.feedback = 'Submission received (demo).'; }
             loadStudentTests();
             return;
         }
