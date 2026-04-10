@@ -6,7 +6,7 @@ const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
 const egnToName = {
-    '1000000001': 'Viktor',
+    '1000000001': 'Victor',
     '1000000002': 'Konstantin',
     '1000000003': 'Ivan',
     '1000000004': 'John',
