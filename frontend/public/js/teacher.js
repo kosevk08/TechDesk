@@ -389,7 +389,7 @@ async function loadNotebooks() {
             return;
         }
 
-        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/all?t=${Date.now()}`);
+        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/list?t=${Date.now()}`);
         const notebooks = await response.json();
 
         const uniqueNotebooks = [];
