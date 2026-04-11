@@ -376,10 +376,11 @@ async function loadNotebooks() {
                         <h4>${notebook.studentName}</h4>
                         <p>Subject: ${notebook.subject} | Page: ${notebook.page}</p>
                     </div>
-                    <button class="view-btn" onclick="viewNotebook('9000000001', '${notebook.studentName}', '${notebook.subject}')">
-                        Preview
-                    </button>
+                    <button class="view-btn">Preview</button>
                 `;
+                card.querySelector('.view-btn').addEventListener('click', () => {
+                    viewNotebook('9000000001', notebook.studentName, notebook.subject);
+                });
                 list.appendChild(card);
             });
             return;
@@ -412,10 +413,11 @@ async function loadNotebooks() {
                     <h4>${studentName}</h4>
                     <p>Subject: ${notebook.subject} | Year: ${notebook.schoolYear}</p>
                 </div>
-                <button class="view-btn" onclick="viewNotebook('${notebook.studentEgn}', '${studentName}', '${notebook.subject}')">
-                    View
-                </button>
+                <button class="view-btn">View</button>
             `;
+            card.querySelector('.view-btn').addEventListener('click', () => {
+                viewNotebook(notebook.studentEgn, studentName, notebook.subject);
+            });
             list.appendChild(card);
         });
 
