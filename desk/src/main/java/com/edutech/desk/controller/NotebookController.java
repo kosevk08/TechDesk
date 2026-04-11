@@ -2,6 +2,7 @@ package com.edutech.desk.controller;
 
 import com.edutech.desk.controller.response.NotebookResponse;
 import com.edutech.desk.entities.Notebook;
+import com.edutech.desk.repository.NotebookRepository;
 import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.NotebookService;
@@ -21,6 +22,9 @@ public class NotebookController {
     private NotebookService notebookService;
 
     @Autowired
+    private NotebookRepository notebookRepository;
+
+    @Autowired
     private NameLookupService nameLookupService;
 
     @Autowired
@@ -35,19 +39,13 @@ public class NotebookController {
         return ResponseEntity.ok(responses);
     }
 
-    // ── New lightweight list endpoint — no image content, deduped by student+subject ──
     @GetMapping("/list")
     public ResponseEntity<List<NotebookResponse>> getNotebookList() {
-        List<Notebook> all = notebookService.getAllNotebooks();
-        Map<String, NotebookResponse> seen = new LinkedHashMap<>();
-        for (Notebook n : all) {
-            String key = n.getStudentEgn() + "-" + n.getSubject();
-            if (!seen.containsKey(key)) {
-                NotebookResponse r = toResponseNoContent(n);
-                seen.put(key, r);
-            }
-        }
-        return ResponseEntity.ok(new ArrayList<>(seen.values()));
+        List<NotebookResponse> responses = notebookRepository.findAllFirstPages()
+            .stream()
+            .map(this::toResponseNoContent)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/student/{egn}")
