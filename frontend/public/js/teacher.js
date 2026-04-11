@@ -32,6 +32,8 @@ const egnToName = {
     '9000000001': 'Radoslav Paskalev'
 };
 
+const nameToEgn = Object.fromEntries(Object.entries(egnToName).map(([egn, name]) => [name, egn]));
+
 if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
 }
@@ -325,7 +327,8 @@ async function loadTeacherPage() {
             renderDemoNotebookPage(demoData.notebooks[0]);
             return;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${currentViewEgn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
+        const egn = nameToEgn[currentViewStudent] || '';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -392,7 +395,7 @@ async function loadNotebooks() {
         const uniqueNotebooks = [];
         const seen = new Set();
         notebooks.forEach(n => {
-            const key = `${n.studentEgn}-${n.subject}`;
+            const key = `${n.studentName}-${n.subject}`;
             if (!seen.has(key)) {
                 seen.add(key);
                 uniqueNotebooks.push(n);
@@ -405,7 +408,8 @@ async function loadNotebooks() {
         }
 
         uniqueNotebooks.forEach(notebook => {
-            const studentName = egnToName[notebook.studentEgn] || notebook.studentEgn;
+            const studentName = notebook.studentName || 'Unknown';
+            const egn = nameToEgn[studentName] || '';
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.innerHTML = `
@@ -416,7 +420,7 @@ async function loadNotebooks() {
                 <button class="view-btn">View</button>
             `;
             card.querySelector('.view-btn').addEventListener('click', () => {
-                viewNotebook(notebook.studentEgn, studentName, notebook.subject);
+                viewNotebook(egn, studentName, notebook.subject);
             });
             list.appendChild(card);
         });
