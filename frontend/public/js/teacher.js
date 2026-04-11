@@ -17,7 +17,7 @@ const teacherNames = {
 };
 
 const egnToName = {
-    '1000000001': 'Viktor Kolev',
+    '1000000001': 'Victor Kolev',
     '1000000002': 'Konstantin Kosev',
     '1000000003': 'Ivan Ivanov',
     '1000000004': 'John Doe',
@@ -376,19 +376,11 @@ async function loadNotebooks() {
                         <h4>${notebook.studentName}</h4>
                         <p>Subject: ${notebook.subject} | Page: ${notebook.page}</p>
                     </div>
-                    <button class="view-btn"
-                        data-egn="9000000001"
-                        data-student="${notebook.studentName}"
-                        data-subject="${notebook.subject}">
+                    <button class="view-btn" onclick="viewNotebook('9000000001', '${notebook.studentName}', '${notebook.subject}')">
                         Preview
                     </button>
                 `;
                 list.appendChild(card);
-            });
-            document.querySelectorAll('.view-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    viewNotebook(btn.dataset.egn, btn.dataset.student, btn.dataset.subject);
-                });
             });
             return;
         }
@@ -420,20 +412,11 @@ async function loadNotebooks() {
                     <h4>${studentName}</h4>
                     <p>Subject: ${notebook.subject} | Year: ${notebook.schoolYear}</p>
                 </div>
-                <button class="view-btn"
-                    data-egn="${notebook.studentEgn}"
-                    data-student="${studentName}"
-                    data-subject="${notebook.subject}">
+                <button class="view-btn" onclick="viewNotebook('${notebook.studentEgn}', '${studentName}', '${notebook.subject}')">
                     View
                 </button>
             `;
             list.appendChild(card);
-        });
-
-        document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                viewNotebook(btn.dataset.egn, btn.dataset.student, btn.dataset.subject);
-            });
         });
 
     } catch (error) {
