@@ -1,8 +1,7 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const socket = io();
+const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
-const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let studentNames = [];
@@ -12,21 +11,46 @@ let testAutosaveTimer = null;
 let lastTestHash = null;
 
 function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    return extra;
 }
+
+const teacherNames = {
+    'h.schmidt-teacher@edu-school.bg': 'Miss Schmidt',
+    'a.popescu-teacher@edu-school.bg': 'Mr Popescu',
+    'e.vasileva-teacher@edu-school.bg': 'Mrs Vasileva'
+};
+
+const egnToName = {
+    '1000000001': 'Victor Kolev',
+    '1000000002': 'Konstantin Kosev',
+    '1000000003': 'Ivan Ivanov',
+    '1000000004': 'John Doe',
+    '1000000005': 'Daniel Kovacs',
+    '1000000006': 'Sofia Martinez',
+    '1000000007': 'Marcus Bennett',
+    '1000000008': 'Elena Petrova',
+    '1000000009': 'Liam O\'Connor',
+    '1000000010': 'Victor Ivanov',
+    '1000000011': 'Natalie Fischer',
+    '1000000012': 'Carlos Mendes',
+    '9000000001': 'Radoslav Paskalev'
+};
+
+const nameToEgn = Object.fromEntries(Object.entries(egnToName).map(([egn, name]) => [name, egn]));
 
 if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
-}
-if (isDemo) {
-    insertDemoBanner();
-    insertDemoTeacherSections();
 }
 
 if (isDemo && demoData) {
     document.getElementById('teacherName').textContent = demoData.teacher.name;
 } else {
-    document.getElementById('teacherName').textContent = user.displayName || 'Teacher';
+    document.getElementById('teacherName').textContent = teacherNames[user.email] || user.email;
+}
+
+if (isDemo) {
+    insertDemoBanner();
+    insertDemoTeacherSections();
 }
 
 function insertDemoBanner() {
@@ -123,6 +147,7 @@ function renderDemoHomework() {
     `).join('');
 }
 
+let currentViewEgn = null;
 let currentViewStudent = null;
 let currentViewSubject = null;
 let currentViewPage = 1;
@@ -189,12 +214,12 @@ function drawTeacher(x0, y0, x1, y1) {
 }
 
 function showSection(sectionId) {
-    ['aiInsightsSection', 'notebooksSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
+    ['aiInsightsSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
         const element = document.getElementById(id);
-        if (element) {
-            element.style.display = id === sectionId ? 'block' : 'none';
-        }
+        if (element) element.style.display = 'none';
     });
+    const target = document.getElementById(sectionId);
+    if (target) target.style.display = 'block';
 }
 
 function subjectMatch(a, b) {
@@ -243,8 +268,7 @@ async function loadNotifications() {
     if (!container) return;
     try {
         if (isDemo && demoData) {
-            const notifications = demoData.notifications;
-            container.innerHTML = notifications.slice(0, 6).map(n => `
+            container.innerHTML = demoData.notifications.slice(0, 6).map(n => `
                 <div class="insight-card">
                     <div class="insight-top">
                         <h5>${n.type}</h5>
@@ -255,23 +279,7 @@ async function loadNotifications() {
             `).join('');
             return;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notifications/me?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
-        const notifications = res.ok ? await res.json() : [];
-        if (!notifications.length) {
-            container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
-            return;
-        }
-        container.innerHTML = notifications.slice(0, 6).map(n => `
-            <div class="insight-card">
-                <div class="insight-top">
-                    <h5>${n.type}</h5>
-                    <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
-                </div>
-                <p class="insight-copy">${n.message}</p>
-            </div>
-        `).join('');
+        container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
     } catch (error) {
         console.error('Could not load notifications:', error);
     }
@@ -279,18 +287,10 @@ async function loadNotifications() {
 
 async function loadStudentNames() {
     if (isDemo && demoData) {
-        studentNames = [{ fullName: demoData.student.name, className: demoData.student.className }];
+        studentNames = [{ fullName: demoData.student.name, egn: '9000000001' }];
         return;
     }
-    try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/student/names`, {
-            headers: authHeaders()
-        });
-        studentNames = res.ok ? await res.json() : [];
-    } catch (error) {
-        console.error('Could not load student names:', error);
-        studentNames = [];
-    }
+    studentNames = Object.entries(egnToName).map(([egn, name]) => ({ fullName: name, egn }));
 }
 
 function setGradeStatus(text) {
@@ -322,26 +322,14 @@ async function addGrade() {
     const subject = document.getElementById('gradeSubject').value.trim();
     const value = parseFloat(document.getElementById('gradeValue').value);
     const comment = document.getElementById('gradeComment').value.trim();
-
     if (!studentName || !subject || Number.isNaN(value)) {
         setGradeStatus('Student, subject, and grade are required.');
         return false;
     }
-
     try {
         setGradeStatus('Saving grade...');
         if (isDemo && demoData) {
-            demoData.grades.unshift({
-                subject,
-                value,
-                comment: comment || 'Demo grade saved.',
-                createdAt: new Date().toISOString()
-            });
-            demoData.notifications.unshift({
-                type: 'Grade Update',
-                message: `${subject} grade added: ${value}`,
-                createdAt: new Date().toISOString()
-            });
+            demoData.grades.unshift({ subject, value, comment: comment || 'Demo grade saved.', createdAt: new Date().toISOString() });
             setGradeStatus('Grade saved (demo).');
             document.getElementById('gradeValue').value = '';
             document.getElementById('gradeComment').value = '';
@@ -369,7 +357,6 @@ async function addGrade() {
         socket.emit('grade-updated', { studentName });
         return true;
     } catch (error) {
-        console.error('Could not save grade:', error);
         setGradeStatus('Failed to save grade.');
         return false;
     }
@@ -391,9 +378,8 @@ function scheduleGradeAutosave() {
 }
 
 async function loadGradeHistory() {
-    const studentName = document.getElementById('gradeStudent').value;
     const container = document.getElementById('gradeHistoryList');
-    if (!container || !studentName) return;
+    if (!container) return;
     container.innerHTML = '<p class="empty-state">Loading...</p>';
     try {
         if (isDemo && demoData) {
@@ -411,23 +397,8 @@ async function loadGradeHistory() {
             `).join('');
             return;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/grades/student/name/${encodeURIComponent(studentName)}?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
-        const grades = res.ok ? await res.json() : [];
-        if (!grades.length) {
-            container.innerHTML = '<p class="empty-state">No grades yet.</p>';
-            return;
-        }
-        container.innerHTML = grades.map(g => `
-            <div class="test-card">
-                <h5>${g.subject}: ${g.value}</h5>
-                <div class="test-meta">${g.comment || 'No comment'}</div>
-                <div class="test-meta">Saved: ${g.createdAt ? g.createdAt.replace('T', ' ') : '-'}</div>
-            </div>
-        `).join('');
+        container.innerHTML = '<p class="empty-state">No grades yet.</p>';
     } catch (error) {
-        console.error('Could not load grades:', error);
         container.innerHTML = '<p class="empty-state">Failed to load grades.</p>';
     }
 }
@@ -440,9 +411,7 @@ async function loadGrades() {
 }
 
 document.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'gradeStudent') {
-        loadGradeHistory();
-    }
+    if (e.target && e.target.id === 'gradeStudent') loadGradeHistory();
 });
 
 document.addEventListener('input', (e) => {
@@ -489,14 +458,11 @@ attachTeacherCanvasEvents();
 async function loadTeacherPage() {
     try {
         if (isDemo && demoData) {
-            const notebook = demoData.notebooks.find(n => n.studentName === currentViewStudent && subjectMatch(n.subject, currentViewSubject))
-                || demoData.notebooks[0];
-            renderDemoNotebookPage(notebook);
+            renderDemoNotebookPage(demoData.notebooks[0]);
             return;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
+        const egn = nameToEgn[currentViewStudent] || '';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -533,13 +499,12 @@ function renderDemoNotebookPage(notebook) {
 
 async function loadNotebooks() {
     try {
-        if (isDemo && demoData) {
-            const section = document.getElementById('notebooksSection');
-            const list = document.getElementById('notebooksList');
-            showSection('notebooksSection');
-            section.style.display = 'block';
-            list.innerHTML = '';
+        const section = document.getElementById('notebooksSection');
+        const list = document.getElementById('notebooksList');
+        section.style.display = 'block';
+        list.innerHTML = '';
 
+        if (isDemo && demoData) {
             demoData.notebooks.forEach(notebook => {
                 const card = document.createElement('div');
                 card.className = 'notebook-card';
@@ -548,19 +513,12 @@ async function loadNotebooks() {
                         <h4>${notebook.studentName}</h4>
                         <p>Subject: ${notebook.subject} | Page: ${notebook.page}</p>
                     </div>
-                    <button class="view-btn"
-                        data-student="${notebook.studentName}"
-                        data-subject="${notebook.subject}">
-                        Preview
-                    </button>
+                    <button class="view-btn">Preview</button>
                 `;
-                list.appendChild(card);
-            });
-
-            document.querySelectorAll('.view-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    viewNotebook(null, btn.dataset.student, btn.dataset.subject);
+                card.querySelector('.view-btn').addEventListener('click', () => {
+                    viewNotebook('9000000001', notebook.studentName, notebook.subject);
                 });
+                list.appendChild(card);
             });
             return;
         }
@@ -579,19 +537,14 @@ async function loadNotebooks() {
             }
         });
 
-        const section = document.getElementById('notebooksSection');
-        const list = document.getElementById('notebooksList');
-        showSection('notebooksSection');
-        section.style.display = 'block';
-        list.innerHTML = '';
-
         if (uniqueNotebooks.length === 0) {
             list.innerHTML = '<p>No notebooks found.</p>';
             return;
         }
 
         uniqueNotebooks.forEach(notebook => {
-            const studentName = notebook.studentName || 'Student';
+            const studentName = notebook.studentName || 'Unknown';
+            const egn = nameToEgn[studentName] || '';
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.innerHTML = `
@@ -599,20 +552,12 @@ async function loadNotebooks() {
                     <h4>${studentName}</h4>
                     <p>Subject: ${notebook.subject} | Year: ${notebook.schoolYear}</p>
                 </div>
-                <button class="view-btn"
-                    data-id="${notebook.id}"
-                    data-student="${studentName}"
-                    data-subject="${notebook.subject}">
-                    View
-                </button>
+                <button class="view-btn">View</button>
             `;
-            list.appendChild(card);
-        });
-
-        document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                viewNotebook(btn.dataset.id, btn.dataset.student, btn.dataset.subject);
+            card.querySelector('.view-btn').addEventListener('click', () => {
+                viewNotebook(egn, studentName, notebook.subject);
             });
+            list.appendChild(card);
         });
 
     } catch (error) {
@@ -620,7 +565,8 @@ async function loadNotebooks() {
     }
 }
 
-function viewNotebook(id, studentName, subject) {
+function viewNotebook(egn, studentName, subject) {
+    currentViewEgn = egn;
     currentViewStudent = studentName;
     currentViewSubject = subject;
     currentViewPage = 1;
@@ -642,6 +588,7 @@ function viewNotebook(id, studentName, subject) {
 }
 
 function backToList() {
+    currentViewEgn = null;
     currentViewStudent = null;
     currentViewSubject = null;
     currentViewPage = 1;
@@ -705,15 +652,12 @@ function riskBadgeClass(level) {
 }
 
 function setAiStatus(message, type = 'info') {
-    aiStatusText.textContent = message;
-
+    if (aiStatusText) aiStatusText.textContent = message;
     if (!message) {
         aiStatusBanner.style.display = 'none';
-        aiStatusBanner.textContent = '';
         aiStatusBanner.className = 'ai-status-banner';
         return;
     }
-
     aiStatusBanner.textContent = message;
     aiStatusBanner.className = `ai-status-banner${type === 'error' ? ' error' : ''}`;
     aiStatusBanner.style.display = 'block';
@@ -729,193 +673,112 @@ function renderOverview(overview) {
         { label: 'Struggling Students', value: overview.strugglingStudentsCount ?? 0 },
         { label: 'Attention Alerts', value: overview.attentionAlertsCount ?? 0 }
     ];
-
-    grid.innerHTML = metrics.map((metric) => `
+    grid.innerHTML = metrics.map((m) => `
         <div class="metric-card">
-            <span class="metric-label">${metric.label}</span>
-            <strong class="metric-value">${metric.value}</strong>
+            <span class="metric-label">${m.label}</span>
+            <strong class="metric-value">${m.value}</strong>
         </div>
     `).join('');
 }
 
 function renderStudents(students) {
     const container = document.getElementById('aiStudentsList');
-
-    if (!students || students.length === 0) {
+    if (!students || !students.length) {
         container.innerHTML = '<p class="empty-state">No students currently flagged for attention.</p>';
         return;
     }
-
-    container.innerHTML = students.map((student) => `
+    container.innerHTML = students.map((s) => `
         <div class="insight-card">
             <div class="insight-top">
                 <div>
-                    <h5>${student.studentName}</h5>
-                    <p>${student.className} • ${student.adaptiveRecommendation.replaceAll('_', ' ')}</p>
+                    <h5>${s.studentName}</h5>
+                    <p>${s.className} • ${s.adaptiveRecommendation.replaceAll('_', ' ')}</p>
                 </div>
-                <span class="${riskBadgeClass(student.riskLevel)}">${student.riskLevel}</span>
+                <span class="${riskBadgeClass(s.riskLevel)}">${s.riskLevel}</span>
             </div>
             <div class="insight-stats">
-                <span>Accuracy ${formatPercent(student.accuracyRate)}</span>
-                <span>Time ${formatSeconds(student.averageTimeSpentSeconds)}</span>
-                <span>Attempts ${Number(student.averageAttempts || 0).toFixed(1)}</span>
+                <span>Accuracy ${formatPercent(s.accuracyRate)}</span>
+                <span>Time ${formatSeconds(s.averageTimeSpentSeconds)}</span>
+                <span>Attempts ${Number(s.averageAttempts || 0).toFixed(1)}</span>
             </div>
-            <p class="insight-copy">${student.recommendedAction}</p>
-            <p class="insight-weaknesses"><strong>Weakness areas:</strong> ${(student.weaknessAreas || []).join(', ') || 'No clear pattern yet'}</p>
+            <p class="insight-copy">${s.recommendedAction}</p>
+            <p class="insight-weaknesses"><strong>Weakness areas:</strong> ${(s.weaknessAreas || []).join(', ') || 'No clear pattern yet'}</p>
         </div>
     `).join('');
 }
 
 function renderAlerts(alerts) {
     const container = document.getElementById('aiAlertsList');
-
-    if (!alerts || alerts.length === 0) {
+    if (!alerts || !alerts.length) {
         container.innerHTML = '<p class="empty-state">No active alerts right now.</p>';
         return;
     }
-
-    container.innerHTML = alerts.map((alert) => `
-        <div class="alert-card alert-${String(alert.severity || 'medium').toLowerCase()}">
+    container.innerHTML = alerts.map((a) => `
+        <div class="alert-card alert-${String(a.severity || 'medium').toLowerCase()}">
             <div class="insight-top">
-                <h5>${alert.title}</h5>
-                <span class="${riskBadgeClass(alert.severity)}">${alert.severity}</span>
+                <h5>${a.title}</h5>
+                <span class="${riskBadgeClass(a.severity)}">${a.severity}</span>
             </div>
-            <p class="insight-copy">${alert.message}</p>
+            <p class="insight-copy">${a.message}</p>
         </div>
     `).join('');
 }
 
 function renderTopics(topics) {
     const container = document.getElementById('aiTopicsList');
-
-    if (!topics || topics.length === 0) {
+    if (!topics || !topics.length) {
         container.innerHTML = '<p class="empty-state">No topic analytics available yet.</p>';
         return;
     }
-
-    container.innerHTML = topics.map((topic) => `
+    container.innerHTML = topics.map((t) => `
         <div class="topic-row">
             <div>
-                <h5>${topic.label}</h5>
-                <p>${topic.subject}</p>
+                <h5>${t.label}</h5>
+                <p>${t.subject}</p>
             </div>
             <div class="topic-metrics">
-                <span>${formatPercent(topic.accuracyRate)} accuracy</span>
-                <span>${formatSeconds(topic.averageTimeSpentSeconds)} avg time</span>
-                <span>${Number(topic.averageAttempts || 0).toFixed(1)} attempts</span>
-                <span class="${riskBadgeClass(topic.difficultyLevel)}">${topic.difficultyLevel}</span>
+                <span>${formatPercent(t.accuracyRate)} accuracy</span>
+                <span>${formatSeconds(t.averageTimeSpentSeconds)} avg time</span>
+                <span>${Number(t.averageAttempts || 0).toFixed(1)} attempts</span>
+                <span class="${riskBadgeClass(t.difficultyLevel)}">${t.difficultyLevel}</span>
             </div>
-            <p class="insight-copy">${topic.teacherAction}</p>
+            <p class="insight-copy">${t.teacherAction}</p>
         </div>
     `).join('');
 }
 
 async function loadAiInsights() {
-    try {
-        if (isDemo) {
-            showSection('aiInsightsSection');
-            renderOverview({
-                totalTasks: 42,
-                accuracyRate: 0.82,
-                averageTimeSpentSeconds: 64,
-                averageAttempts: 1.6,
-                strugglingStudentsCount: 1,
-                attentionAlertsCount: 2
-            });
-            renderStudents([
-                {
-                    studentName: demoData.student.name,
-                    className: demoData.student.className,
-                    adaptiveRecommendation: 'FOCUS_REVIEW',
-                    riskLevel: 'medium',
-                    accuracyRate: 0.68,
-                    averageTimeSpentSeconds: 85,
-                    averageAttempts: 2.1,
-                    recommendedAction: 'Schedule a quick recap on factoring.',
-                    weaknessAreas: ['Quadratic factoring', 'Word problems']
-                }
-            ]);
-            renderAlerts([
-                {
-                    title: 'Physics Momentum',
-                    severity: 'medium',
-                    message: 'Several students spend extra time on momentum problems.'
-                }
-            ]);
-            renderTopics([
-                {
-                    label: 'Quadratic Equations',
-                    subject: 'Maths',
-                    accuracyRate: 0.72,
-                    averageTimeSpentSeconds: 88,
-                    averageAttempts: 2.4,
-                    difficultyLevel: 'medium',
-                    teacherAction: 'Re-teach factoring with a short guided example.'
-                }
-            ]);
-            setAiStatus('Demo AI data loaded for exploration.');
-            return;
-        }
-        setAiStatus('Loading live classroom signals from the AI engine...');
-        const response = await fetch(`${BACKEND_BASE_URL}/api/ai/dashboard?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
-        if (!response.ok) {
-            throw new Error(`Dashboard request failed with status ${response.status}`);
-        }
-
-        const dashboard = await response.json();
-        showSection('aiInsightsSection');
-        renderOverview(dashboard.overview || {});
-        renderStudents(dashboard.strugglingStudents || []);
-        renderAlerts(dashboard.alerts || []);
-        renderTopics(dashboard.topicInsights || []);
-        if ((dashboard.overview?.totalTasks || 0) === 0) {
-            setAiStatus('AI is online. No tracked task activity has been received yet, so the dashboard is waiting for student learning data.');
-        } else {
-            setAiStatus(`AI is active and analyzing ${dashboard.overview.totalTasks} tracked tasks across the class.`);
-        }
-    } catch (error) {
-        console.error('Could not load AI insights:', error);
-        showSection('aiInsightsSection');
-        document.getElementById('aiOverviewGrid').innerHTML = '';
-        document.getElementById('aiStudentsList').innerHTML = '<p class="empty-state">AI insights could not be loaded.</p>';
-        document.getElementById('aiAlertsList').innerHTML = '<p class="empty-state">The teacher page could not reach the backend AI service.</p>';
-        document.getElementById('aiTopicsList').innerHTML = '';
-        setAiStatus(`AI dashboard connection failed. This page is using ${BACKEND_BASE_URL}. Make sure that backend is running and reachable.`, 'error');
+    showSection('aiInsightsSection');
+    if (isDemo) {
+        renderOverview({ totalTasks: 42, accuracyRate: 0.82, averageTimeSpentSeconds: 64, averageAttempts: 1.6, strugglingStudentsCount: 1, attentionAlertsCount: 2 });
+        renderStudents([{ studentName: demoData.student.name, className: demoData.student.className, adaptiveRecommendation: 'FOCUS_REVIEW', riskLevel: 'medium', accuracyRate: 0.68, averageTimeSpentSeconds: 85, averageAttempts: 2.1, recommendedAction: 'Schedule a quick recap on factoring.', weaknessAreas: ['Quadratic factoring', 'Word problems'] }]);
+        renderAlerts([{ title: 'Physics Momentum', severity: 'medium', message: 'Several students spend extra time on momentum problems.' }]);
+        renderTopics([{ label: 'Quadratic Equations', subject: 'Maths', accuracyRate: 0.72, averageTimeSpentSeconds: 88, averageAttempts: 2.4, difficultyLevel: 'medium', teacherAction: 'Re-teach factoring with a short guided example.' }]);
+        setAiStatus('Demo AI data loaded for exploration.');
+        return;
     }
+    setAiStatus('AI Insights not yet connected to backend.');
+    renderOverview({});
+    renderStudents([]);
+    renderAlerts([]);
+    renderTopics([]);
 }
 
 async function loadClasses() {
     const select = document.getElementById('testClass');
     if (!select) return;
     select.innerHTML = '';
-    try {
-        if (isDemo) {
-            const option = document.createElement('option');
-            option.value = demoData.student.className;
-            option.textContent = demoData.student.className;
-            select.appendChild(option);
-            return;
-        }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/classes`, {
-            headers: authHeaders()
-        });
-        const classes = res.ok ? await res.json() : [];
-        if (!classes.length) {
-            select.innerHTML = '<option value="">No classes found</option>';
-            return;
-        }
-        classes.forEach(cls => {
-            const option = document.createElement('option');
-            option.value = cls;
-            option.textContent = cls;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        select.innerHTML = '<option value="">No classes found</option>';
-        console.error('Could not load classes:', error);
+    if (isDemo) {
+        const option = document.createElement('option');
+        option.value = demoData.student.className;
+        option.textContent = demoData.student.className;
+        select.appendChild(option);
+        return;
     }
+    const option = document.createElement('option');
+    option.value = '11D';
+    option.textContent = '11D';
+    select.appendChild(option);
 }
 
 function setTestStatus(text) {
@@ -937,31 +800,14 @@ async function createTest() {
         return false;
     }
 
-    const questions = questionsInput
-        ? questionsInput.split('\n').map(q => q.trim()).filter(Boolean)
-        : [];
+    const questions = questionsInput ? questionsInput.split('\n').map(q => q.trim()).filter(Boolean) : [];
 
     try {
         setTestStatus('Creating test...');
         if (isDemo && demoData) {
             const id = Math.floor(Date.now() / 1000);
-            const demoTest = {
-                id,
-                title,
-                subject,
-                assignments: [{ className, dueDate }]
-            };
-            demoData.teacherTests.unshift(demoTest);
-            demoData.tests.unshift({
-                testId: id,
-                title,
-                subject,
-                dueDate,
-                questionsJson: JSON.stringify(questions),
-                status: 'ASSIGNED',
-                score: null,
-                feedback: null
-            });
+            demoData.teacherTests.unshift({ id, title, subject, assignments: [{ className, dueDate }] });
+            demoData.tests.unshift({ testId: id, title, subject, dueDate, questionsJson: JSON.stringify(questions), status: 'ASSIGNED', score: null, feedback: null });
             setTestStatus('Test created and assigned (demo).');
             document.getElementById('testTitle').value = '';
             document.getElementById('testSubject').value = '';
@@ -1007,7 +853,6 @@ async function createTest() {
         loadTests();
         return true;
     } catch (error) {
-        console.error('Could not create test:', error);
         setTestStatus('Failed to create test.');
         return false;
     }
@@ -1039,12 +884,9 @@ function renderTests(tests) {
         list.innerHTML = '<p class="empty-state">No tests created yet.</p>';
         return;
     }
-
     list.innerHTML = tests.map(test => {
         const assignments = test.assignments || [];
-        const assignmentText = assignments.length
-            ? assignments.map(a => `${a.className}${a.dueDate ? ` • due ${a.dueDate}` : ''}`).join(', ')
-            : 'Not assigned yet';
+        const assignmentText = assignments.length ? assignments.map(a => `${a.className}${a.dueDate ? ` • due ${a.dueDate}` : ''}`).join(', ') : 'Not assigned yet';
         return `
             <div class="test-card">
                 <h5>${test.title}</h5>
@@ -1063,7 +905,6 @@ async function loadSubmissions(testId) {
     if (!panel || !list) return;
     panel.style.display = 'block';
     list.innerHTML = '<p class="empty-state">Loading submissions...</p>';
-
     try {
         if (isDemo && demoData) {
             const submissions = demoData.testSubmissions[testId] || [];
@@ -1086,60 +927,18 @@ async function loadSubmissions(testId) {
             `).join('');
             return;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/submissions/test/${testId}`, {
-            headers: authHeaders()
-        });
-        const submissions = res.ok ? await res.json() : [];
-        if (!submissions.length) {
-            list.innerHTML = '<p class="empty-state">No submissions yet.</p>';
-            return;
-        }
-
-        list.innerHTML = submissions.map(sub => `
-            <div class="submission-card">
-                <strong>Student: ${sub.studentName || 'Student'}</strong>
-                <div class="test-meta">Status: ${sub.status || 'SUBMITTED'}</div>
-                <div class="test-meta">Answers:</div>
-                <pre class="test-meta">${sub.answersJson || ''}</pre>
-                <div class="test-row">
-                    <input type="number" min="0" placeholder="Score" id="score-${sub.id}" value="${sub.score ?? ''}">
-                    <input type="text" placeholder="Feedback" id="feedback-${sub.id}" value="${sub.feedback ?? ''}">
-                    <button class="action-btn" onclick="gradeSubmission(${sub.id}, '${sub.studentName || 'Student'}')">Grade</button>
-                </div>
-            </div>
-        `).join('');
+        list.innerHTML = '<p class="empty-state">No submissions yet.</p>';
     } catch (error) {
-        console.error('Could not load submissions:', error);
         list.innerHTML = '<p class="empty-state">Failed to load submissions.</p>';
     }
 }
 
 async function gradeSubmission(submissionId, studentName) {
-    const score = document.getElementById(`score-${submissionId}`).value;
-    const feedback = document.getElementById(`feedback-${submissionId}`).value;
-    try {
-        if (isDemo && demoData) {
-            const submissions = Object.values(demoData.testSubmissions).flat();
-            const sub = submissions.find(s => s.id === submissionId);
-            if (sub) {
-                sub.score = score ? parseInt(score, 10) : null;
-                sub.feedback = feedback || 'Demo feedback saved.';
-                sub.status = 'GRADED';
-            }
-            loadSubmissions(Object.keys(demoData.testSubmissions).find(id => (demoData.testSubmissions[id] || []).some(s => s.id === submissionId)) || submissionId);
-            return;
-        }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/submission/${submissionId}/grade`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ score: score ? parseInt(score, 10) : null, feedback })
-        });
-        if (!res.ok) throw new Error(`Grade failed ${res.status}`);
-        const graded = await res.json();
-        socket.emit('test-graded', { studentName, testId: graded.testId });
-        loadSubmissions(graded.testId);
-    } catch (error) {
-        console.error('Could not grade submission:', error);
+    if (isDemo && demoData) {
+        const submissions = Object.values(demoData.testSubmissions).flat();
+        const sub = submissions.find(s => s.id === submissionId);
+        if (sub) { sub.score = null; sub.feedback = 'Demo feedback saved.'; sub.status = 'GRADED'; }
+        return;
     }
 }
 
@@ -1151,20 +950,8 @@ async function loadTests() {
             renderTests(demoData.teacherTests || []);
             return;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/teacher/me`, {
-            headers: authHeaders()
-        });
-        const tests = res.ok ? await res.json() : [];
-        renderTests(tests);
+        renderTests([]);
     } catch (error) {
         console.error('Could not load tests:', error);
     }
-}
-
-if (!isDemo) {
-    socket.on('test-submitted', () => {
-        if (document.getElementById('testsSection')?.style.display === 'block') {
-            loadTests();
-        }
-    });
 }

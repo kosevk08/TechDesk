@@ -1,4 +1,4 @@
-MERGE INTO subjects (name, description) KEY(name) VALUES
+INSERT INTO subjects (name, description) VALUES
 ('Bulgarian Language and Literature', 'Bulgarian language and literature studies'),
 ('English', 'English language studies'),
 ('Chemistry', 'Chemistry studies'),
@@ -10,9 +10,10 @@ MERGE INTO subjects (name, description) KEY(name) VALUES
 ('English Literature', 'English literature studies'),
 ('German (A1)', 'German language for beginners'),
 ('Spanish (A1)', 'Spanish language for beginners'),
-('Philosophy', 'Philosophy studies');
+('Philosophy', 'Philosophy studies')
+ON DUPLICATE KEY UPDATE description = VALUES(description);
 
-MERGE INTO users (egn, email, password, role, demo, student_egn) KEY(egn) VALUES
+INSERT INTO users (egn, email, password, role, demo, student_egn) VALUES
 ('1000000001', 'v.kolev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
 ('1000000002', 'k.kosev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
 ('1000000003', 'i.ivanov-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
@@ -46,7 +47,7 @@ MERGE INTO users (egn, email, password, role, demo, student_egn) KEY(egn) VALUES
 ('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'PARENT', TRUE, '9000000001'),
 ('9000000004', 's.markova-admin@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'ADMIN', TRUE, NULL);
 
-MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(egn) VALUES
+INSERT INTO students (egn, first_name, last_name, email, grade, class_name) VALUES
 ('1000000001', 'Victor', 'Kolev', 'v.kolev-student@edu-school.bg', '10', '10A'),
 ('1000000002', 'Konstantin', 'Kosev', 'k.kosev-student@edu-school.bg', '10', '10A'),
 ('1000000003', 'Ivan', 'Ivanov', 'i.ivanov-student@edu-school.bg', '10', '10A'),
@@ -58,7 +59,8 @@ MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(e
 ('1000000009', 'Liam', 'OConnor', 'l.oconnor-student@edu-school.bg', '11', '11A'),
 ('1000000010', 'Victor', 'Ivanov', 'v.ivanov-student@edu-school.bg', '11', '11B'),
 ('1000000011', 'Natalie', 'Fischer', 'n.fischer-student@edu-school.bg', '11', '11B'),
-('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B');
+('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B')
+ON DUPLICATE KEY UPDATE first_name = VALUES(first_name);
 
 MERGE INTO teachers (egn, first_name, last_name, email) KEY(egn) VALUES
 ('2000000001', 'Helena', 'Schmidt', 'h.schmidt-teacher@edu-school.bg'),
@@ -182,4 +184,5 @@ MERGE INTO notebooks (student_egn, subject, school_year, format, style, color, c
 ('1000000012', 'Philosophy', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000012', 'Spanish (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
 ('1000000012', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
-('1000000012', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1);
+('1000000012', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1)
+ON DUPLICATE KEY UPDATE content = VALUES(content);

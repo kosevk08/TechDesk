@@ -2,6 +2,7 @@ package com.edutech.desk.controller;
 
 import com.edutech.desk.controller.response.NotebookResponse;
 import com.edutech.desk.entities.Notebook;
+import com.edutech.desk.repository.NotebookRepository;
 import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.NotebookService;
@@ -10,8 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -21,6 +21,9 @@ public class NotebookController {
 
     @Autowired
     private NotebookService notebookService;
+
+    @Autowired
+    private NotebookRepository notebookRepository;
 
     @Autowired
     private NameLookupService nameLookupService;
@@ -36,6 +39,15 @@ public class NotebookController {
         List<NotebookResponse> responses = notebookService.getAllNotebooks()
             .stream()
             .map(this::toResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<NotebookResponse>> getNotebookList() {
+        List<NotebookResponse> responses = notebookRepository.findAllFirstPages()
+            .stream()
+            .map(this::toResponseNoContent)
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
@@ -119,6 +131,17 @@ public class NotebookController {
         return ResponseEntity.ok(toResponse(saved));
     }
 
+    @PostMapping("/save")
+    public ResponseEntity<NotebookResponse> saveNotebook(@RequestBody Notebook notebook) {
+        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
+            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
+        notebook.setLastUpdated(LocalDateTime.now());
+        Notebook saved = existing.isPresent()
+            ? notebookService.updateNotebook(existing.get().getId(), notebook)
+            : notebookService.createNotebook(notebook);
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
     private NotebookResponse toResponse(Notebook notebook) {
         NotebookResponse response = new NotebookResponse();
         response.setId(notebook.getId());
@@ -129,6 +152,21 @@ public class NotebookController {
         response.setStyle(notebook.getStyle());
         response.setColor(notebook.getColor());
         response.setContent(notebook.getContent());
+        response.setPageNumber(notebook.getPageNumber());
+        response.setLastUpdated(notebook.getLastUpdated());
+        return response;
+    }
+
+    private NotebookResponse toResponseNoContent(Notebook notebook) {
+        NotebookResponse response = new NotebookResponse();
+        response.setId(notebook.getId());
+        response.setStudentName(nameLookupService.studentName(notebook.getStudentEgn()));
+        response.setSubject(notebook.getSubject());
+        response.setSchoolYear(notebook.getSchoolYear());
+        response.setFormat(notebook.getFormat());
+        response.setStyle(notebook.getStyle());
+        response.setColor(notebook.getColor());
+        response.setContent(null);
         response.setPageNumber(notebook.getPageNumber());
         response.setLastUpdated(notebook.getLastUpdated());
         return response;

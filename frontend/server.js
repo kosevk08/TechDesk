@@ -7,6 +7,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use((req, res, next) => {
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'self' http://localhost:8080 https://techdesk-backend.onrender.com ws://localhost:3000 wss://techdesk-frontend.onrender.com https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com");
+    next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
@@ -22,57 +30,20 @@ app.get('/demo', (req, res) => res.sendFile(path.join(__dirname, 'views', 'demo.
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    socket.on('draw-stroke', (data) => {
-        socket.broadcast.emit('draw-stroke', data);
-    });
+    socket.on('draw-stroke', (data) => { socket.broadcast.emit('draw-stroke', data); });
+    socket.on('clear-canvas', (data) => { socket.broadcast.emit('clear-canvas', data); });
+    socket.on('page-change', (data) => { socket.broadcast.emit('page-change', data); });
+    socket.on('private-message', (data) => { socket.broadcast.emit('private-message', data); });
+    socket.on('group-message', (data) => { socket.broadcast.emit('group-message', data); });
+    socket.on('class-message', (data) => { socket.broadcast.emit('class-message', data); });
+    socket.on('announcement', (data) => { socket.broadcast.emit('announcement', data); });
+    socket.on('attendance-updated', (data) => { socket.broadcast.emit('attendance-updated', data); });
+    socket.on('test-assigned', (data) => { socket.broadcast.emit('test-assigned', data); });
+    socket.on('test-submitted', (data) => { socket.broadcast.emit('test-submitted', data); });
+    socket.on('test-graded', (data) => { socket.broadcast.emit('test-graded', data); });
+    socket.on('grade-updated', (data) => { socket.broadcast.emit('grade-updated', data); });
 
-    socket.on('clear-canvas', (data) => {
-        socket.broadcast.emit('clear-canvas', data);
-    });
-
-    socket.on('page-change', (data) => {
-        socket.broadcast.emit('page-change', data);
-    });
-
-    socket.on('private-message', (data) => {
-        socket.broadcast.emit('private-message', data);
-    });
-
-    socket.on('group-message', (data) => {
-        socket.broadcast.emit('group-message', data);
-    });
-
-    socket.on('class-message', (data) => {
-        socket.broadcast.emit('class-message', data);
-    });
-
-    socket.on('announcement', (data) => {
-        socket.broadcast.emit('announcement', data);
-    });
-
-    socket.on('attendance-updated', (data) => {
-        socket.broadcast.emit('attendance-updated', data);
-    });
-
-    socket.on('test-assigned', (data) => {
-        socket.broadcast.emit('test-assigned', data);
-    });
-
-    socket.on('test-submitted', (data) => {
-        socket.broadcast.emit('test-submitted', data);
-    });
-
-    socket.on('test-graded', (data) => {
-        socket.broadcast.emit('test-graded', data);
-    });
-
-    socket.on('grade-updated', (data) => {
-        socket.broadcast.emit('grade-updated', data);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-    });
+    socket.on('disconnect', () => { console.log('User disconnected:', socket.id); });
 });
 
 server.listen(3000, () => {

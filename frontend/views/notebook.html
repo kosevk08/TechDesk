@@ -14,16 +14,17 @@
         .navbar {
             background: #1a1a2e;
             color: white;
-            padding: 10px 20px;
+            padding: 6px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 50px;
+            height: 44px;
+            flex-shrink: 0;
         }
 
-        .navbar h1 { font-size: 1.2rem; }
-        .navbar .subject-name { font-size: 1rem; color: #a0aec0; }
-        .navbar a { color: #a0aec0; text-decoration: none; font-size: 0.9rem; }
+        .navbar h1 { font-size: 1rem; white-space: nowrap; }
+        .navbar .subject-name { font-size: 0.75rem; color: #a0aec0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+        .navbar a { color: #a0aec0; text-decoration: none; font-size: 0.75rem; white-space: nowrap; }
         .navbar a:hover { color: white; }
 
         .split-container {
@@ -35,7 +36,7 @@
         .textbook-panel {
             width: 50%;
             background: #f8f9fa;
-            border-right: 3px solid #1a1a2e;
+            border-right: 2px solid #1a1a2e;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -44,23 +45,25 @@
         .panel-header {
             background: #1a1a2e;
             color: white;
-            padding: 8px 15px;
-            font-size: 0.9rem;
+            padding: 5px 10px;
+            font-size: 0.75rem;
             font-weight: bold;
+            flex-shrink: 0;
         }
 
         .textbook-content {
             flex: 1;
-            padding: 20px;
+            padding: 10px;
             overflow-y: auto;
-            font-size: 0.95rem;
-            line-height: 1.7;
+            font-size: 0.75rem;
+            line-height: 1.5;
             color: #2d3748;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .textbook-content h2 { margin-bottom: 15px; color: #1a1a2e; }
-        .textbook-content h3 { margin: 15px 0 8px; color: #2d3748; }
-        .textbook-content p { margin-bottom: 12px; }
+        .textbook-content h2 { margin-bottom: 8px; color: #1a1a2e; font-size: 0.9rem; }
+        .textbook-content h3 { margin: 8px 0 5px; color: #2d3748; font-size: 0.8rem; }
+        .textbook-content p { margin-bottom: 8px; }
 
         .notebook-panel {
             width: 50%;
@@ -71,38 +74,43 @@
 
         .notebook-toolbar {
             background: #2d3748;
-            padding: 6px 15px;
+            padding: 4px 8px;
             display: flex;
-            gap: 8px;
+            gap: 5px;
             align-items: center;
-            flex-wrap: wrap;
+            flex-shrink: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .notebook-toolbar button {
             background: #4a5568;
             color: white;
             border: none;
-            padding: 4px 10px;
+            padding: 3px 7px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .notebook-toolbar button:hover { background: #718096; }
         .notebook-toolbar button.active { background: #3182ce; }
 
         .color-btn {
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
             border-radius: 50% !important;
-            border: 3px solid transparent !important;
+            border: 2px solid transparent !important;
             padding: 0 !important;
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .color-btn.active {
-            border: 3px solid white !important;
-            outline: 2px solid #a0aec0;
+            border: 2px solid white !important;
+            outline: 1px solid #a0aec0;
         }
 
         .color-blue { background: #1a56db !important; }
@@ -119,14 +127,14 @@
             background-image:
                 linear-gradient(#b0c4de 1px, transparent 1px),
                 linear-gradient(90deg, #b0c4de 1px, transparent 1px);
-            background-size: 25px 25px;
+            background-size: 20px 20px;
         }
 
         .lined {
             background-color: white;
             background-image: linear-gradient(#b0c4de 1px, transparent 1px);
-            background-size: 100% 28px;
-            background-position: 0 27px;
+            background-size: 100% 24px;
+            background-position: 0 23px;
         }
 
         canvas {
@@ -139,38 +147,55 @@
             background: #38a169 !important;
             color: white;
             border: none;
-            padding: 4px 12px !important;
+            padding: 3px 8px !important;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             margin-left: auto;
+            flex-shrink: 0;
         }
 
         .save-btn:hover { background: #2f855a !important; }
 
         .saved-msg {
             color: #68d391;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             display: none;
+            flex-shrink: 0;
+        }
+
+        .demo-badge {
+            background: #e9a100;
+            color: white;
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            border-radius: 8px;
+            font-weight: 700;
+        }
+
+        #sizeSlider {
+            width: 50px;
+            flex-shrink: 0;
         }
 
         .page-controls {
             background: #1a1a2e;
-            padding: 6px 15px;
+            padding: 5px 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
+            flex-shrink: 0;
         }
 
         .page-controls button {
             background: #4a5568;
             color: white;
             border: none;
-            padding: 4px 12px;
+            padding: 3px 10px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
 
         .page-controls button:hover { background: #718096; }
@@ -178,14 +203,9 @@
 
         .page-indicator {
             color: white;
-            font-size: 0.85rem;
-            min-width: 80px;
+            font-size: 0.75rem;
+            min-width: 60px;
             text-align: center;
-        }
-
-        @media (max-width: 768px) {
-            .textbook-panel { display: none; }
-            .notebook-panel { width: 100%; }
         }
     </style>
 </head>
@@ -193,7 +213,10 @@
     <nav class="navbar">
         <h1>TechDesk</h1>
         <span class="subject-name" id="subjectName">Subject</span>
-        <a href="/student">← Back</a>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span id="demoBadge" class="demo-badge" style="display:none;">🧪 DEMO</span>
+            <a href="/student">← Back</a>
+        </div>
     </nav>
 
     <div class="split-container">
@@ -210,7 +233,7 @@
             <div class="notebook-toolbar">
                 <button class="active" id="penBtn" onclick="setTool('pen')">✏️ Pen</button>
                 <button onclick="setTool('eraser')">⬜ Eraser</button>
-                <button onclick="clearCanvas()">🗑️ Clear</button>
+                <button onclick="clearCanvas()">🗑️</button>
                 <button class="color-btn color-blue active" id="btnBlue" onclick="setColor('#1a56db', 'btnBlue')" title="Blue"></button>
                 <button class="color-btn color-black" id="btnBlack" onclick="setColor('#111111', 'btnBlack')" title="Black"></button>
                 <input type="range" id="sizeSlider" min="1" max="20" value="3" title="Size">
@@ -221,9 +244,9 @@
                 <canvas id="notebookCanvas"></canvas>
             </div>
             <div class="page-controls">
-                <button id="prevBtn" onclick="changePage(-1)" disabled>◀ Prev</button>
+                <button id="prevBtn" onclick="changePage(-1)" disabled>◀</button>
                 <span class="page-indicator" id="pageIndicator">Page 1 / 20</span>
-                <button id="nextBtn" onclick="changePage(1)">Next ▶</button>
+                <button id="nextBtn" onclick="changePage(1)">▶</button>
             </div>
         </div>
     </div>
@@ -233,13 +256,14 @@
     <script>
         const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
         const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-        const socket = io();
+        const socket = io('https://techdesk-frontend.onrender.com');
         const user = JSON.parse(localStorage.getItem('user'));
-        const token = localStorage.getItem('token');
         const demoData = window.DemoData;
-        const isDemo = Boolean(user && user.demo);
-        const authHeaders = (extra = {}) => token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+        const DEMO_EGNS = ['9000000001', '9000000002', '9000000003'];
+        const isDemo = Boolean(user && user.demo) || DEMO_EGNS.includes(user && user.egn);
         if (!user) window.location.href = '/';
+
+        if (isDemo) document.getElementById('demoBadge').style.display = 'inline';
 
         const subjectId = localStorage.getItem('currentSubject');
         const canvas = document.getElementById('notebookCanvas');
@@ -341,9 +365,7 @@
                 if (isDemo && demoData) {
                     subject = demoData.subjects.find(s => String(s.id) === String(subjectId)) || demoData.subjects[0];
                 } else {
-                    const res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`, {
-                        headers: authHeaders()
-                    });
+                    const res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
                     subject = await res.json();
                 }
                 currentSubjectName = subject.name;
@@ -372,25 +394,10 @@
         async function loadPage(subjectName, page) {
             try {
                 if (isDemo) {
-                    const key = `demo-notebook-${user.displayName || 'Student'}-${subjectName}-page-${page}`;
-                    const stored = localStorage.getItem(key);
-                    if (stored) {
-                        const img = new Image();
-                        img.onload = () => ctx.drawImage(img, 0, 0);
-                        img.src = stored;
-                    } else {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = '#1b1b1b';
-                        ctx.font = '18px sans-serif';
-                        ctx.fillText('Demo notebook page', 20, 40);
-                        ctx.font = '14px sans-serif';
-                        ctx.fillText('Draw here to add your own notes.', 20, 70);
-                    }
+                    demoLoad(subjectName, page);
                     return;
                 }
-                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/me/${encodeURIComponent(subjectName)}/${page}`, {
-                    headers: authHeaders()
-                });
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`);
                 if (res.ok) {
                     const notebook = await res.json();
                     if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
@@ -410,7 +417,7 @@
                 color: tool === 'eraser' ? null : currentColor,
                 size: document.getElementById('sizeSlider').value,
                 tool,
-                studentName: user.displayName || 'Student',
+                studentEgn: user.egn,
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
@@ -470,7 +477,6 @@
         canvas.addEventListener('touchend', () => drawing = false);
         canvas.addEventListener('touchcancel', () => drawing = false);
 
-
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             socket.emit('clear-canvas', {
@@ -490,26 +496,26 @@
         }
 
         async function saveNotebook(silent = false) {
+            if (isDemo) {
+                demoSave(silent);
+                return;
+            }
             const imageData = canvas.toDataURL();
             try {
-                if (isDemo) {
-                    const key = `demo-notebook-${user.displayName || 'Student'}-${currentSubjectName}-page-${currentPage}`;
-                    localStorage.setItem(key, imageData);
-                } else {
-                    await fetch(`${BACKEND_BASE_URL}/api/notebook/save/me`, {
-                        method: 'POST',
-                        headers: authHeaders({ 'Content-Type': 'application/json' }),
-                        body: JSON.stringify({
-                            subject: currentSubjectName,
-                            schoolYear: '2025-2026',
-                            format: 'A4',
-                            style: 'lined',
-                            color: currentColor,
-                            content: imageData,
-                            pageNumber: currentPage
-                        })
-                    });
-                }
+                await fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentEgn: user.egn,
+                        subject: currentSubjectName,
+                        schoolYear: '2025-2026',
+                        format: 'A4',
+                        style: 'lined',
+                        color: currentColor,
+                        content: imageData,
+                        pageNumber: currentPage
+                    })
+                });
                 if (!silent) {
                     const msg = document.getElementById('savedMsg');
                     msg.style.display = 'inline';

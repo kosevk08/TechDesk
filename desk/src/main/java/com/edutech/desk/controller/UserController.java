@@ -17,6 +17,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/user")
@@ -27,19 +30,15 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtService jwtService;
-
-    @Autowired
     private NameLookupService nameLookupService;
 
     @Autowired
     private StudentRepository studentRepository;
 
-    @Autowired
-    private CurrentUserService currentUserService;
+    private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
+    private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
+    private static final int MAX_ATTEMPTS = 5;
+    private static final long BLOCK_DURATION = 5 * 60 * 1000L;
 
     @GetMapping("/health")
     public ResponseEntity<String> health() {
@@ -47,21 +46,44 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody User loginUser) {
-        try {
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginUser.getEmail(), loginUser.getPassword())
-            );
-        } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<User> login(@RequestBody User loginUser,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String forwarded,
+            jakarta.servlet.http.HttpServletRequest request) {
+
+        String ip = forwarded != null ? forwarded.split(",")[0].trim() : request.getRemoteAddr();
+
+        if (blockedIps.containsKey(ip)) {
+            long blockedAt = blockedIps.get(ip);
+            if (System.currentTimeMillis() - blockedAt < BLOCK_DURATION) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+            } else {
+                blockedIps.remove(ip);
+                failedAttempts.remove(ip);
+            }
         }
 
-        User user = userService.login(loginUser.getEmail(), loginUser.getPassword());
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        String email = loginUser.getEmail();
+        String password = loginUser.getPassword();
+
+        if (email == null || password == null ||
+            email.contains("<") || email.contains(">") ||
+            email.contains("'") || email.contains("--") ||
+            email.length() > 100 || password.length() > 100) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        String token = jwtService.generateToken(user.getEmail(), user.getRole().name(), user.isDemo());
-        return ResponseEntity.ok(new AuthResponse(token, toPublicUser(user)));
+
+        User user = userService.login(email, password);
+        if (user != null) {
+            failedAttempts.remove(ip);
+            return ResponseEntity.ok(user);
+        }
+
+        failedAttempts.computeIfAbsent(ip, k -> new AtomicInteger(0)).incrementAndGet();
+        if (failedAttempts.get(ip).get() >= MAX_ATTEMPTS) {
+            blockedIps.put(ip, System.currentTimeMillis());
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @PostMapping("/register")
@@ -80,38 +102,21 @@ public class UserController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<UserPublicResponse>> getAllUsers() {
-        List<UserPublicResponse> users = userService.getAllUsers().stream()
-            .map(this::toPublicUser)
-            .toList();
-        return ResponseEntity.ok(users);
-    }
-
-    @GetMapping("/people")
-    public ResponseEntity<List<PeopleResponse>> getPeople() {
-        User current = currentUserService.getUser();
-        String currentEgn = current != null ? current.getEgn() : null;
-        List<PeopleResponse> people = userService.getAllUsers().stream()
-            .filter(u -> currentEgn == null || !u.getEgn().equals(currentEgn))
-            .map(u -> {
-                PeopleResponse p = new PeopleResponse();
-                p.setDisplayName(nameLookupService.userDisplayName(u.getEgn()));
-                p.setRole(u.getRole().name());
-                return p;
-            })
-            .toList();
-        return ResponseEntity.ok(people);
-    }
-
-    @GetMapping("/me")
-    public ResponseEntity<UserPublicResponse> getCurrentUser() {
-        User user = currentUserService.getUser();
-        if (user == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(toPublicUser(user));
+    public ResponseEntity<List<User>> getAllUsers(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        if (!"techdesk-secret-2026".equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/setup")
-    public ResponseEntity<String> setupUsers() {
+    public ResponseEntity<String> setupUsers(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        if (!"techdesk-secret-2026".equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
         String[][] users = {
             {"1000000001", "v.kolev-student@edu-school.bg", "password123", "STUDENT", "false"},
             {"1000000002", "k.kosev-student@edu-school.bg", "password123", "STUDENT", "false"},
