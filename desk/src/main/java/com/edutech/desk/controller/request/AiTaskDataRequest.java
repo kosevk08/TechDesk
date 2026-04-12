@@ -11,6 +11,9 @@ public class AiTaskDataRequest {
     private String taskId;
     private String subject;
     private String concept;
+    private String className;
+    private String notebookSubject;
+    private Integer notebookPage;
     @NotNull
     @Min(0)
     private Long timeSpent;
@@ -35,6 +38,15 @@ public class AiTaskDataRequest {
 
     public String getConcept() { return concept; }
     public void setConcept(String concept) { this.concept = concept; }
+
+    public String getClassName() { return className; }
+    public void setClassName(String className) { this.className = className; }
+
+    public String getNotebookSubject() { return notebookSubject; }
+    public void setNotebookSubject(String notebookSubject) { this.notebookSubject = notebookSubject; }
+
+    public Integer getNotebookPage() { return notebookPage; }
+    public void setNotebookPage(Integer notebookPage) { this.notebookPage = notebookPage; }
 
     public Long getTimeSpent() { return timeSpent; }
     public void setTimeSpent(Long timeSpent) { this.timeSpent = timeSpent; }

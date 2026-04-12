@@ -41,7 +41,15 @@ CREATE TABLE IF NOT EXISTS students (
 CREATE TABLE IF NOT EXISTS teachers (
     egn VARCHAR(20) PRIMARY KEY,
     first_name VARCHAR(50),
-    last_name VARCHAR(50)
+    last_name VARCHAR(50),
+    email VARCHAR(100)
+);
+
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS email VARCHAR(100);
+
+CREATE TABLE IF NOT EXISTS teacher_subjects (
+    teacher_egn VARCHAR(20) NOT NULL,
+    subject VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS parents (
@@ -104,6 +112,9 @@ CREATE TABLE IF NOT EXISTS ai_task_data (
     task_id VARCHAR(100) NOT NULL,
     subject_name VARCHAR(255) NULL,
     concept_name VARCHAR(255) NULL,
+    class_name VARCHAR(50) NULL,
+    notebook_subject VARCHAR(255) NULL,
+    notebook_page INT NULL,
     time_spent_seconds BIGINT NOT NULL,
     attempts INT NOT NULL,
     correct BOOLEAN NOT NULL,
@@ -145,8 +156,14 @@ CREATE TABLE IF NOT EXISTS test_submissions (
     graded_at TIMESTAMP
 );
 
-ALTER TABLE teachers MODIFY COLUMN email VARCHAR(100) NULL DEFAULT NULL;
-ALTER TABLE students MODIFY COLUMN grade VARCHAR(20) NULL DEFAULT NULL;
-ALTER TABLE students MODIFY COLUMN email VARCHAR(100) NULL DEFAULT NULL;
-ALTER TABLE parents MODIFY COLUMN first_name VARCHAR(50) NULL DEFAULT NULL;
-ALTER TABLE parents MODIFY COLUMN last_name VARCHAR(50) NULL DEFAULT NULL;
+CREATE TABLE IF NOT EXISTS feedback (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    message TEXT NOT NULL,
+    page VARCHAR(255),
+    severity VARCHAR(20),
+    contact VARCHAR(120),
+    user_egn VARCHAR(20),
+    user_display_name VARCHAR(120),
+    role VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

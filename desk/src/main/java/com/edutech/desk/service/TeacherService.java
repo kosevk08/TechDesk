@@ -10,4 +10,6 @@ public interface TeacherService {
     void markAttendance(String studentEgn, boolean present);
     Teacher getTeacherByEgn(String egn);
     List<Teacher> getAllTeachers();
+    List<String> getTeacherSubjects(String egn);
+    Teacher updateTeacherSubjects(String egn, List<String> subjects);
 }

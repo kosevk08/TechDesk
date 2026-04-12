@@ -6,6 +6,7 @@
     <title>TechDesk - Teacher</title>
     <script src="/socket.io/socket.io.js"></script>
     <link rel="stylesheet" href="/css/teacher.css">
+    <link rel="stylesheet" href="/css/shared.css">
 </head>
 <body>
     <nav class="navbar">
@@ -186,6 +187,15 @@
                 <h3 id="notebookTitle">Notebook</h3>
                 <span class="live-badge" id="liveBadge" style="display:none;">🔴 Live</span>
             </div>
+            <div class="notebook-tools">
+                <button class="tool-btn active" id="teacherPenBtn" onclick="setTeacherTool('pen')">✏️ Pen</button>
+                <button class="tool-btn" id="teacherEraserBtn" onclick="setTeacherTool('eraser')">⬜ Eraser</button>
+                <button class="tool-btn" id="teacherClearBtn" onclick="clearTeacherCanvas()">🗑️ Clear</button>
+                <button class="color-swatch active" id="teacherRed" onclick="setTeacherColor('#e53e3e', 'teacherRed')" title="Red"></button>
+                <button class="color-swatch" id="teacherBlue" onclick="setTeacherColor('#1a56db', 'teacherBlue')" title="Blue"></button>
+                <button class="color-swatch" id="teacherBlack" onclick="setTeacherColor('#111111', 'teacherBlack')" title="Black"></button>
+                <input type="range" id="teacherSize" min="1" max="12" value="3" title="Brush size">
+            </div>
             <div class="notebook-canvas-wrapper" id="notebookCanvasWrapper">
                 <img id="notebookImage" src="" style="position:absolute; top:0; left:0; width:100%; height:100%;" />
                 <canvas id="teacherCanvas" style="position:absolute; top:0; left:0;"></canvas>
@@ -195,5 +205,6 @@
 
     <script src="/js/demo-data.js"></script>
     <script src="/js/teacher.js"></script>
+    <script src="/js/feedback.js"></script>
 </body>
 </html>

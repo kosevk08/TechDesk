@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#f8fafc" />
+  <rect x="60" y="60" width="680" height="880" rx="24" fill="#ffffff" stroke="#1f2937" stroke-width="2" />
+  <text x="100" y="140" font-family="Trebuchet MS, sans-serif" font-size="40" fill="#0d1b3e">English</text>
+  <text x="100" y="190" font-family="Trebuchet MS, sans-serif" font-size="20" fill="#4b5563">Narrative Structure</text>
+  <text x="100" y="260" font-family="Trebuchet MS, sans-serif" font-size="18" fill="#111827">Focus: Theme, character arc, and setting.</text>
+  <rect x="100" y="320" width="600" height="2" fill="#cbd5f5" />
+  <text x="100" y="370" font-family="Trebuchet MS, sans-serif" font-size="16" fill="#4b5563">Activity: Summarize chapter 3 in 150 words.</text>
+</svg>

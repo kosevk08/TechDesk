@@ -24,6 +24,15 @@ public class AiTaskData {
     @Column(name = "concept_name")
     private String concept;
 
+    @Column(name = "class_name")
+    private String className;
+
+    @Column(name = "notebook_subject")
+    private String notebookSubject;
+
+    @Column(name = "notebook_page")
+    private Integer notebookPage;
+
     @Column(name = "time_spent_seconds", nullable = false)
     private Long timeSpent;
 
@@ -61,6 +70,15 @@ public class AiTaskData {
 
     public String getConcept() { return concept; }
     public void setConcept(String concept) { this.concept = concept; }
+
+    public String getClassName() { return className; }
+    public void setClassName(String className) { this.className = className; }
+
+    public String getNotebookSubject() { return notebookSubject; }
+    public void setNotebookSubject(String notebookSubject) { this.notebookSubject = notebookSubject; }
+
+    public Integer getNotebookPage() { return notebookPage; }
+    public void setNotebookPage(Integer notebookPage) { this.notebookPage = notebookPage; }
 
     public Long getTimeSpent() { return timeSpent; }
     public void setTimeSpent(Long timeSpent) { this.timeSpent = timeSpent; }

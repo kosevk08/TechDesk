@@ -6,6 +6,7 @@ import com.edutech.desk.repository.NotebookRepository;
 import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.NotebookService;
+import com.edutech.desk.service.TeacherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,9 @@ public class NotebookController {
 
     @Autowired
     private CurrentUserService currentUserService;
+
+    @Autowired
+    private TeacherService teacherService;
 
     @GetMapping("/all")
     public ResponseEntity<List<NotebookResponse>> getAllNotebooks() {
@@ -73,6 +77,18 @@ public class NotebookController {
         var user = currentUserService.getUser();
         if (user == null || user.getStudentEgn() == null) return ResponseEntity.ok(List.of());
         List<NotebookResponse> responses = notebookService.getNotebooksByStudentEgn(user.getStudentEgn())
+            .stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/teacher")
+    public ResponseEntity<List<NotebookResponse>> getTeacherNotebooks() {
+        String egn = currentUserService.getEgn();
+        if (egn == null) return ResponseEntity.ok(List.of());
+        List<String> subjects = teacherService.getTeacherSubjects(egn);
+        List<NotebookResponse> responses = notebookService.getNotebooksBySubjects(subjects)
             .stream()
             .map(this::toResponse)
             .collect(Collectors.toList());

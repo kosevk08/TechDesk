@@ -25,6 +25,14 @@ public class NotebookServiceImpl implements NotebookService {
     }
 
     @Override
+    public List<Notebook> getNotebooksBySubjects(List<String> subjects) {
+        if (subjects == null || subjects.isEmpty()) {
+            return List.of();
+        }
+        return notebookRepository.findBySubjectIn(subjects);
+    }
+
+    @Override
     public Notebook createNotebook(Notebook notebook) {
         return notebookRepository.save(notebook);
     }

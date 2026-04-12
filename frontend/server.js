@@ -25,6 +25,7 @@ app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'admi
 app.get('/notebook', (req, res) => res.sendFile(path.join(__dirname, 'views', 'notebook.html')));
 app.get('/attendance', (req, res) => res.sendFile(path.join(__dirname, 'views', 'attendance.html')));
 app.get('/messages', (req, res) => res.sendFile(path.join(__dirname, 'views', 'messages.html')));
+app.get('/demo', (req, res) => res.sendFile(path.join(__dirname, 'views', 'demo.html')));
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);

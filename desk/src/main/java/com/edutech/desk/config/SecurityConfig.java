@@ -39,7 +39,24 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/user/login", "/api/user/register", "/api/user/health", "/api/demo/**").permitAll()
+                .requestMatchers("/api/feedback/all").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/feedback").authenticated()
+                .requestMatchers("/api/user/all").hasRole("ADMIN")
+                .requestMatchers("/api/teacher/all", "/api/teacher/subjects").hasRole("ADMIN")
+                .requestMatchers("/api/tests/teacher/**", "/api/tests/classes", "/api/tests/submissions/**", "/api/tests/submission/*/grade").hasRole("TEACHER")
+                .requestMatchers("/api/attendance/mark", "/api/attendance/date/**").hasRole("TEACHER")
+                .requestMatchers("/api/grades").hasRole("TEACHER")
+                .requestMatchers("/api/notebook/teacher").hasRole("TEACHER")
+                .requestMatchers("/api/grades/**", "/api/attendance/student/**", "/api/notifications/**").authenticated()
+                .requestMatchers("/api/tests/student/**", "/api/tests/*/submit").hasRole("STUDENT")
+                .requestMatchers("/api/tests/results/**", "/api/message/**", "/api/notebook/**", "/api/subject/**", "/api/student/**", "/api/parent/**", "/api/ai/**").authenticated()
+                .anyRequest().authenticated())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(demoAccessFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }
