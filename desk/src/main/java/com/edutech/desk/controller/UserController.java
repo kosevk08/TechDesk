@@ -140,9 +140,11 @@ public class UserController {
             {"2000000013", "i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false"},
             {"2000000014", "e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false"},
             {"3000000001", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false"},
+            {"4000000001", "admin@edu-school.bg", "password123", "ADMIN", "false"},
             {"9000000001", "r.paskalev-student@edu-school.bg", "pass@2026", "STUDENT", "true"},
             {"9000000002", "e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true"},
-            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true"}
+            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true"},
+            {"9000000004", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true"}
         };
 
         for (String[] u : users) {

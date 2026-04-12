@@ -1,7 +1,9 @@
 package com.edutech.desk.controller;
 
 import com.edutech.desk.controller.response.NotebookResponse;
+import com.edutech.desk.controller.request.TeacherSubjectsRequest;
 import com.edutech.desk.entities.Notebook;
+import com.edutech.desk.entities.Teacher;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.TeacherService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,21 @@ public class TeacherController {
             return ResponseEntity.ok(toResponse(notebook));
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<Teacher>> getAllTeachers() {
+        return ResponseEntity.ok(teacherService.getAllTeachers());
+    }
+
+    @PostMapping("/subjects")
+    public ResponseEntity<Teacher> updateSubjects(@RequestBody TeacherSubjectsRequest request) {
+        if (request == null || request.getTeacherEgn() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Teacher updated = teacherService.updateTeacherSubjects(request.getTeacherEgn(), request.getSubjects());
+        if (updated == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
     @PostMapping("/attendance/{egn}")

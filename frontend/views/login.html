@@ -49,8 +49,28 @@
                 <button type="submit" class="login-btn">Login</button>
                 <p id="errorMsg" class="error-msg"></p>
             </form>
+            <div class="demo-launch">
+                <button type="button" class="demo-btn" id="openDemo">Try A Demo</button>
+                <p class="demo-hint">Explore with sample data and live notebooks.</p>
+                <a class="demo-link" href="/demo">Open Competition Demo Wall</a>
+            </div>
         </div>
     </div>
+    <div class="demo-modal" id="demoModal" aria-hidden="true">
+        <div class="demo-card">
+            <div class="demo-card-header">
+                <div>
+                    <span class="demo-kicker">Demo Mode</span>
+                    <h3>Choose A Profile</h3>
+                </div>
+                <button type="button" class="demo-close" id="closeDemo">×</button>
+            </div>
+            <p class="demo-subtitle">Pick a role to preview how TechDesk works with real-time notebooks.</p>
+            <div class="demo-profiles" id="demoProfiles"></div>
+            <button type="button" class="demo-secondary" id="demoCancel">Cancel</button>
+        </div>
+    </div>
+    <script src="/js/demo-data.js"></script>
     <script src="/js/login.js"></script>
 </body>
 </html>

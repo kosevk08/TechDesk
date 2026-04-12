@@ -40,9 +40,11 @@ MERGE INTO users (egn, email, password, role, demo, student_egn) KEY(egn) VALUES
 ('2000000013', 'i.karaslavova-spanish@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'TEACHER', FALSE, NULL),
 ('2000000014', 'e.nikolova-anthro@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'TEACHER', FALSE, NULL),
 ('3000000001', 'l.navarro-parent@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'PARENT', FALSE, '1000000002'),
+('4000000001', 'admin@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'ADMIN', FALSE, NULL),
 ('9000000001', 'r.paskalev-student@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'STUDENT', TRUE, NULL),
 ('9000000002', 'e.vasileva-teacher@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'TEACHER', TRUE, NULL),
-('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'PARENT', TRUE, '9000000001');
+('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'PARENT', TRUE, '9000000001'),
+('9000000004', 's.markova-admin@edu-school.bg', '$2y$10$JrrkR8J67vRLI4Sl7nMsFufdGpfvRZWI1Nx4w851qPJ13cHphZpY2', 'ADMIN', TRUE, NULL);
 
 MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(egn) VALUES
 ('1000000001', 'Victor', 'Kolev', 'v.kolev-student@edu-school.bg', '10', '10A'),
@@ -58,21 +60,35 @@ MERGE INTO students (egn, first_name, last_name, email, grade, class_name) KEY(e
 ('1000000011', 'Natalie', 'Fischer', 'n.fischer-student@edu-school.bg', '11', '11B'),
 ('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B');
 
-MERGE INTO teachers (egn, first_name, last_name) KEY(egn) VALUES
-('2000000001', 'Helena', 'Schmidt'),
-('2000000002', 'Andrei', 'Popescu'),
-('2000000003', 'Maya', 'Ivanova'),
-('2000000004', 'Petar', 'Georgiev'),
-('2000000005', 'Lora', 'Stoyanova'),
-('2000000006', 'Dimitar', 'Petrov'),
-('2000000007', 'Simeon', 'Martin'),
-('2000000008', 'Tanya', 'Vasileva'),
-('2000000009', 'Georgi', 'Stefanov'),
-('2000000010', 'Rada', 'Dimitrova'),
-('2000000011', 'Nina', 'Koleva'),
-('2000000012', 'Violeta', 'Georgieva'),
-('2000000013', 'Ivana', 'Karaslavova'),
-('2000000014', 'Elena', 'Nikolova');
+MERGE INTO teachers (egn, first_name, last_name, email) KEY(egn) VALUES
+('2000000001', 'Helena', 'Schmidt', 'h.schmidt-teacher@edu-school.bg'),
+('2000000002', 'Andrei', 'Popescu', 'a.popescu-teacher@edu-school.bg'),
+('2000000003', 'Maya', 'Ivanova', 'm.ivanova-maths@edu-school.bg'),
+('2000000004', 'Petar', 'Georgiev', 'p.georgiev-physics@edu-school.bg'),
+('2000000005', 'Lora', 'Stoyanova', 'l.stoyanova-chem@edu-school.bg'),
+('2000000006', 'Dimitar', 'Petrov', 'd.petrov-biology@edu-school.bg'),
+('2000000007', 'Simeon', 'Martin', 's.martin-english@edu-school.bg'),
+('2000000008', 'Tanya', 'Vasileva', 't.vasileva-bulgarian@edu-school.bg'),
+('2000000009', 'Georgi', 'Stefanov', 'g.stefanov-geography@edu-school.bg'),
+('2000000010', 'Rada', 'Dimitrova', 'r.dimitrova-philosophy@edu-school.bg'),
+('2000000011', 'Nina', 'Koleva', 'n.koleva-englishlit@edu-school.bg'),
+('2000000012', 'Violeta', 'Georgieva', 'v.georgieva-german@edu-school.bg'),
+('2000000013', 'Ivana', 'Karaslavova', 'i.karaslavova-spanish@edu-school.bg'),
+('2000000014', 'Elena', 'Nikolova', 'e.nikolova-anthro@edu-school.bg');
+
+MERGE INTO teacher_subjects (teacher_egn, subject) KEY(teacher_egn, subject) VALUES
+('2000000003', 'Maths'),
+('2000000004', 'Physics'),
+('2000000005', 'Chemistry'),
+('2000000006', 'Biology'),
+('2000000007', 'English'),
+('2000000008', 'Bulgarian Language and Literature'),
+('2000000009', 'Geography'),
+('2000000010', 'Philosophy'),
+('2000000011', 'English Literature'),
+('2000000012', 'German (A1)'),
+('2000000013', 'Spanish (A1)'),
+('2000000014', 'Social Anthropology');
 
 MERGE INTO lessons (subject_id, teacher_egn, date, content) KEY(subject_id, teacher_egn)
 SELECT s.id, '2000000003', DATE '2026-04-01', 'Lead teacher' FROM subjects s WHERE s.name = 'Maths';

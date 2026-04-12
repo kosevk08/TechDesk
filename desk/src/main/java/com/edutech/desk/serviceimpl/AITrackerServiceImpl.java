@@ -45,6 +45,9 @@ public class AITrackerServiceImpl implements AITrackerService {
             record.setTaskId(request.getTaskId());
             record.setSubject(request.getSubject());
             record.setConcept(request.getConcept());
+            record.setClassName(request.getClassName());
+            record.setNotebookSubject(request.getNotebookSubject());
+            record.setNotebookPage(request.getNotebookPage());
             record.setTimeSpent(request.getTimeSpent());
             record.setAttempts(request.getAttempts());
             record.setCorrect(request.getCorrect());

@@ -7,6 +7,7 @@ import com.edutech.desk.repository.TeacherRepository;
 import com.edutech.desk.service.TeacherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -41,5 +42,22 @@ public class TeacherServiceImpl implements TeacherService {
     @Override
     public List<Teacher> getAllTeachers() {
         return teacherRepository.findAll();
+    }
+
+    @Override
+    public List<String> getTeacherSubjects(String egn) {
+        Teacher teacher = teacherRepository.findById(egn).orElse(null);
+        if (teacher == null || teacher.getSubjects() == null) {
+            return Collections.emptyList();
+        }
+        return teacher.getSubjects();
+    }
+
+    @Override
+    public Teacher updateTeacherSubjects(String egn, List<String> subjects) {
+        Teacher teacher = teacherRepository.findById(egn).orElse(null);
+        if (teacher == null) return null;
+        teacher.setSubjects(subjects);
+        return teacherRepository.save(teacher);
     }
 }

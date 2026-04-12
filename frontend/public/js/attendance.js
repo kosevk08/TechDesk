@@ -39,6 +39,7 @@ if (role === 'TEACHER') {
 }
 
 const attendanceMap = {};
+let autosaveTimer = null;
 
 async function loadStudentsForDate() {
     const date = document.getElementById('attendanceDate').value;
@@ -106,6 +107,12 @@ function setStatus(studentName, status, btn) {
     const row = btn.closest('.status-btns');
     row.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    scheduleAttendanceAutosave();
+}
+
+function scheduleAttendanceAutosave() {
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => saveAll(), 800);
 }
 
 async function saveAll() {

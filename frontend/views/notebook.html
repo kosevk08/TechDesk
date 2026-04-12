@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TechDesk - Notebook</title>
     <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/css/shared.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -228,6 +229,7 @@
     </div>
 
     <script src="/js/demo-data.js"></script>
+    <script src="/js/feedback.js"></script>
     <script>
         const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
         const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
@@ -273,19 +275,64 @@
             document.getElementById('nextBtn').disabled = currentPage === MAX_PAGES;
         }
 
+        function subjectMatch(a, b) {
+            return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
+        }
+
         async function changePage(direction) {
             await saveNotebook(true);
             currentPage += direction;
             updatePageControls();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             await loadPage(currentSubjectName, currentPage);
-            if (!isDemo) {
-                socket.emit('page-change', {
-                    studentName: user.displayName || 'Student',
-                    subject: currentSubjectName,
-                    page: currentPage
-                });
+            localStorage.setItem('currentNotebookPage', String(currentPage));
+            socket.emit('page-change', {
+                studentName: user.displayName || 'Student',
+                subject: currentSubjectName,
+                page: currentPage,
+                authorRole: user.role || 'STUDENT'
+            });
+        }
+
+        function renderTextbookFallback(subjectName) {
+            const demoBook = demoData?.textbooks?.[subjectName];
+            if (demoBook) {
+                const sections = demoBook.sections.map(section => `
+                    <h3>${section.heading}</h3>
+                    <p>${section.body}</p>
+                `).join('');
+                document.getElementById('textbookContent').innerHTML = `
+                    <h2>${demoBook.title}</h2>
+                    ${sections}
+                `;
+                return;
             }
+            document.getElementById('textbookContent').innerHTML =
+                `<h2>${subjectName}</h2><p>Sample textbook content will appear here.</p>`;
+        }
+
+        function loadTextbookVisual(subjectName) {
+            const pdfName = subjectName.toLowerCase().replace(/ /g, '-');
+            const svgUrl = `/textbooks/${pdfName}.svg`;
+            const pngUrl = `/textbooks/${pdfName}.png`;
+            fetch(svgUrl, { method: 'HEAD' })
+                .then(res => {
+                    if (res.ok) {
+                        document.getElementById('textbookContent').innerHTML =
+                            `<img src="${svgUrl}" style="width:100%; height:auto;" alt="${subjectName} textbook" />`;
+                        return;
+                    }
+                    return fetch(pngUrl, { method: 'HEAD' })
+                        .then(pngRes => {
+                            if (pngRes.ok) {
+                                document.getElementById('textbookContent').innerHTML =
+                                    `<img src="${pngUrl}" style="width:100%; height:auto;" alt="${subjectName} textbook" />`;
+                            } else {
+                                renderTextbookFallback(subjectName);
+                            }
+                        });
+                })
+                .catch(() => renderTextbookFallback(subjectName));
         }
 
         async function loadSubject() {
@@ -302,26 +349,20 @@
                 currentSubjectName = subject.name;
                 document.getElementById('subjectName').textContent = subject.name;
                 document.title = `TechDesk - ${subject.name}`;
+                localStorage.setItem('currentNotebookSubject', subject.name);
+                if (user?.className) {
+                    localStorage.setItem('currentClassName', user.className);
+                }
 
                 const area = document.getElementById('notebookArea');
                 const isMaths = subject.name.toLowerCase() === 'maths';
                 area.className = 'notebook-area ' + (isMaths ? 'squared' : 'lined');
 
-                const pdfName = subject.name.toLowerCase().replace(/ /g, '-');
-                const pdfUrl = `/textbooks/${pdfName}.png`;
-                fetch(pdfUrl, { method: 'HEAD' })
-                    .then(res => {
-                        if (res.ok) {
-                            document.getElementById('textbookContent').innerHTML =
-                                `<img src="${pdfUrl}" style="width:100%; height:auto;" />`;
-                        } else {
-                            document.getElementById('textbookContent').innerHTML =
-                                `<h2>${subject.name}</h2><p>Textbook content will be added here.</p>`;
-                        }
-                    });
+                loadTextbookVisual(subject.name);
 
                 resizeCanvas();
                 updatePageControls();
+                localStorage.setItem('currentNotebookPage', String(currentPage));
                 await loadPage(subject.name, currentPage);
             } catch (err) {
                 console.error('Could not load subject:', err);
@@ -371,7 +412,8 @@
                 tool,
                 studentName: user.displayName || 'Student',
                 subject: currentSubjectName,
-                page: currentPage
+                page: currentPage,
+                authorRole: user.role || 'STUDENT'
             };
 
             if (tool === 'eraser') {
@@ -387,9 +429,7 @@
                 ctx.stroke();
             }
 
-            if (!isDemo) {
-                socket.emit('draw-stroke', strokeData);
-            }
+            socket.emit('draw-stroke', strokeData);
             scheduleAutoSave();
         }
 
@@ -433,9 +473,12 @@
 
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!isDemo) {
-                socket.emit('clear-canvas', { studentName: user.displayName || 'Student', subject: currentSubjectName, page: currentPage });
-            }
+            socket.emit('clear-canvas', {
+                studentName: user.displayName || 'Student',
+                subject: currentSubjectName,
+                page: currentPage,
+                authorRole: user.role || 'STUDENT'
+            });
             scheduleAutoSave();
         }
 
@@ -479,6 +522,43 @@
 
         window.addEventListener('resize', resizeCanvas);
         loadSubject();
+
+        socket.on('draw-stroke', (data) => {
+            if (!data) return;
+            if (data.studentName !== (user.displayName || 'Student')) return;
+            if (!subjectMatch(data.subject, currentSubjectName)) return;
+            if (parseInt(data.page) !== parseInt(currentPage)) return;
+            if (data.tool === 'eraser') {
+                ctx.clearRect(data.x1 - 10, data.y1 - 10, 20, 20);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(data.x0, data.y0);
+                ctx.lineTo(data.x1, data.y1);
+                ctx.strokeStyle = data.color || '#111111';
+                ctx.lineWidth = data.size || 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+            }
+        });
+
+        socket.on('clear-canvas', (data) => {
+            if (!data) return;
+            if (data.studentName !== (user.displayName || 'Student')) return;
+            if (!subjectMatch(data.subject, currentSubjectName)) return;
+            if (parseInt(data.page) !== parseInt(currentPage)) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        socket.on('page-change', (data) => {
+            if (!data) return;
+            if (data.studentName !== (user.displayName || 'Student')) return;
+            if (!subjectMatch(data.subject, currentSubjectName)) return;
+            currentPage = parseInt(data.page);
+            updatePageControls();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            loadPage(currentSubjectName, currentPage);
+        });
     </script>
 </body>
 </html>

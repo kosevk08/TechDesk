@@ -238,6 +238,9 @@ function trackTaskCompletion(taskData) {
         studentId: user.displayName || 'Student',
         completed: true,
         skipped: false,
+        className: user.className || localStorage.getItem('currentClassName') || null,
+        notebookSubject: localStorage.getItem('currentNotebookSubject') || null,
+        notebookPage: localStorage.getItem('currentNotebookPage') || null,
         ...taskData
     };
 

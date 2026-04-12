@@ -21,6 +21,8 @@ public class Teacher {
     private String email;
 
     @ElementCollection
+    @CollectionTable(name = "teacher_subjects", joinColumns = @JoinColumn(name = "teacher_egn"))
+    @Column(name = "subject")
     private List<String> subjects;
 
     public Teacher() {}

@@ -6,6 +6,10 @@ const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let studentNames = [];
+let gradeAutosaveTimer = null;
+let lastGradeHash = null;
+let testAutosaveTimer = null;
+let lastTestHash = null;
 
 function authHeaders(extra = {}) {
     return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
@@ -126,6 +130,63 @@ const teacherCanvas = document.getElementById('teacherCanvas');
 const tCtx = teacherCanvas.getContext('2d');
 const aiStatusText = document.getElementById('aiStatusText');
 const aiStatusBanner = document.getElementById('aiStatusBanner');
+let teacherTool = 'pen';
+let teacherColor = '#e53e3e';
+let teacherDrawing = false;
+let teacherLastX = 0;
+let teacherLastY = 0;
+
+function setTeacherTool(tool) {
+    teacherTool = tool;
+    document.getElementById('teacherPenBtn')?.classList.toggle('active', tool === 'pen');
+    document.getElementById('teacherEraserBtn')?.classList.toggle('active', tool === 'eraser');
+}
+
+function setTeacherColor(color, btnId) {
+    teacherColor = color;
+    document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
+    const button = document.getElementById(btnId);
+    if (button) button.classList.add('active');
+}
+
+function clearTeacherCanvas() {
+    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+    if (currentViewStudent && currentViewSubject) {
+        socket.emit('clear-canvas', {
+            studentName: currentViewStudent,
+            subject: currentViewSubject,
+            page: currentViewPage,
+            authorRole: 'TEACHER'
+        });
+    }
+}
+
+function drawTeacher(x0, y0, x1, y1) {
+    if (!currentViewStudent || !currentViewSubject) return;
+    const size = document.getElementById('teacherSize')?.value || 3;
+    if (teacherTool === 'eraser') {
+        tCtx.clearRect(x1 - 10, y1 - 10, 20, 20);
+    } else {
+        tCtx.beginPath();
+        tCtx.moveTo(x0, y0);
+        tCtx.lineTo(x1, y1);
+        tCtx.strokeStyle = teacherColor;
+        tCtx.lineWidth = size;
+        tCtx.lineCap = 'round';
+        tCtx.lineJoin = 'round';
+        tCtx.stroke();
+    }
+    socket.emit('draw-stroke', {
+        x0, y0, x1, y1,
+        color: teacherTool === 'eraser' ? null : teacherColor,
+        size,
+        tool: teacherTool,
+        studentName: currentViewStudent,
+        subject: currentViewSubject,
+        page: currentViewPage,
+        authorRole: 'TEACHER'
+    });
+}
 
 function showSection(sectionId) {
     ['aiInsightsSection', 'notebooksSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
@@ -140,44 +201,42 @@ function subjectMatch(a, b) {
     return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
-if (!isDemo) {
-    socket.on('draw-stroke', (data) => {
-        if (data.studentName === currentViewStudent &&
-            subjectMatch(data.subject, currentViewSubject) &&
-            parseInt(data.page) === parseInt(currentViewPage)) {
-            document.getElementById('liveBadge').style.display = 'inline';
-            if (data.tool === 'eraser') {
-                tCtx.clearRect(data.x1 - 10, data.y1 - 10, 20, 20);
-            } else {
-                tCtx.beginPath();
-                tCtx.moveTo(data.x0, data.y0);
-                tCtx.lineTo(data.x1, data.y1);
-                tCtx.strokeStyle = data.color;
-                tCtx.lineWidth = data.size;
-                tCtx.lineCap = 'round';
-                tCtx.stroke();
-            }
+socket.on('draw-stroke', (data) => {
+    if (data.studentName === currentViewStudent &&
+        subjectMatch(data.subject, currentViewSubject) &&
+        parseInt(data.page) === parseInt(currentViewPage)) {
+        document.getElementById('liveBadge').style.display = 'inline';
+        if (data.tool === 'eraser') {
+            tCtx.clearRect(data.x1 - 10, data.y1 - 10, 20, 20);
+        } else {
+            tCtx.beginPath();
+            tCtx.moveTo(data.x0, data.y0);
+            tCtx.lineTo(data.x1, data.y1);
+            tCtx.strokeStyle = data.color;
+            tCtx.lineWidth = data.size;
+            tCtx.lineCap = 'round';
+            tCtx.stroke();
         }
-    });
+    }
+});
 
-    socket.on('clear-canvas', (data) => {
-        if (data.studentName === currentViewStudent &&
-            subjectMatch(data.subject, currentViewSubject) &&
-            parseInt(data.page) === parseInt(currentViewPage)) {
-            tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-        }
-    });
+socket.on('clear-canvas', (data) => {
+    if (data.studentName === currentViewStudent &&
+        subjectMatch(data.subject, currentViewSubject) &&
+        parseInt(data.page) === parseInt(currentViewPage)) {
+        tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+    }
+});
 
-    socket.on('page-change', (data) => {
-        if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
-            currentViewPage = data.page;
-            document.getElementById('notebookTitle').textContent =
-                `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
-            tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-            loadTeacherPage();
-        }
-    });
-}
+socket.on('page-change', (data) => {
+    if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
+        currentViewPage = data.page;
+        document.getElementById('notebookTitle').textContent =
+            `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
+        tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+        loadTeacherPage();
+    }
+});
 
 async function loadNotifications() {
     const container = document.getElementById('teacherNotifications');
@@ -266,7 +325,7 @@ async function addGrade() {
 
     if (!studentName || !subject || Number.isNaN(value)) {
         setGradeStatus('Student, subject, and grade are required.');
-        return;
+        return false;
     }
 
     try {
@@ -288,7 +347,7 @@ async function addGrade() {
             document.getElementById('gradeComment').value = '';
             loadGradeHistory();
             loadNotifications();
-            return;
+            return true;
         }
         const res = await fetch(`${BACKEND_BASE_URL}/api/grades`, {
             method: 'POST',
@@ -308,10 +367,27 @@ async function addGrade() {
         loadGradeHistory();
         loadNotifications();
         socket.emit('grade-updated', { studentName });
+        return true;
     } catch (error) {
         console.error('Could not save grade:', error);
         setGradeStatus('Failed to save grade.');
+        return false;
     }
+}
+
+function scheduleGradeAutosave() {
+    if (gradeAutosaveTimer) clearTimeout(gradeAutosaveTimer);
+    gradeAutosaveTimer = setTimeout(async () => {
+        const studentName = document.getElementById('gradeStudent').value;
+        const subject = document.getElementById('gradeSubject').value.trim();
+        const value = document.getElementById('gradeValue').value.trim();
+        if (!studentName || !subject || !value) return;
+        const hash = `${studentName}|${subject}|${value}|${document.getElementById('gradeComment').value.trim()}`;
+        if (hash === lastGradeHash) return;
+        setGradeStatus('Autosaving...');
+        const success = await addGrade();
+        if (success) lastGradeHash = hash;
+    }, 900);
 }
 
 async function loadGradeHistory() {
@@ -369,6 +445,35 @@ document.addEventListener('change', (e) => {
     }
 });
 
+document.addEventListener('input', (e) => {
+    if (!e.target) return;
+    const autosaveIds = new Set(['gradeStudent', 'gradeSubject', 'gradeValue', 'gradeComment']);
+    if (autosaveIds.has(e.target.id)) {
+        scheduleGradeAutosave();
+    }
+});
+
+document.addEventListener('input', (e) => {
+    if (!e.target) return;
+    const autosaveIds = new Set([
+        'testTitle',
+        'testSubject',
+        'testDescription',
+        'testQuestions',
+        'testPoints',
+        'testDueDate'
+    ]);
+    if (autosaveIds.has(e.target.id)) {
+        scheduleTestAutosave();
+    }
+});
+
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'testClass') {
+        scheduleTestAutosave();
+    }
+});
+
 if (!isDemo) {
     socket.on('grade-updated', () => {
         if (document.getElementById('gradesSection')?.style.display === 'block') {
@@ -379,6 +484,7 @@ if (!isDemo) {
 }
 
 loadNotifications();
+attachTeacherCanvasEvents();
 
 async function loadTeacherPage() {
     try {
@@ -458,7 +564,7 @@ async function loadNotebooks() {
             });
             return;
         }
-        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/all?t=${Date.now()}`, {
+        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/teacher?t=${Date.now()}`, {
             headers: authHeaders()
         });
         const notebooks = await response.json();
@@ -542,6 +648,48 @@ function backToList() {
     document.getElementById('liveBadge').style.display = 'none';
     document.getElementById('notebookViewer').style.display = 'none';
     document.getElementById('notebooksSection').style.display = 'block';
+}
+
+function attachTeacherCanvasEvents() {
+    if (!teacherCanvas) return;
+    teacherCanvas.addEventListener('mousedown', (event) => {
+        if (!currentViewStudent) return;
+        teacherDrawing = true;
+        [teacherLastX, teacherLastY] = [event.offsetX, event.offsetY];
+    });
+
+    teacherCanvas.addEventListener('mousemove', (event) => {
+        if (!teacherDrawing) return;
+        drawTeacher(teacherLastX, teacherLastY, event.offsetX, event.offsetY);
+        [teacherLastX, teacherLastY] = [event.offsetX, event.offsetY];
+    });
+
+    teacherCanvas.addEventListener('mouseup', () => { teacherDrawing = false; });
+    teacherCanvas.addEventListener('mouseout', () => { teacherDrawing = false; });
+
+    teacherCanvas.addEventListener('touchstart', (event) => {
+        if (!currentViewStudent) return;
+        event.preventDefault();
+        const touch = event.touches[0];
+        const rect = teacherCanvas.getBoundingClientRect();
+        teacherDrawing = true;
+        teacherLastX = touch.clientX - rect.left;
+        teacherLastY = touch.clientY - rect.top;
+    }, { passive: false });
+
+    teacherCanvas.addEventListener('touchmove', (event) => {
+        if (!teacherDrawing) return;
+        event.preventDefault();
+        const touch = event.touches[0];
+        const rect = teacherCanvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        drawTeacher(teacherLastX, teacherLastY, x, y);
+        [teacherLastX, teacherLastY] = [x, y];
+    }, { passive: false });
+
+    teacherCanvas.addEventListener('touchend', () => { teacherDrawing = false; });
+    teacherCanvas.addEventListener('touchcancel', () => { teacherDrawing = false; });
 }
 
 function formatPercent(value) {
@@ -786,7 +934,7 @@ async function createTest() {
 
     if (!title || !className) {
         setTestStatus('Title and class are required.');
-        return;
+        return false;
     }
 
     const questions = questionsInput
@@ -821,7 +969,7 @@ async function createTest() {
             document.getElementById('testQuestions').value = '';
             document.getElementById('testPoints').value = '';
             loadTests();
-            return;
+            return true;
         }
         const res = await fetch(`${BACKEND_BASE_URL}/api/tests`, {
             method: 'POST',
@@ -857,10 +1005,31 @@ async function createTest() {
         document.getElementById('testQuestions').value = '';
         document.getElementById('testPoints').value = '';
         loadTests();
+        return true;
     } catch (error) {
         console.error('Could not create test:', error);
         setTestStatus('Failed to create test.');
+        return false;
     }
+}
+
+function scheduleTestAutosave() {
+    if (testAutosaveTimer) clearTimeout(testAutosaveTimer);
+    testAutosaveTimer = setTimeout(async () => {
+        const title = document.getElementById('testTitle').value.trim();
+        const className = document.getElementById('testClass').value;
+        if (!title || !className) return;
+        const subject = document.getElementById('testSubject').value.trim();
+        const description = document.getElementById('testDescription').value.trim();
+        const questionsInput = document.getElementById('testQuestions').value.trim();
+        const totalPoints = document.getElementById('testPoints').value.trim();
+        const dueDate = document.getElementById('testDueDate').value;
+        const hash = `${title}|${className}|${subject}|${description}|${questionsInput}|${totalPoints}|${dueDate}`;
+        if (hash === lastTestHash) return;
+        setTestStatus('Autosaving...');
+        const success = await createTest();
+        if (success) lastTestHash = hash;
+    }, 1200);
 }
 
 function renderTests(tests) {

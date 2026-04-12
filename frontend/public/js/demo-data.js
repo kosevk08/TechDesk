@@ -14,6 +14,15 @@ window.DemoData = {
         email: 'p.stoyanov-parent@edu-school.bg',
         studentName: 'Radoslav Paskalev'
     },
+    teachers: [
+        { egn: '2000000003', firstName: 'Maya', lastName: 'Ivanova', email: 'm.ivanova-maths@edu-school.bg', subjects: ['Maths'] },
+        { egn: '2000000004', firstName: 'Petar', lastName: 'Georgiev', email: 'p.georgiev-physics@edu-school.bg', subjects: ['Physics'] },
+        { egn: '2000000007', firstName: 'Simeon', lastName: 'Martin', email: 's.martin-english@edu-school.bg', subjects: ['English'] }
+    ],
+    admin: {
+        name: 'Sofia Markova',
+        email: 's.markova-admin@edu-school.bg'
+    },
     subjects: [
         { id: 1, name: 'Maths' },
         { id: 2, name: 'English' },
@@ -166,5 +175,53 @@ window.DemoData = {
         announcements: [
             { senderName: 'Ms Vasileva', content: 'School trip permission slips due Monday.', sentAt: '2026-04-01T12:30:00' }
         ]
+    },
+    feedback: [
+        {
+            id: 1,
+            severity: 'Medium',
+            page: 'Teacher • AI Insights',
+            message: 'The AI dashboard loads slowly during peak hours.',
+            createdAt: '2026-04-04T09:12:00',
+            sender: 'Elena Vasileva'
+        },
+        {
+            id: 2,
+            severity: 'High',
+            page: 'Student • Notebook',
+            message: 'Live notebook sync stopped after switching tabs.',
+            createdAt: '2026-04-05T14:05:00',
+            sender: 'Radoslav Paskalev'
+        }
+    ],
+    users: [
+        { displayName: 'Radoslav Paskalev', role: 'STUDENT', email: 'r.paskalev-student@edu-school.bg' },
+        { displayName: 'Elena Vasileva', role: 'TEACHER', email: 'e.vasileva-teacher@edu-school.bg' },
+        { displayName: 'Plamen Stoyanov', role: 'PARENT', email: 'p.stoyanov-parent@edu-school.bg' },
+        { displayName: 'Sofia Markova', role: 'ADMIN', email: 's.markova-admin@edu-school.bg' }
+    ],
+    textbooks: {
+        Maths: {
+            title: 'Maths: Quadratic Foundations',
+            sections: [
+                { heading: 'Warm Up', body: 'Review factoring and square roots with short practice sets.' },
+                { heading: 'Quadratic Formula', body: 'Use x = [-b ± √(b²-4ac)] / 2a to solve any quadratic equation.' },
+                { heading: 'Graph Insight', body: 'Identify vertex and axis of symmetry to sketch parabolas quickly.' }
+            ]
+        },
+        English: {
+            title: 'English: Narrative Structure',
+            sections: [
+                { heading: 'Theme', body: 'Identify the driving message or lesson in each text.' },
+                { heading: 'Character Arc', body: 'Track how the main character changes from beginning to end.' }
+            ]
+        },
+        Physics: {
+            title: 'Physics: Motion Lab',
+            sections: [
+                { heading: 'Key Formula', body: 'v = d / t. Compare average and instantaneous speed.' },
+                { heading: 'Lab Note', body: 'Use consistent units and label your axes.' }
+            ]
+        }
     }
 };

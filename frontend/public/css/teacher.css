@@ -284,6 +284,46 @@ body {
     margin-bottom: 20px;
 }
 
+.notebook-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.tool-btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: #ffffff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.tool-btn.active {
+    background: #0d1b3e;
+    color: #ffffff;
+}
+
+.color-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    background: #111111;
+}
+
+.color-swatch.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.2);
+}
+
+.color-swatch#teacherRed { background: #e53e3e; }
+.color-swatch#teacherBlue { background: #1a56db; }
+.color-swatch#teacherBlack { background: #111111; }
+
 .notebook-canvas-wrapper {
     position: relative;
     width: 100%;
