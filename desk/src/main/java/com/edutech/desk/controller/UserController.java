@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin(origins = {"http://localhost:3000", "https://techdesk-frontend.onrender.com"})
 public class UserController {
 
     @Autowired

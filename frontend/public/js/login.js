@@ -5,7 +5,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const originalBtnText = loginBtn.textContent;
     
     const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+    const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const errorMsg = document.getElementById('errorMsg');
@@ -46,7 +46,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         loginBtn.textContent = originalBtnText;
         errorMsg.innerHTML = `
             <div class="connection-error">
-                <p>Connection lost. Please ensure the TechThrone server is running.</p>
+                <p>Unable to connect to the TechThrone server. Please check your internet connection or verify the server status in the Render Dashboard.</p>
                 <button type="button" class="action-btn secondary-btn" onclick="location.reload()">Retry Connection</button>
                 <p style="margin-top:10px; font-size:0.8em;">Or <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Explore in Demo Mode</a></p>
             </div>
