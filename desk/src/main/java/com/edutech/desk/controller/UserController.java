@@ -94,7 +94,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody User user) {
-        if (user == null || !isSanitized(user.getEmail()) || !isSanitized(user.getEgn())) {
+        if (user == null || !isSanitized(user.getEmail())) {
             return ResponseEntity.badRequest().build();
         }
         // New users are not approved by default
@@ -107,9 +107,9 @@ public class UserController {
         return ResponseEntity.ok(result);
     }
 
-    @PutMapping("/approve/{egn}")
+    @PutMapping("/approve/{id}")
     public ResponseEntity<Void> approveUser(
-            @PathVariable String egn,
+            @PathVariable Long id,
             @RequestHeader(value = "X-Admin-Key", required = false) String key) {
         String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
         if (adminSecret == null) adminSecret = "techdesk-secret-2026";
@@ -118,7 +118,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        User user = userService.getUserByEgn(egn);
+        User user = userService.getUserById(id);
         if (user != null) {
             // In a real app, you'd set user.setApproved(true) 
             // For now, we'll use the registration to trigger the 'active' state
@@ -129,18 +129,18 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/get/{egn}")
-    public ResponseEntity<UserPublicResponse> getUserByEgn(@PathVariable String egn) {
-        User user = userService.getUserByEgn(egn);
+    @GetMapping("/get/{id}")
+    public ResponseEntity<UserPublicResponse> getUserById(@PathVariable Long id) {
+        User user = userService.getUserById(id);
         if (user != null) {
             return ResponseEntity.ok(toPublicUser(user));
         }
         return ResponseEntity.notFound().build();
     }
 
-    @PutMapping("/role/{egn}")
+    @PutMapping("/role/{id}")
     public ResponseEntity<Void> updateUserRole(
-            @PathVariable String egn,
+            @PathVariable Long id,
             @RequestBody Map<String, String> body,
             @RequestHeader(value = "X-Admin-Key", required = false) String key) {
         String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
@@ -153,7 +153,7 @@ public class UserController {
         if (newRole == null || !isSanitized(newRole)) {
             return ResponseEntity.badRequest().build();
         }
-        User userToUpdate = userService.getUserByEgn(egn);
+        User userToUpdate = userService.getUserById(id);
         if (userToUpdate != null) {
             userToUpdate.setRole(Role.valueOf(newRole));
             userService.register(userToUpdate);
@@ -184,49 +184,47 @@ public class UserController {
         }
 
         String[][] users = {
-            {"1000000001", "v.kolev-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000002", "k.kosev-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000003", "i.ivanov-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000004", "j.doe-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000005", "d.kovacs-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000006", "s.martinez-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000007", "m.bennett-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000008", "e.petrova-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000009", "l.oconnor-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000010", "v.ivanov-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000011", "n.fischer-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"1000000012", "c.mendes-student@edu-school.bg", "password123", "STUDENT", "false"},
-            {"2000000001", "h.schmidt-teacher@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000002", "a.popescu-teacher@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000003", "m.ivanova-maths@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000004", "p.georgiev-physics@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000005", "l.stoyanova-chem@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000006", "d.petrov-biology@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000007", "s.martin-english@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000008", "t.vasileva-bulgarian@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000009", "g.stefanov-geography@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000010", "r.dimitrova-philosophy@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000011", "n.koleva-englishlit@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000012", "v.georgieva-german@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000013", "i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false"},
-            {"2000000014", "e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false"},
-            {"3000000001", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false", "1000000001"},
-            {"4000000002", "victor-admin@techdesk.edu", "admin2026", "ADMIN", "false"},
-            {"4000000001", "admin@edu-school.bg", "password123", "ADMIN", "false"},
-            {"9000000001", "r.paskalev-student@edu-school.bg", "pass@2026", "STUDENT", "true"},
-            {"9000000002", "e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true"},
-            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true", "9000000001"},
-            {"9000000004", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true"}
+            {"v.kolev-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"k.kosev-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"i.ivanov-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"j.doe-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"d.kovacs-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"s.martinez-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"m.bennett-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"e.petrova-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"l.oconnor-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"v.ivanov-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"n.fischer-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"c.mendes-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"h.schmidt-teacher@edu-school.bg", "password123", "TEACHER", "false"},
+            {"a.popescu-teacher@edu-school.bg", "password123", "TEACHER", "false"},
+            {"m.ivanova-maths@edu-school.bg", "password123", "TEACHER", "false"},
+            {"p.georgiev-physics@edu-school.bg", "password123", "TEACHER", "false"},
+            {"l.stoyanova-chem@edu-school.bg", "password123", "TEACHER", "false"},
+            {"d.petrov-biology@edu-school.bg", "password123", "TEACHER", "false"},
+            {"s.martin-english@edu-school.bg", "password123", "TEACHER", "false"},
+            {"t.vasileva-bulgarian@edu-school.bg", "password123", "TEACHER", "false"},
+            {"g.stefanov-geography@edu-school.bg", "password123", "TEACHER", "false"},
+            {"r.dimitrova-philosophy@edu-school.bg", "password123", "TEACHER", "false"},
+            {"n.koleva-englishlit@edu-school.bg", "password123", "TEACHER", "false"},
+            {"v.georgieva-german@edu-school.bg", "password123", "TEACHER", "false"},
+            {"i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false"},
+            {"e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false"},
+            {"l.navarro-parent@edu-school.bg", "password123", "PARENT", "false"},
+            {"victor-admin@techdesk.edu", "admin2026", "ADMIN", "false"},
+            {"admin@edu-school.bg", "password123", "ADMIN", "false"},
+            {"r.paskalev-student@edu-school.bg", "pass@2026", "STUDENT", "true"},
+            {"e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true"},
+            {"p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true"},
+            {"s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true"}
         };
 
         for (String[] u : users) {
             User user = new User();
-            user.setEgn(u[0]);
-            user.setEmail(u[1]);
-            user.setPassword(passwordEncoder.encode(u[2]));
-            user.setRole(com.edutech.desk.entities.Role.valueOf(u[3]));
-            user.setDemo(Boolean.parseBoolean(u[4]));
-            if (u.length > 5) user.setStudentEgn(u[5]);
+            user.setEmail(u[0]);
+            user.setPassword(passwordEncoder.encode(u[1]));
+            user.setRole(com.edutech.desk.entities.Role.valueOf(u[2]));
+            user.setDemo(Boolean.parseBoolean(u[3]));
             userService.register(user);
         }
         return ResponseEntity.ok("All demo and standard users created successfully!");
@@ -234,15 +232,17 @@ public class UserController {
 
     private UserPublicResponse toPublicUser(User user) {
         UserPublicResponse response = new UserPublicResponse();
-        response.setDisplayName(nameLookupService.userDisplayName(user.getEgn()));
+        // Using ID or Email for display lookup since EGN is removed
+        response.setDisplayName(nameLookupService.displayNameFromEmail(user.getEmail()));
         response.setRole(user.getRole().name());
         response.setDemo(user.isDemo());
 
         if ("STUDENT".equalsIgnoreCase(user.getRole().name())) {
-            Student student = studentRepository.findById(user.getEgn()).orElse(null);
+            Student student = studentRepository.findById(user.getEmail()).orElse(null);
             response.setClassName(student != null ? student.getClassName() : null);
         } else if ("PARENT".equalsIgnoreCase(user.getRole().name())) {
-            Student child = studentRepository.findById(user.getStudentEgn()).orElse(null);
+            // Using email as identifier for child lookup until childId field is implemented
+            Student child = studentRepository.findById(user.getEmail()).orElse(null);
             if (child != null) {
                 response.setChildName(child.getFirstName() + " " + child.getLastName());
                 response.setChildClassName(child.getClassName());

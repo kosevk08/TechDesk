@@ -30,10 +30,10 @@ async function handleLogin(e) {
             document.querySelector('.login-card').style.transform = 'translateY(-20px)';
             
             setTimeout(() => {
-                if (user.role === 'TEACHER') window.location.href = '/teacher';
-                else if (user.role === 'STUDENT') window.location.href = '/student';
-                else if (user.role === 'PARENT') window.location.href = '/parent';
-                else if (user.role === 'ADMIN') window.location.href = '/admin';
+                if (user.role === 'TEACHER') window.location.href = '/teacher.html';
+                else if (user.role === 'STUDENT') window.location.href = '/student.html';
+                else if (user.role === 'PARENT') window.location.href = '/parent.html';
+                else if (user.role === 'ADMIN') window.location.href = '/admin.html';
             }, 400);
             
         } else {
@@ -60,7 +60,6 @@ async function handleRegister(e) {
     e.preventDefault();
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
-    const egn = document.getElementById('regEgn').value;
     const roleValue = document.getElementById('roleSlider').value;
     
     const roles = ['STUDENT', 'PARENT', 'TEACHER'];
@@ -73,14 +72,14 @@ async function handleRegister(e) {
         const response = await fetch(`${BACKEND_BASE_URL}/api/user/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, egn, role })
+            body: JSON.stringify({ email, password, role })
         });
 
         if (response.ok) {
             alert('Registration submitted! An administrator must approve your account before you can log in.');
             toggleAuthMode();
         } else {
-            alert('Registration failed. EGN or Email might already exist.');
+            alert('Registration failed. This email might already be registered.');
         }
     } catch (error) {
         console.error('Registration error:', error);

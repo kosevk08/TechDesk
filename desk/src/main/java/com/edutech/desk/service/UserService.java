@@ -6,6 +6,6 @@ import java.util.List;
 public interface UserService {
     User login(String email, String password);
     String register(User user);
-    User getUserByEgn(String egn);
+    User getUserById(Long id);
     List<User> getAllUsers();
 }

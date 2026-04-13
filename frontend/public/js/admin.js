@@ -48,7 +48,7 @@ function renderUsers(users) {
     table.innerHTML = `
         <thead>
             <tr>
-                <th>EGN</th>
+                <th>User ID</th>
                 <th>Email</th>
                 <th>Role</th>
                 <th>Demo</th>
@@ -63,8 +63,8 @@ function renderUsers(users) {
     users.forEach(u => {
         const tr = document.createElement('tr');
         
-        const tdEgn = document.createElement('td');
-        tdEgn.textContent = u.egn;
+        const tdId = document.createElement('td');
+        tdId.textContent = u.id;
         
         const tdEmail = document.createElement('td');
         tdEmail.textContent = u.email;
@@ -79,7 +79,7 @@ function renderUsers(users) {
             if (u.role === role) opt.selected = true;
             selectRole.appendChild(opt);
         });
-        selectRole.addEventListener('change', () => updateUserRole(u.egn, selectRole.value));
+        selectRole.addEventListener('change', () => updateUserRole(u.id, selectRole.value));
         tdRole.appendChild(selectRole);
         
         const tdDemo = document.createElement('td');
@@ -94,25 +94,25 @@ function renderUsers(users) {
         btnApprove.className = 'action-btn';
         btnApprove.style.marginRight = '5px';
         btnApprove.textContent = 'Approve';
-        btnApprove.onclick = () => approveUser(u.egn);
+        btnApprove.onclick = () => approveUser(u.id);
 
         tdActions.append(btnApprove, btnDelete);
         
-        tr.append(tdEgn, tdEmail, tdRole, tdDemo, tdActions);
+        tr.append(tdId, tdEmail, tdRole, tdDemo, tdActions);
         tbody.appendChild(tr);
     });
 
     listContainer.appendChild(table);
 }
 
-async function updateUserRole(egn, newRole) {
-    if (!confirm(`Are you sure you want to change user ${egn} to role ${newRole}?`)) {
+async function updateUserRole(id, newRole) {
+    if (!confirm(`Are you sure you want to change user ${id} to role ${newRole}?`)) {
         fetchUsers(); // Reset UI
         return;
     }
 
     try {
-        const response = await fetch(`${BACKEND_BASE_URL}/api/user/role/${egn}`, {
+        const response = await fetch(`${BACKEND_BASE_URL}/api/user/role/${id}`, {
             method: 'PUT',
             headers: { 
                 'X-Admin-Key': adminKey,
@@ -133,9 +133,9 @@ async function updateUserRole(egn, newRole) {
     }
 }
 
-async function approveUser(egn) {
+async function approveUser(id) {
     try {
-        const response = await fetch(`${BACKEND_BASE_URL}/api/user/approve/${egn}`, {
+        const response = await fetch(`${BACKEND_BASE_URL}/api/user/approve/${id}`, {
             method: 'PUT',
             headers: { 'X-Admin-Key': adminKey }
         });
