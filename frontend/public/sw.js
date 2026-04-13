@@ -69,7 +69,7 @@ async function syncStrokesToServer() {
 
   if (strokes.length > 0 && token) {
     try {
-        const backendUrl = 'https://techdesk-backend.onrender.com'; // Should match your production API
+        const backendUrl = self.location.origin.includes('localhost') ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
         const response = await fetch(`${backendUrl}/api/notebook/sync-strokes`, {
         method: 'POST',
         headers: {
