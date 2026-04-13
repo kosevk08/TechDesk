@@ -31,7 +31,7 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   // Handle API requests for notebook data (Network-First)
-  if (event.request.url.includes('/api/notebook/')) {
+  if (event.request.method === 'GET' && event.request.url.includes('/api/notebook/')) {
     event.respondWith(
       caches.open(DATA_CACHE_NAME).then((cache) => {
         return fetch(event.request)
@@ -48,6 +48,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   // Handle static assets (Cache-First)
+  if (event.request.method !== 'GET') return; // Do not cache POST/PUT/DELETE
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);
