@@ -110,6 +110,23 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
+    @PutMapping("/role/{egn}")
+    public ResponseEntity<Void> updateUserRole(
+            @PathVariable String egn,
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null || !adminSecret.equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        String newRole = body.get("role");
+        if (newRole == null || !isSanitized(newRole)) {
+            return ResponseEntity.badRequest().build();
+        }
+        userService.updateRole(egn, newRole);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<User>> getAllUsers(
             @RequestHeader(value = "X-Admin-Key", required = false) String key) {
@@ -155,11 +172,12 @@ public class UserController {
             {"2000000012", "v.georgieva-german@edu-school.bg", "password123", "TEACHER", "false"},
             {"2000000013", "i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false"},
             {"2000000014", "e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false"},
-            {"3000000001", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false"},
+            {"3000000001", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false", "1000000001"},
+            {"4000000002", "victor-admin@techdesk.edu", "admin2026", "ADMIN", "false"},
             {"4000000001", "admin@edu-school.bg", "password123", "ADMIN", "false"},
             {"9000000001", "r.paskalev-student@edu-school.bg", "pass@2026", "STUDENT", "true"},
             {"9000000002", "e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true"},
-            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true"},
+            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true", "9000000001"},
             {"9000000004", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true"}
         };
 
@@ -170,6 +188,7 @@ public class UserController {
             user.setPassword(passwordEncoder.encode(u[2]));
             user.setRole(com.edutech.desk.entities.Role.valueOf(u[3]));
             user.setDemo(Boolean.parseBoolean(u[4]));
+            if (u.length > 5) user.setStudentEgn(u[5]);
             userService.register(user);
         }
         return ResponseEntity.ok("All demo and standard users created successfully!");

@@ -12,7 +12,15 @@ window.DemoData = {
             voice_to_notes: 'Глас към записки',
             lesson_replay: 'Повторение на урока',
             attention_alert: 'Внимание: Студентът напусна прозореца'
-        }
+            assistant_name: 'Теки'
+        },
+        sr: { dashboard: 'Контролна табла' }, // Serbian
+        el: { dashboard: 'Πίνακας Ελέγχου' }, // Greek
+        tr: { dashboard: 'Panel' },           // Turkish
+        ro: { dashboard: 'Panou de control' }, // Romanian
+        it: { dashboard: 'Cruscotto' },       // Italian
+        es: { dashboard: 'Tablero' },          // Spanish
+        fr: { dashboard: 'Tableau de bord' }   // French
     },
     student: {
         name: 'Radoslav Paskalev',
@@ -220,7 +228,8 @@ window.DemoData = {
         { displayName: 'Radoslav Paskalev', role: 'STUDENT', email: 'r.paskalev-student@edu-school.bg' },
         { displayName: 'Elena Vasileva', role: 'TEACHER', email: 'e.vasileva-teacher@edu-school.bg' },
         { displayName: 'Plamen Stoyanov', role: 'PARENT', email: 'p.stoyanov-parent@edu-school.bg' },
-        { displayName: 'Sofia Markova', role: 'ADMIN', email: 's.markova-admin@edu-school.bg' }
+        { displayName: 'Sofia Markova', role: 'ADMIN', email: 's.markova-admin@edu-school.bg' },
+        { displayName: 'Victor Admin', role: 'ADMIN', email: 'victor-admin@techdesk.edu' }
     ],
     textbooks: {
         Maths: {

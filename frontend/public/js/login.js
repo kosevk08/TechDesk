@@ -1,6 +1,9 @@
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const loginBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnText = loginBtn.textContent;
+    
     const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
     const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
     const email = document.getElementById('email').value;
@@ -8,6 +11,9 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const errorMsg = document.getElementById('errorMsg');
 
     try {
+        loginBtn.disabled = true;
+        loginBtn.textContent = 'Verifying Credentials...';
+        
         const response = await fetch(`${BACKEND_BASE_URL}/api/user/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -17,20 +23,27 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         if (response.ok) {
             const user = await response.json();
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', user.token || 'demo-token');
 
-            if (user.role === 'TEACHER') {
-                window.location.href = '/teacher';
-            } else if (user.role === 'STUDENT') {
-                window.location.href = '/student';
-            } else if (user.role === 'PARENT') {
-                window.location.href = '/parent';
-            } else if (user.role === 'ADMIN') {
-                window.location.href = '/admin';
-            }
+            // Smooth transition to dashboard
+            document.querySelector('.login-card').style.opacity = '0';
+            document.querySelector('.login-card').style.transform = 'translateY(-20px)';
+            
+            setTimeout(() => {
+                if (user.role === 'TEACHER') window.location.href = '/teacher';
+                else if (user.role === 'STUDENT') window.location.href = '/student';
+                else if (user.role === 'PARENT') window.location.href = '/parent';
+                else if (user.role === 'ADMIN') window.location.href = '/admin';
+            }, 400);
+            
         } else {
-            errorMsg.textContent = 'Invalid email or password!';
+            errorMsg.textContent = 'Access Denied: Invalid email or password.';
+            loginBtn.disabled = false;
+            loginBtn.textContent = originalBtnText;
         }
     } catch (error) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = originalBtnText;
         errorMsg.innerHTML = `
             Offline Mode: Cannot reach server.<br>
             <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Use Offline Demo Mode instead?</a>
@@ -150,6 +163,16 @@ function initLoginAnimation() {
     canvas.id = 'login-bg-canvas';
     document.body.prepend(canvas);
 
+    // Create Techie the Assistant
+    const assistant = document.createElement('div');
+    assistant.id = 'assistant-techie';
+    assistant.innerHTML = '🤖';
+    assistant.style.cssText = `
+        position: fixed; bottom: 40px; right: 40px; font-size: 50px;
+        z-index: 100; cursor: pointer; transition: transform 0.3s ease;
+    `;
+    document.body.appendChild(assistant);
+
     const style = document.createElement('style');
     style.textContent = `
         #login-bg-canvas {
@@ -167,6 +190,11 @@ function initLoginAnimation() {
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
+        #assistant-techie {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(10deg); } }
+        .assistant-speech { position: absolute; bottom: 70px; right: 0; background: white; color: black; padding: 10px; border-radius: 10px; font-size: 14px; width: 150px; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
     `;
     document.head.appendChild(style);
 
@@ -174,6 +202,15 @@ function initLoginAnimation() {
     let particles = [];
     const particleCount = 100;
     const mouse = { x: null, y: null, radius: 120 };
+
+    // Assistant Speech Bubble
+    const speech = document.createElement('div');
+    speech.className = 'assistant-speech';
+    speech.textContent = "Ready to learn something new?";
+    assistant.appendChild(speech);
+
+    assistant.addEventListener('mouseenter', () => { speech.style.opacity = '1'; });
+    assistant.addEventListener('mouseleave', () => { speech.style.opacity = '0'; });
 
     window.addEventListener('mousemove', (e) => {
         mouse.x = e.x;
