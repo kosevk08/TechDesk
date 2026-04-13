@@ -31,7 +31,10 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             errorMsg.textContent = 'Invalid email or password!';
         }
     } catch (error) {
-        errorMsg.textContent = 'Could not connect to server. Please try again.';
+        errorMsg.innerHTML = `
+            Offline Mode: Cannot reach server.<br>
+            <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Use Offline Demo Mode instead?</a>
+        `;
     }
 });
 
@@ -138,3 +141,104 @@ if (toggleBtn && passwordInput) {
         toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
     });
 }
+
+/**
+ * Neural Network Background Animation
+ */
+function initLoginAnimation() {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'login-bg-canvas';
+    document.body.prepend(canvas);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #login-bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        .login-card, #loginForm, .demo-modal-content {
+            background: rgba(15, 23, 42, 0.7) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+    `;
+    document.head.appendChild(style);
+
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const particleCount = 100;
+    const mouse = { x: null, y: null, radius: 120 };
+
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = e.x;
+        mouse.y = e.y;
+    });
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        init();
+    });
+
+    class Particle {
+        constructor(x, y, dx, dy, size) {
+            this.x = x; this.y = y; this.dx = dx; this.dy = dy; this.size = size;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
+            ctx.fill();
+        }
+        update() {
+            if (this.x > canvas.width || this.x < 0) this.dx = -this.dx;
+            if (this.y > canvas.height || this.y < 0) this.dy = -this.dy;
+            this.x += this.dx;
+            this.y += this.dy;
+            this.draw();
+        }
+    }
+
+    function init() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        particles = [];
+        for (let i = 0; i < particleCount; i++) {
+            let size = Math.random() * 2 + 1;
+            let x = Math.random() * canvas.width;
+            let y = Math.random() * canvas.height;
+            let dx = (Math.random() - 0.5) * 0.8;
+            let dy = (Math.random() - 0.5) * 0.8;
+            particles.push(new Particle(x, y, dx, dy, size));
+        }
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            for (let j = i; j < particles.length; j++) {
+                const dist = Math.hypot(particles[i].x - particles[j].x, particles[i].y - particles[j].y);
+                if (dist < 150) {
+                    const opacity = 1 - (dist / 150);
+                    ctx.strokeStyle = `rgba(99, 102, 241, ${opacity * 0.2})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+    init();
+    animate();
+}
+initLoginAnimation();

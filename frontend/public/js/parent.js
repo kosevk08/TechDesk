@@ -1,6 +1,6 @@
 const user = JSON.parse(localStorage.getItem('user'));
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
 const socket = io();
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
@@ -240,9 +240,14 @@ function viewNotebook(studentName, subject) {
 async function loadPage() {
     try {
         if (isDemo && demoData) {
-            const img = document.getElementById('notebookImage');
-            img.src = '';
-            img.style.display = 'none';
+            const notebook = demoData.notebooks.find(n => n.subject === currentSubject);
+            if (notebook) {
+                const img = document.getElementById('notebookImage');
+                // Simulate content display for demo purposes
+                img.src = 'https://via.placeholder.com/800x1000.png?text=Demo+Content+Loaded';
+                img.style.display = 'block';
+                console.log('Demo Mode: notebook preview info:', notebook.preview);
+            }
             return;
         }
         const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentStudentEgn)}/${encodeURIComponent(currentSubject)}/${currentPage}?t=${Date.now()}`, {
@@ -376,12 +381,21 @@ async function loadAttendanceSummary() {
 
 function renderTagList(elementId, values, emptyMessage) {
     const container = document.getElementById(elementId);
+    if (!container) return;
+    container.replaceChildren();
     if (!values || !values.length) {
-        container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+        const p = document.createElement('p');
+        p.className = 'empty-state';
+        p.textContent = emptyMessage;
+        container.appendChild(p);
         return;
     }
-
-    container.innerHTML = values.map((value) => `<span class="insight-tag">${value}</span>`).join('');
+    values.forEach((value) => {
+        const span = document.createElement('span');
+        span.className = 'insight-tag';
+        span.textContent = value;
+        container.appendChild(span);
+    });
 }
 
 function renderMetricCards(data) {
@@ -634,15 +648,24 @@ async function loadParentNotifications() {
     try {
         if (isDemo && demoData) {
             const notifications = demoData.notifications;
-            container.innerHTML = notifications.slice(0, 6).map(n => `
-                <div class="insight-card">
-                    <div class="insight-top">
-                        <h5>${n.type}</h5>
-                        <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
-                    </div>
-                    <p class="insight-copy">${n.message}</p>
-                </div>
-            `).join('');
+            container.replaceChildren();
+            notifications.slice(0, 6).forEach(n => {
+                const card = document.createElement('div');
+                card.className = 'insight-card';
+                const top = document.createElement('div');
+                top.className = 'insight-top';
+                const h5 = document.createElement('h5');
+                h5.textContent = n.type;
+                const span = document.createElement('span');
+                span.className = 'metric-label';
+                span.textContent = (n.createdAt || '').replace('T', ' ');
+                top.append(h5, span);
+                const p = document.createElement('p');
+                p.className = 'insight-copy';
+                p.textContent = n.message;
+                card.append(top, p);
+                container.appendChild(card);
+            });
             return;
         }
         const res = await fetch(`${BACKEND_BASE_URL}/api/notifications/me?t=${Date.now()}`, {

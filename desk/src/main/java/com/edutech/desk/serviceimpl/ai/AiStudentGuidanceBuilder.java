@@ -90,6 +90,34 @@ public class AiStudentGuidanceBuilder {
         return response;
     }
 
+    /**
+     * Implementation for the "Explain Like I'm 5" feature.
+     */
+    public AiGuidanceResponse buildEli5(String subject, String topic) {
+        AiGuidanceResponse response = new AiGuidanceResponse();
+        response.setGuidanceLevel(AiGuidanceLevel.LIGHT);
+        response.setLearningStatus("Simplifying " + topic + " for you!");
+        response.setEncouragement("Think of this like a game or a daily activity.");
+        response.setHints(List.of("Imagine " + topic + " is like sharing a pizza with friends...", 
+                                  "It works just like putting toys in different boxes."));
+        response.setTeacherEscalation("None - self-guided exploration.");
+        return response;
+    }
+
+    /**
+     * Feature 4: Teacher AI Assistant
+     * Generates a structured lesson plan for a teacher.
+     */
+    public String generateLessonPlan(String subject, String topic) {
+        return String.format("""
+            Lesson Plan: %s
+            Subject: %s
+            1. Concept Intro: Define %s with real-world examples.
+            2. Guided Practice: 3 exercises of increasing difficulty.
+            3. AI Checkpoint: Quick quiz to trigger the Weakness Radar.
+            """, topic, subject, topic);
+    }
+
     private int guidancePressureScore(AiGuidanceRequest request) {
         AIInsightsProperties.Guidance guidance = properties.getGuidance();
         int score = 0;

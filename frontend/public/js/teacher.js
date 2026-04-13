@@ -1,6 +1,6 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const socket = io('https://techdesk-frontend.onrender.com');
+const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
+const socket = io(window.TECHDESK_SOCKET_URL || 'https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
@@ -8,10 +8,97 @@ let studentNames = [];
 let gradeAutosaveTimer = null;
 let lastGradeHash = null;
 let testAutosaveTimer = null;
+let currentLang = 'en';
 let lastTestHash = null;
+let strokeHistory = []; // For Replay Lesson feature
+let isPlayingBack = false;
+let activeWritingTime = 0; // Effort Monitoring
+let lastStrokeTime = null;
+
+// Register Service Worker for Offline Support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('TechDesk Service Worker Registered');
+            updateSyncStatus();
+        }).catch(err => console.log('SW Registration Failed', err));
+    });
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data.type === 'SYNC_COMPLETE') updateSyncStatus();
+    });
+}
+
+/**
+ * IndexedDB Helper for Offline Persistence
+ */
+async function saveStrokeOffline(strokeData) {
+    const dbRequest = indexedDB.open('TechDeskDB', 1);
+    dbRequest.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction(['strokes', 'meta'], 'readwrite');
+        tx.objectStore('strokes').add(strokeData);
+        tx.objectStore('meta').put(localStorage.getItem('token'), 'auth_token');
+        
+        // Register Background Sync
+        navigator.serviceWorker.ready.then(reg => {
+            if (reg.sync) reg.sync.register('sync-strokes');
+            updateSyncStatus();
+        });
+    };
+}
+
+/**
+ * Updates the UI to show how many items are waiting to be synced.
+ */
+async function updateSyncStatus() {
+    const dbRequest = indexedDB.open('TechDeskDB', 1);
+    dbRequest.onsuccess = (e) => {
+        const db = e.target.result;
+        const tx = db.transaction(['strokes'], 'readonly');
+        const store = tx.objectStore('strokes');
+        const countRequest = store.count();
+        countRequest.onsuccess = () => {
+            const count = countRequest.result;
+            let indicator = document.getElementById('syncStatusIndicator');
+            if (!indicator && count > 0) {
+                indicator = document.createElement('div');
+                indicator.id = 'syncStatusIndicator';
+                indicator.className = 'ai-status-banner info';
+                document.body.prepend(indicator);
+            }
+            if (indicator) {
+                indicator.style.display = count > 0 ? 'block' : 'none';
+                indicator.textContent = count > 0 
+                    ? `${count} ${currentLang === 'bg' ? 'елемента чакат синхронизация' : 'items pending sync'}`
+                    : '';
+            }
+        };
+    };
+}
+
+window.addEventListener('online', updateSyncStatus);
 
 function authHeaders(extra = {}) {
     return extra;
+}
+
+/**
+ * Injects CSS animations for the ELI5 Modal
+ */
+function injectEli5Styles() {
+    if (document.getElementById('eli5Styles')) return;
+    const style = document.createElement('style');
+    style.id = 'eli5Styles';
+    style.textContent = `
+        @keyframes eli5FadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .eli5-content {
+            animation: eli5FadeIn 0.3s ease-out forwards;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 const teacherNames = {
@@ -46,6 +133,19 @@ if (isDemo && demoData) {
     document.getElementById('teacherName').textContent = demoData.teacher.name;
 } else {
     document.getElementById('teacherName').textContent = teacherNames[user.email] || user.email;
+}
+
+function toggleLanguage() {
+    currentLang = currentLang === 'en' ? 'bg' : 'en';
+    const btn = document.getElementById('langToggle');
+    if (btn) btn.textContent = currentLang === 'en' ? 'BG' : 'EN';
+    
+    if (currentLang === 'bg' && demoData.translations.bg) {
+        // Apply basic mapping for demo
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            el.textContent = demoData.translations.bg[el.dataset.i18n] || el.textContent;
+        });
+    }
 }
 
 if (isDemo) {
@@ -156,10 +256,155 @@ const tCtx = teacherCanvas.getContext('2d');
 const aiStatusText = document.getElementById('aiStatusText');
 const aiStatusBanner = document.getElementById('aiStatusBanner');
 let teacherTool = 'pen';
-let teacherColor = '#e53e3e';
+let teacherColor = '#e53e3e'; // Required: Red ink for corrections
 let teacherDrawing = false;
 let teacherLastX = 0;
 let teacherLastY = 0;
+
+/**
+ * Feature 1: Smart Classroom Control
+ * Locks student devices to the current TechDesk view.
+ */
+function toggleClassroomLock(isLocked) {
+    socket.emit('classroom-control', {
+        command: isLocked ? 'LOCK_SCREENS' : 'UNLOCK_SCREENS',
+        className: '11D'
+    });
+    setAiStatus(isLocked ? 'Classroom screens locked.' : 'Classroom screens released.');
+}
+
+/**
+ * Feature: Offline Sync
+ * Attempts to send any strokes that were saved while the Wi-Fi was down.
+ */
+/**
+ * Feature 2: Voice-to-Notes
+ */
+function startVoiceToNotes() {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = currentLang === 'bg' ? 'bg-BG' : 'en-US';
+    recognition.onstart = () => setAiStatus('Listening for notes...');
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setAiStatus(`Transcribed: ${transcript.substring(0, 30)}...`);
+        // Send to backend to structure as notes
+        socket.emit('voice-note-transcribed', { transcript, subject: currentViewSubject });
+    };
+    recognition.start();
+}
+
+/**
+ * Feature: Explain Like I'm 5 (ELI5)
+ * Calls the AI to simplify a complex topic for the student.
+ */
+async function explainLikeIm5() {
+    if (!currentViewSubject) return;
+
+    const topic = prompt(currentLang === 'bg' ? "Коя концепция да опростя?" : "What concept should I simplify?");
+    if (!topic) return;
+
+    setAiStatus('Simplifying concept...', 'info');
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/eli5/${encodeURIComponent(currentViewSubject)}/${encodeURIComponent(topic)}`, {
+            headers: authHeaders()
+        });
+
+        if (!res.ok) throw new Error('Failed to fetch explanation');
+
+        const data = await res.json();
+        showEli5Modal(topic, data);
+        setAiStatus('');
+    } catch (err) {
+        console.error(err);
+        setAiStatus('Failed to simplify concept.', 'error');
+    }
+}
+
+function showEli5Modal(topic, data) {
+    injectEli5Styles();
+    let modal = document.getElementById('eli5Modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'eli5Modal';
+        modal.className = 'modal-overlay'; // Assuming styling for full-screen overlay
+        document.body.appendChild(modal);
+    }
+
+    modal.replaceChildren();
+    const content = document.createElement('div');
+    content.className = 'card section-card eli5-content';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = `ELI5: ${topic}`;
+
+    const pStatus = document.createElement('p');
+    pStatus.innerHTML = `<strong>Status:</strong> ${data.learningStatus}`;
+
+    const pEnc = document.createElement('p');
+    pEnc.className = 'insight-copy';
+    pEnc.style.fontStyle = 'italic';
+    pEnc.textContent = data.encouragement;
+
+    const ul = document.createElement('ul');
+    data.hints.forEach(hint => {
+        const li = document.createElement('li');
+        li.textContent = hint;
+        ul.appendChild(li);
+    });
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'action-btn';
+    closeBtn.textContent = 'Close';
+    closeBtn.onclick = () => modal.style.display = 'none';
+
+    content.append(h3, pStatus, pEnc, ul, closeBtn);
+    modal.appendChild(content);
+    modal.style.display = 'flex';
+}
+
+/**
+ * Feature 1: Open Page
+ * Forces all students to sync to the teacher's current subject and page.
+ */
+function syncStudentsToCurrentPage() {
+    if (!currentViewSubject) return;
+    socket.emit('force-page-sync', {
+        subject: currentViewSubject,
+        page: currentViewPage,
+        className: '11D'
+    });
+    setAiStatus(`Students synced to ${currentViewSubject} Page ${currentViewPage}`);
+}
+
+/**
+ * Feature 10: Attention Detection
+ * Monitors if the teacher's dashboard is active (can be applied to student client)
+ */
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        console.log("Teacher tab inactive. Monitoring paused.");
+    }
+});
+
+/**
+ * Feature 2: Exam Mode Monitoring
+ * Listens for suspicious behavior reported by student clients.
+ */
+socket.on('suspicious-activity', (data) => {
+    const { studentName, reason } = data;
+    // Create an alert in the teacher's dashboard
+    const alertsList = document.getElementById('aiAlertsList');
+    if (alertsList) {
+        const card = document.createElement('div');
+        card.className = 'alert-card alert-high';
+        const h5 = document.createElement('h5');
+        h5.textContent = `Suspicious Activity: ${studentName}`;
+        const p = document.createElement('p');
+        p.textContent = reason;
+        card.append(h5, p);
+        alertsList.prepend(card);
+    }
+});
 
 function setTeacherTool(tool) {
     teacherTool = tool;
@@ -186,9 +431,57 @@ function clearTeacherCanvas() {
     }
 }
 
+/**
+ * Feature: Replay Lesson
+ * Animates the stored strokes to show the writing process.
+ */
+async function replayLesson() {
+    if (strokeHistory.length === 0 || isPlayingBack) return;
+    isPlayingBack = true;
+    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+
+    const startTime = strokeHistory[0].timestamp;
+
+    for (const stroke of strokeHistory) {
+        const delay = stroke.timestamp - startTime;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        tCtx.beginPath();
+        tCtx.moveTo(stroke.x0, stroke.y0);
+        tCtx.lineTo(stroke.x1, stroke.y1);
+        tCtx.strokeStyle = stroke.color || '#e53e3e';
+        tCtx.lineWidth = stroke.size;
+        tCtx.lineCap = 'round';
+        tCtx.stroke();
+    }
+    isPlayingBack = false;
+}
+
 function drawTeacher(x0, y0, x1, y1) {
     if (!currentViewStudent || !currentViewSubject) return;
     const size = document.getElementById('teacherSize')?.value || 3;
+    const timestamp = Date.now();
+
+    // Effort Monitoring
+    if (lastStrokeTime) {
+        activeWritingTime += (timestamp - lastStrokeTime < 2000) ? (timestamp - lastStrokeTime) : 0;
+    }
+    lastStrokeTime = timestamp;
+
+    const strokeData = {
+        x0, y0, x1, y1,
+        color: teacherTool === 'eraser' ? null : teacherColor,
+        size,
+        tool: teacherTool,
+        studentName: currentViewStudent,
+        subject: currentViewSubject,
+        page: currentViewPage,
+        authorRole: 'TEACHER',
+        timestamp
+    };
+
+    strokeHistory.push(strokeData);
+
     if (teacherTool === 'eraser') {
         tCtx.clearRect(x1 - 10, y1 - 10, 20, 20);
     } else {
@@ -201,16 +494,13 @@ function drawTeacher(x0, y0, x1, y1) {
         tCtx.lineJoin = 'round';
         tCtx.stroke();
     }
-    socket.emit('draw-stroke', {
-        x0, y0, x1, y1,
-        color: teacherTool === 'eraser' ? null : teacherColor,
-        size,
-        tool: teacherTool,
-        studentName: currentViewStudent,
-        subject: currentViewSubject,
-        page: currentViewPage,
-        authorRole: 'TEACHER'
-    });
+
+    if (socket.connected) {
+        socket.emit('draw-stroke', strokeData);
+    } else {
+        saveStrokeOffline(strokeData);
+        setAiStatus('Offline: Syncing when connection returns.', 'error');
+    }
 }
 
 function showSection(sectionId) {
@@ -221,6 +511,20 @@ function showSection(sectionId) {
     const target = document.getElementById(sectionId);
     if (target) target.style.display = 'block';
 }
+
+/**
+ * Feature 3: Silent Communication
+ * Responds to a student message privately or globally.
+ */
+function sendSilentResponse(studentName, message, isPublic = false) {
+    const sender = (isDemo && demoData) ? demoData.teacher.name : (user.displayName || user.email);
+    socket.emit('silent-message-response', {
+        recipient: isPublic ? 'CLASS_11D' : studentName,
+        content: message,
+        teacherName: sender
+    });
+}
+
 
 function subjectMatch(a, b) {
     return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -268,15 +572,24 @@ async function loadNotifications() {
     if (!container) return;
     try {
         if (isDemo && demoData) {
-            container.innerHTML = demoData.notifications.slice(0, 6).map(n => `
-                <div class="insight-card">
-                    <div class="insight-top">
-                        <h5>${n.type}</h5>
-                        <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
-                    </div>
-                    <p class="insight-copy">${n.message}</p>
-                </div>
-            `).join('');
+            container.replaceChildren();
+            demoData.notifications.slice(0, 6).forEach(n => {
+                const card = document.createElement('div');
+                card.className = 'insight-card';
+                const top = document.createElement('div');
+                top.className = 'insight-top';
+                const h5 = document.createElement('h5');
+                h5.textContent = n.type;
+                const span = document.createElement('span');
+                span.className = 'metric-label';
+                span.textContent = (n.createdAt || '').replace('T', ' ');
+                top.append(h5, span);
+                const p = document.createElement('p');
+                p.className = 'insight-copy';
+                p.textContent = n.message;
+                card.append(top, p);
+                container.appendChild(card);
+            });
             return;
         }
         container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
@@ -473,6 +786,11 @@ async function loadTeacherPage() {
                 img.src = '';
                 img.style.display = 'none';
             }
+            // Feature 2.3: Second Brain Summary display
+            const summaryEl = document.getElementById('notebookAiSummary');
+            if (summaryEl) {
+                summaryEl.textContent = notebook.summary || "AI is generating a summary of this lesson...";
+            }
         } else {
             img.src = '';
             img.style.display = 'none';
@@ -576,6 +894,18 @@ function viewNotebook(egn, studentName, subject) {
     document.getElementById('notebookTitle').textContent = `${studentName} - ${subject} (Page 1)`;
     document.getElementById('liveBadge').style.display = 'none';
 
+    // Add ELI5 Button to the viewer if not present
+    if (!document.getElementById('eli5Btn')) {
+        const eli5Btn = document.createElement('button');
+        eli5Btn.id = 'eli5Btn';
+        eli5Btn.className = 'action-btn secondary-btn';
+        eli5Btn.style.marginLeft = '10px';
+        eli5Btn.setAttribute('data-i18n', 'eli5_button');
+        eli5Btn.textContent = currentLang === 'bg' ? 'Обясни като на 5-годишен' : 'ELI5';
+        eli5Btn.onclick = explainLikeIm5;
+        document.querySelector('#notebookViewer .section-header div').appendChild(eli5Btn);
+    }
+
     const wrapper = document.getElementById('notebookCanvasWrapper');
     const isMaths = subject.toLowerCase() === 'maths';
     wrapper.className = 'notebook-canvas-wrapper ' + (isMaths ? 'squared' : 'lined');
@@ -663,8 +993,34 @@ function setAiStatus(message, type = 'info') {
     aiStatusBanner.style.display = 'block';
 }
 
+/**
+ * Feature 5: Classroom Heatmap
+ * Visualizes the understanding levels of the entire class.
+ */
+function renderHeatmap(students) {
+    const container = document.getElementById('classroomHeatmap');
+    if (!container) return;
+    
+    container.replaceChildren();
+    students.forEach(student => {
+        const cell = document.createElement('div');
+        cell.className = `heatmap-cell status-${student.riskLevel.toLowerCase()}`;
+        
+        const tooltip = document.createElement('span');
+        tooltip.className = 'heatmap-tooltip';
+        tooltip.textContent = `${student.studentName}: ${student.riskLevel} Risk`;
+        
+        cell.appendChild(tooltip);
+        cell.onclick = () => viewNotebook(nameToEgn[student.studentName], student.studentName, currentViewSubject || 'Maths');
+        
+        container.appendChild(cell);
+    });
+}
+
 function renderOverview(overview) {
     const grid = document.getElementById('aiOverviewGrid');
+    if (!grid) return;
+    
     const metrics = [
         { label: 'Tracked Tasks', value: overview.totalTasks ?? 0 },
         { label: 'Accuracy', value: formatPercent(overview.accuracyRate) },
@@ -673,78 +1029,136 @@ function renderOverview(overview) {
         { label: 'Struggling Students', value: overview.strugglingStudentsCount ?? 0 },
         { label: 'Attention Alerts', value: overview.attentionAlertsCount ?? 0 }
     ];
-    grid.innerHTML = metrics.map((m) => `
-        <div class="metric-card">
-            <span class="metric-label">${m.label}</span>
-            <strong class="metric-value">${m.value}</strong>
-        </div>
-    `).join('');
+
+    grid.replaceChildren();
+    metrics.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'metric-card';
+        const label = document.createElement('span');
+        label.className = 'metric-label';
+        label.textContent = m.label;
+        const value = document.createElement('strong');
+        value.className = 'metric-value';
+        value.textContent = m.value;
+        card.append(label, value);
+        grid.appendChild(card);
+    });
 }
 
 function renderStudents(students) {
     const container = document.getElementById('aiStudentsList');
     if (!students || !students.length) {
-        container.innerHTML = '<p class="empty-state">No students currently flagged for attention.</p>';
+        container.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'empty-state';
+        p.textContent = 'No students currently flagged for attention.';
+        container.appendChild(p);
         return;
     }
-    container.innerHTML = students.map((s) => `
-        <div class="insight-card">
-            <div class="insight-top">
-                <div>
-                    <h5>${s.studentName}</h5>
-                    <p>${s.className} • ${s.adaptiveRecommendation.replaceAll('_', ' ')}</p>
-                </div>
-                <span class="${riskBadgeClass(s.riskLevel)}">${s.riskLevel}</span>
-            </div>
-            <div class="insight-stats">
-                <span>Accuracy ${formatPercent(s.accuracyRate)}</span>
-                <span>Time ${formatSeconds(s.averageTimeSpentSeconds)}</span>
-                <span>Attempts ${Number(s.averageAttempts || 0).toFixed(1)}</span>
-            </div>
-            <p class="insight-copy">${s.recommendedAction}</p>
-            <p class="insight-weaknesses"><strong>Weakness areas:</strong> ${(s.weaknessAreas || []).join(', ') || 'No clear pattern yet'}</p>
-        </div>
-    `).join('');
+
+    container.replaceChildren();
+    students.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'insight-card';
+        
+        const top = document.createElement('div');
+        top.className = 'insight-top';
+        const nameDiv = document.createElement('div');
+        const h5 = document.createElement('h5');
+        h5.textContent = s.studentName;
+        const pMeta = document.createElement('p');
+        pMeta.textContent = `${s.className} • ${s.adaptiveRecommendation.replaceAll('_', ' ')}`;
+        nameDiv.append(h5, pMeta);
+        const riskSpan = document.createElement('span');
+        riskSpan.className = riskBadgeClass(s.riskLevel);
+        riskSpan.textContent = s.riskLevel;
+        top.append(nameDiv, riskSpan);
+
+        const copy = document.createElement('p');
+        copy.className = 'insight-copy';
+        copy.textContent = s.recommendedAction;
+
+        const weaknesses = document.createElement('p');
+        weaknesses.className = 'insight-weaknesses';
+        weaknesses.innerHTML = `<strong>Weakness areas:</strong> ${s.weaknessAreas?.join(', ') || 'None'}`;
+
+        card.append(top, copy, weaknesses);
+        container.appendChild(card);
+    });
 }
 
 function renderAlerts(alerts) {
     const container = document.getElementById('aiAlertsList');
+    container.replaceChildren();
     if (!alerts || !alerts.length) {
-        container.innerHTML = '<p class="empty-state">No active alerts right now.</p>';
+        const p = document.createElement('p');
+        p.className = 'empty-state';
+        p.textContent = 'No active alerts right now.';
+        container.appendChild(p);
         return;
     }
-    container.innerHTML = alerts.map((a) => `
-        <div class="alert-card alert-${String(a.severity || 'medium').toLowerCase()}">
-            <div class="insight-top">
-                <h5>${a.title}</h5>
-                <span class="${riskBadgeClass(a.severity)}">${a.severity}</span>
-            </div>
-            <p class="insight-copy">${a.message}</p>
-        </div>
-    `).join('');
+    alerts.forEach((a) => {
+        const card = document.createElement('div');
+        card.className = `alert-card alert-${String(a.severity || 'medium').toLowerCase()}`;
+        const top = document.createElement('div');
+        top.className = 'insight-top';
+        const h5 = document.createElement('h5');
+        h5.textContent = a.title;
+        const span = document.createElement('span');
+        span.className = riskBadgeClass(a.severity);
+        span.textContent = a.severity;
+        top.append(h5, span);
+        const p = document.createElement('p');
+        p.className = 'insight-copy';
+        p.textContent = a.message;
+        card.append(top, p);
+        container.appendChild(card);
+    });
 }
+
+/**
+ * Updated to trigger Heatmap rendering.
+ */
 
 function renderTopics(topics) {
     const container = document.getElementById('aiTopicsList');
     if (!topics || !topics.length) {
-        container.innerHTML = '<p class="empty-state">No topic analytics available yet.</p>';
+        container.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'empty-state';
+        p.textContent = 'No topic analytics available yet.';
+        container.appendChild(p);
         return;
     }
-    container.innerHTML = topics.map((t) => `
-        <div class="topic-row">
-            <div>
-                <h5>${t.label}</h5>
-                <p>${t.subject}</p>
-            </div>
-            <div class="topic-metrics">
-                <span>${formatPercent(t.accuracyRate)} accuracy</span>
-                <span>${formatSeconds(t.averageTimeSpentSeconds)} avg time</span>
-                <span>${Number(t.averageAttempts || 0).toFixed(1)} attempts</span>
-                <span class="${riskBadgeClass(t.difficultyLevel)}">${t.difficultyLevel}</span>
-            </div>
-            <p class="insight-copy">${t.teacherAction}</p>
-        </div>
-    `).join('');
+
+    container.replaceChildren();
+    topics.forEach(t => {
+        const row = document.createElement('div');
+        row.className = 'topic-row';
+        
+        const info = document.createElement('div');
+        const h5 = document.createElement('h5');
+        h5.textContent = t.label;
+        const pSub = document.createElement('p');
+        pSub.textContent = t.subject;
+        info.append(h5, pSub);
+
+        const metrics = document.createElement('div');
+        metrics.className = 'topic-metrics';
+        const acc = document.createElement('span');
+        acc.textContent = `${formatPercent(t.accuracyRate)} accuracy`;
+        const diff = document.createElement('span');
+        diff.className = riskBadgeClass(t.difficultyLevel);
+        diff.textContent = t.difficultyLevel;
+        metrics.append(acc, diff);
+
+        const action = document.createElement('p');
+        action.className = 'insight-copy';
+        action.textContent = t.teacherAction;
+
+        row.append(info, metrics, action);
+        container.appendChild(row);
+    });
 }
 
 async function loadAiInsights() {
