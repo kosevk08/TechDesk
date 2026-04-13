@@ -137,8 +137,8 @@ public class NotebookController {
      */
     @PostMapping("/sync-strokes")
     public ResponseEntity<Void> syncStrokes(@RequestBody List<Map<String, Object>> strokes) {
-        // Business logic to iterate through strokes and apply them to the notebook records
-        // This ensures that work done offline is permanently stored in the cloud.
+        // The service worker sends batched coordinates. 
+        // For now, we acknowledge receipt to allow the client to clear its offline buffer.
         return ResponseEntity.ok().build();
     }
 
