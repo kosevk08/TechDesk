@@ -5,22 +5,6 @@ const socket = io('https://techdesk-frontend.onrender.com');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
-const egnToName = {
-    '1000000001': 'Victor',
-    '1000000002': 'Konstantin',
-    '1000000003': 'Ivan',
-    '1000000004': 'John',
-    '1000000005': 'Daniel',
-    '1000000006': 'Sofia',
-    '1000000007': 'Marcus',
-    '1000000008': 'Elena',
-    '1000000009': 'Liam',
-    '1000000010': 'Victor',
-    '1000000011': 'Natalie',
-    '1000000012': 'Carlos',
-    '9000000001': 'Radoslav'
-};
-
 function authHeaders(extra = {}) {
     return extra;
 }
@@ -68,7 +52,7 @@ if (!user || user.role !== 'STUDENT') {
     window.location.href = '/';
 }
 
-const displayName = egnToName[user.egn] || user.email.split('@')[0];
+const displayName = user.displayName || user.email.split('@')[0];
 
 if (isDemo && demoData) {
     document.getElementById('studentName').textContent = demoData.student.name;

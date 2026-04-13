@@ -56,48 +56,6 @@ async function handleLogin(e) {
     }
 }
 
-async function handleRegister(e) {
-    e.preventDefault();
-    const email = document.getElementById('regEmail').value;
-    const password = document.getElementById('regPassword').value;
-    const roleValue = document.getElementById('roleSlider').value;
-    
-    const roles = ['STUDENT', 'PARENT', 'TEACHER'];
-    const role = roles[roleValue];
-
-    const isLocalhost = ['localhost', '127.0.0.1', '::1', ''].includes(window.location.hostname);
-    const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-
-    try {
-        const response = await fetch(`${BACKEND_BASE_URL}/api/user/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, role })
-        });
-
-        if (response.ok) {
-            alert('Registration submitted! An administrator must approve your account before you can log in.');
-            toggleAuthMode();
-        } else {
-            alert('Registration failed. This email might already be registered.');
-        }
-    } catch (error) {
-        console.error('Registration error:', error);
-    }
-}
-
-function toggleAuthMode() {
-    const loginForm = document.getElementById('loginForm');
-    const regForm = document.getElementById('registerForm');
-    if (loginForm.style.display === 'none') {
-        loginForm.style.display = 'block';
-        regForm.style.display = 'none';
-    } else {
-        loginForm.style.display = 'none';
-        regForm.style.display = 'block';
-    }
-}
-
 function openDemoModal() {
     const demoModal = document.getElementById('demoModal');
     if (!demoModal) return;
@@ -179,25 +137,6 @@ function buildDemoProfiles() {
 // Initialize everything only when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
-    document.getElementById('registerForm')?.querySelector('form')?.addEventListener('submit', handleRegister);
-
-    // Role Slider Interaction
-    const roleSlider = document.getElementById('roleSlider');
-    const roleLabels = document.querySelectorAll('.role-labels span');
-    const sliderContainer = document.querySelector('.role-slider-container');
-    const roleColors = ['#6366f1', '#10b981', '#f59e0b']; // Indigo, Emerald, Amber
-
-    roleSlider?.addEventListener('input', (e) => {
-        const val = parseInt(e.target.value);
-        
-        // Update dynamic color
-        sliderContainer.style.setProperty('--slider-accent', roleColors[val]);
-
-        // Update label highlighting
-        roleLabels.forEach((label, index) => {
-            label.classList.toggle('active', index === val);
-        });
-    });
 
     // Initialize Demo Modal Logic
     document.getElementById('openDemo')?.addEventListener('click', () => {
