@@ -34,9 +34,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getUserById(Long id) {
-        // Converting id to String if your UserRepository still uses String as the ID type
-        // If you updated UserRepository to <User, Long>, you can remove .toString()
-        return userRepository.findById(id.toString()).orElse(null);
+        // Check if the repository uses Long or String for ID. 
+        // If your User entity @Id is a Long, use findById(id).
+        // If it is a String (like the old EGN), keep the toString().
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
