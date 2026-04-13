@@ -1,18 +1,13 @@
 package com.edutech.desk.controller;
 
 import com.edutech.desk.entities.User;
-import com.edutech.desk.controller.response.AuthResponse;
-import com.edutech.desk.controller.response.PeopleResponse;
 import com.edutech.desk.controller.response.UserPublicResponse;
 import com.edutech.desk.entities.Student;
 import com.edutech.desk.repository.StudentRepository;
-import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.NameLookupService;
-import com.edutech.desk.service.JwtService;
 import com.edutech.desk.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,10 +30,13 @@ public class UserController {
     @Autowired
     private StudentRepository studentRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
-    private static final long BLOCK_DURATION = 5 * 60 * 1000L;
+    private static final long BLOCK_DURATION = 15 * 60 * 1000L; // 15 minutes
 
     @GetMapping("/health")
     public ResponseEntity<String> health() {
@@ -86,8 +84,19 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
+    private boolean isSanitized(String input) {
+        if (input == null) return true;
+        String lower = input.toLowerCase();
+        // Basic injection/malformity check
+        return !lower.contains("<script") && !lower.contains("select ") && !lower.contains("drop ");
+    }
+
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody User user) {
+        if (user == null || !isSanitized(user.getEmail()) || !isSanitized(user.getEgn())) {
+            return ResponseEntity.badRequest().build();
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         String result = userService.register(user);
         return ResponseEntity.ok(result);
     }
@@ -104,7 +113,8 @@ public class UserController {
     @GetMapping("/all")
     public ResponseEntity<List<User>> getAllUsers(
             @RequestHeader(value = "X-Admin-Key", required = false) String key) {
-        if (!"techdesk-secret-2026".equals(key)) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null || !adminSecret.equals(key)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userService.getAllUsers());
@@ -113,7 +123,8 @@ public class UserController {
     @GetMapping("/setup")
     public ResponseEntity<String> setupUsers(
             @RequestHeader(value = "X-Admin-Key", required = false) String key) {
-        if (!"techdesk-secret-2026".equals(key)) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null || !adminSecret.equals(key)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
@@ -156,7 +167,7 @@ public class UserController {
             User user = new User();
             user.setEgn(u[0]);
             user.setEmail(u[1]);
-            user.setPassword(u[2]);
+            user.setPassword(passwordEncoder.encode(u[2]));
             user.setRole(com.edutech.desk.entities.Role.valueOf(u[3]));
             user.setDemo(Boolean.parseBoolean(u[4]));
             userService.register(user);

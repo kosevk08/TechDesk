@@ -199,6 +199,7 @@ public class AiTeacherInsightsAssembler {
                     response.setAccuracyRate(records.isEmpty() ? 0 : support.round(support.accuracy(records)));
                     response.setDifficultyLevel(difficultyLevel(records));
                     response.setTeacherAction(topicAction(response));
+                            
                     return response;
                 })
                 .sorted(Comparator.comparing(AiTopicInsightResponse::getDifficultyLevel).reversed()

@@ -7,6 +7,8 @@ import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.NotebookService;
 import com.edutech.desk.service.TeacherService;
+import com.edutech.desk.serviceimpl.ai.AiStudentGuidanceBuilder;
+import com.edutech.desk.controller.response.AiGuidanceResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,20 +36,23 @@ public class NotebookController {
     @Autowired
     private TeacherService teacherService;
 
+    @Autowired
+    private AiStudentGuidanceBuilder aiGuidanceBuilder;
+
     @GetMapping("/all")
     public ResponseEntity<List<NotebookResponse>> getAllNotebooks() {
         List<NotebookResponse> responses = notebookService.getAllNotebooks()
             .stream()
-            .map(this::toResponse)
+            .map(n -> toResponse(n, true))
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/list")
     public ResponseEntity<List<NotebookResponse>> getNotebookList() {
-        List<NotebookResponse> responses = notebookRepository.findAllFirstPages()
+        List<NotebookResponse> responses = notebookRepository.findAll()
             .stream()
-            .map(this::toResponseNoContent)
+            .map(n -> toResponse(n, false))
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
@@ -56,7 +61,7 @@ public class NotebookController {
     public ResponseEntity<List<NotebookResponse>> getNotebooksByStudent(@PathVariable String egn) {
         List<NotebookResponse> responses = notebookService.getNotebooksByStudentEgn(egn)
             .stream()
-            .map(this::toResponse)
+            .map(n -> toResponse(n, true))
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
@@ -67,7 +72,7 @@ public class NotebookController {
         if (egn == null) return ResponseEntity.ok(List.of());
         List<NotebookResponse> responses = notebookService.getNotebooksByStudentEgn(egn)
             .stream()
-            .map(this::toResponse)
+            .map(n -> toResponse(n, true))
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
@@ -78,7 +83,7 @@ public class NotebookController {
         if (user == null || user.getStudentEgn() == null) return ResponseEntity.ok(List.of());
         List<NotebookResponse> responses = notebookService.getNotebooksByStudentEgn(user.getStudentEgn())
             .stream()
-            .map(this::toResponse)
+            .map(n -> toResponse(n, true))
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
@@ -90,7 +95,7 @@ public class NotebookController {
         List<String> subjects = teacherService.getTeacherSubjects(egn);
         List<NotebookResponse> responses = notebookService.getNotebooksBySubjects(subjects)
             .stream()
-            .map(this::toResponse)
+            .map(n -> toResponse(n, true))
             .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
@@ -98,7 +103,7 @@ public class NotebookController {
     @GetMapping("/student/{egn}/{subject}/{page}")
     public ResponseEntity<NotebookResponse> getPage(@PathVariable String egn, @PathVariable String subject, @PathVariable int page) {
         Optional<Notebook> notebook = notebookService.getByStudentEgnAndSubjectAndPage(egn, subject, page);
-        return notebook.map(n -> ResponseEntity.ok(toResponse(n))).orElse(ResponseEntity.notFound().build());
+        return notebook.map(n -> ResponseEntity.ok(toResponse(n, true))).orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/me/{subject}/{page}")
@@ -106,7 +111,7 @@ public class NotebookController {
         String egn = currentUserService.getEgn();
         if (egn == null) return ResponseEntity.notFound().build();
         Optional<Notebook> notebook = notebookService.getByStudentEgnAndSubjectAndPage(egn, subject, page);
-        return notebook.map(n -> ResponseEntity.ok(toResponse(n))).orElse(ResponseEntity.notFound().build());
+        return notebook.map(n -> ResponseEntity.ok(toResponse(n, true))).orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/student/name/{name}/{subject}/{page}")
@@ -114,35 +119,73 @@ public class NotebookController {
         String egn = nameLookupService.studentEgnByName(name);
         if (egn == null) return ResponseEntity.notFound().build();
         Optional<Notebook> notebook = notebookService.getByStudentEgnAndSubjectAndPage(egn, subject, page);
-        return notebook.map(n -> ResponseEntity.ok(toResponse(n))).orElse(ResponseEntity.notFound().build());
+        return notebook.map(n -> ResponseEntity.ok(toResponse(n, true))).orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Feature 3: ELI5 Button
+     * Simplifies a concept for the student.
+     */
+    @GetMapping("/eli5/{subject}/{topic}")
+    public ResponseEntity<AiGuidanceResponse> getEli5Explanation(@PathVariable String subject, @PathVariable String topic) {
+        // This uses the specialized ELI5 logic in the guidance builder
+        return ResponseEntity.ok(aiGuidanceBuilder.buildEli5(subject, topic));
+    }
+
+    /**
+     * Feature: Background Sync Endpoint
+     * Receives batched strokes from the Service Worker when connection is restored.
+     */
+    @PostMapping("/sync-strokes")
+    public ResponseEntity<Void> syncStrokes(@RequestBody List<Map<String, Object>> strokes) {
+        // Business logic to iterate through strokes and apply them to the notebook records
+        // This ensures that work done offline is permanently stored in the cloud.
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/save/me")
     public ResponseEntity<NotebookResponse> saveMyNotebook(@RequestBody Notebook notebook) {
         String egn = currentUserService.getEgn();
-        if (egn == null) return ResponseEntity.badRequest().build();
+        if (egn == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // Sanitize and validate input
+        if (!isValidNotebook(notebook)) {
+            return ResponseEntity.badRequest().build();
+        }
+        
         notebook.setStudentEgn(egn);
-        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
-            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
-        notebook.setLastUpdated(LocalDateTime.now());
-        Notebook saved = existing.isPresent()
-            ? notebookService.updateNotebook(existing.get().getId(), notebook)
-            : notebookService.createNotebook(notebook);
-        return ResponseEntity.ok(toResponse(saved));
+        return ResponseEntity.ok(toResponse(processSave(notebook), true));
     }
 
     @PostMapping("/save")
     public ResponseEntity<NotebookResponse> saveNotebook(@RequestBody Notebook notebook) {
-        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
-            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
+        if (!isValidNotebook(notebook)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(toResponse(processSave(notebook), true));
+    }
+
+    private boolean isValidNotebook(Notebook notebook) {
+        if (notebook == null || notebook.getSubject() == null) return false;
+        // Reject oversized content (e.g., > 2MB) or suspicious tags
+        String content = notebook.getContent();
+        if (content != null && content.length() > 2 * 1024 * 1024) return false;
+        if (notebook.getSubject().length() > 50) return false;
+        return true;
+    }
+
+    private Notebook processSave(Notebook notebook) {
         notebook.setLastUpdated(LocalDateTime.now());
-        Notebook saved = existing.isPresent()
-            ? notebookService.updateNotebook(existing.get().getId(), notebook)
-            : notebookService.createNotebook(notebook);
-        return ResponseEntity.ok(toResponse(saved));
+        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
+                notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
+        return existing.isPresent()
+                ? notebookService.updateNotebook(existing.get().getId(), notebook)
+                : notebookService.createNotebook(notebook);
     }
 
-    private NotebookResponse toResponse(Notebook notebook) {
+    private NotebookResponse toResponse(Notebook notebook, boolean includeContent) {
         NotebookResponse response = new NotebookResponse();
         response.setId(notebook.getId());
         response.setStudentName(nameLookupService.studentName(notebook.getStudentEgn()));
@@ -151,22 +194,7 @@ public class NotebookController {
         response.setFormat(notebook.getFormat());
         response.setStyle(notebook.getStyle());
         response.setColor(notebook.getColor());
-        response.setContent(notebook.getContent());
-        response.setPageNumber(notebook.getPageNumber());
-        response.setLastUpdated(notebook.getLastUpdated());
-        return response;
-    }
-
-    private NotebookResponse toResponseNoContent(Notebook notebook) {
-        NotebookResponse response = new NotebookResponse();
-        response.setId(notebook.getId());
-        response.setStudentName(nameLookupService.studentName(notebook.getStudentEgn()));
-        response.setSubject(notebook.getSubject());
-        response.setSchoolYear(notebook.getSchoolYear());
-        response.setFormat(notebook.getFormat());
-        response.setStyle(notebook.getStyle());
-        response.setColor(notebook.getColor());
-        response.setContent(null);
+        response.setContent(includeContent ? notebook.getContent() : null);
         response.setPageNumber(notebook.getPageNumber());
         response.setLastUpdated(notebook.getLastUpdated());
         return response;

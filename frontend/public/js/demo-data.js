@@ -1,9 +1,30 @@
 window.DemoData = {
     demoNotice: 'Demo mode: explore features safely. All actions stay inside demo data and never touch real accounts.',
+    translations: {
+        bg: {
+            dashboard: 'Табло',
+            notebooks: 'Тетрадки',
+            grades: 'Оценки',
+            attendance: 'Присъствие',
+            ai_insights: 'AI Анализи',
+            eli5_button: 'Обясни като на 5-годишен',
+            heatmap: 'Топлинна карта на класа',
+            voice_to_notes: 'Глас към записки',
+            lesson_replay: 'Повторение на урока',
+            attention_alert: 'Внимание: Студентът напусна прозореца'
+        }
+    },
     student: {
         name: 'Radoslav Paskalev',
         className: '11D',
-        email: 'r.paskalev-student@edu-school.bg'
+        email: 'r.paskalev-student@edu-school.bg',
+        gamification: {
+            points: 1250,
+            level: 12,
+            badges: ['Perfect Attendance', 'Math Whiz', 'Fast Responder'],
+            nextLevelProgress: 75
+        },
+        status: 'online'
     },
     teacher: {
         name: 'Elena Vasileva',
@@ -143,7 +164,8 @@ window.DemoData = {
             studentName: 'Radoslav Paskalev',
             subject: 'Maths',
             page: 1,
-            preview: 'Worked example: (x + 2)(x - 3) = 0 ➜ x = -2 or x = 3.'
+            preview: 'Worked example: (x + 2)(x - 3) = 0 ➜ x = -2 or x = 3.',
+            summary: 'Quadratic equations solved via factoring.'
         },
         {
             studentName: 'Radoslav Paskalev',
