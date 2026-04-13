@@ -180,6 +180,7 @@ function buildDemoProfiles() {
 // Initialize everything only when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+    document.getElementById('registerForm')?.querySelector('form')?.addEventListener('submit', handleRegister);
 
     // Initialize Demo Modal Logic
     document.getElementById('openDemo')?.addEventListener('click', () => {
