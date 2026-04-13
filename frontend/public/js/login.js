@@ -289,4 +289,3 @@ function initLoginAnimation() {
     init();
     animate();
 }
-initLoginAnimation();
