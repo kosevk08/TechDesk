@@ -45,7 +45,7 @@ public class NameLookupService {
         if (student != null) return student.getFirstName() + " " + student.getLastName();
         Teacher teacher = teacherRepository.findById(egn).orElse(null);
         if (teacher != null) return teacher.getFirstName() + " " + teacher.getLastName();
-        User user = userRepository.findById(egn).orElse(null);
+        User user = userRepository.findByEgn(egn);
         if (user != null) return displayNameFromEmail(user.getEmail());
         return "User";
     }

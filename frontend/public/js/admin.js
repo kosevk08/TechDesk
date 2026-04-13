@@ -90,13 +90,7 @@ function renderUsers(users) {
         btnDelete.className = 'action-btn danger-btn';
         btnDelete.textContent = 'Delete';
         
-        const btnApprove = document.createElement('button');
-        btnApprove.className = 'action-btn';
-        btnApprove.style.marginRight = '5px';
-        btnApprove.textContent = 'Approve';
-        btnApprove.onclick = () => approveUser(u.id);
-
-        tdActions.append(btnApprove, btnDelete);
+        tdActions.append(btnDelete);
         
         tr.append(tdId, tdEmail, tdRole, tdDemo, tdActions);
         tbody.appendChild(tr);
@@ -133,22 +127,6 @@ async function updateUserRole(id, newRole) {
     }
 }
 
-async function approveUser(id) {
-    try {
-        const response = await fetch(`${BACKEND_BASE_URL}/api/user/approve/${id}`, {
-            method: 'PUT',
-            headers: { 'X-Admin-Key': adminKey }
-        });
-        if (response.ok) {
-            alert('User approved successfully!');
-            fetchUsers();
-        } else {
-            alert('Approval failed.');
-        }
-    } catch (error) {
-        console.error('Error approving user:', error);
-    }
-}
 async function runSetup() {
     if (!confirm('Are you sure you want to run the system setup? This will create demo users.')) return;
     const res = await fetch(`${BACKEND_BASE_URL}/api/user/setup`, { headers: { 'X-Admin-Key': adminKey } });

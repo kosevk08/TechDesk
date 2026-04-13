@@ -103,43 +103,6 @@ public class UserController {
         return !lower.contains("<script") && !lower.contains("select ") && !lower.contains("drop ");
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> registerUser(@RequestBody User user) {
-        if (user == null || !isSanitized(user.getEmail())) {
-            return ResponseEntity.badRequest().build();
-        }
-        // New users are not approved by default
-        user.setDemo(false);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        
-        // We assume the User entity has an 'approved' field. 
-        // For this implementation, we'll use the 'enabled' logic or a custom flag.
-        String result = userService.register(user);
-        return ResponseEntity.ok(result);
-    }
-
-    @PutMapping("/approve/{id}")
-    public ResponseEntity<Void> approveUser(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
-        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
-        if (adminSecret == null) adminSecret = "techdesk-secret-2026";
-
-        if (!adminSecret.equals(key)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        User user = userService.getUserById(id);
-        if (user != null) {
-            // In a real app, you'd set user.setApproved(true) 
-            // For now, we'll use the registration to trigger the 'active' state
-            user.setDemo(false); 
-            userService.register(user); 
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
-    }
-
     @GetMapping("/get/{id}")
     public ResponseEntity<UserPublicResponse> getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);
