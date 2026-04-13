@@ -1,253 +1,139 @@
-const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const user = JSON.parse(localStorage.getItem('user'));
-const token = localStorage.getItem('token');
-const demoData = window.DemoData;
-const isDemo = Boolean(user && user.demo);
-
-function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
-}
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
+const adminKey = 'techdesk-secret-2026';
 
 if (!user || user.role !== 'ADMIN') {
     window.location.href = '/';
 }
 
-document.getElementById('adminName').textContent = user.displayName || 'Admin';
-
-async function loadStatus() {
-    const statusEl = document.getElementById('adminStatus');
-    if (isDemo) {
-        statusEl.textContent = 'Demo (offline safe)';
-        return;
-    }
+async function fetchUsers() {
+    const listContainer = document.getElementById('userList');
+    if (!listContainer) return;
+    
+    listContainer.innerHTML = '<p class="empty-state">Loading users...</p>';
+    
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/user/health`);
-        statusEl.textContent = res.ok ? 'All systems operational' : 'Degraded';
+        const response = await fetch(`${BACKEND_BASE_URL}/api/user/all`, {
+            headers: { 'X-Admin-Key': adminKey }
+        });
+        
+        if (response.ok) {
+            const users = await response.json();
+            renderUsers(users);
+        } else {
+            listContainer.innerHTML = '<p class="empty-state">Failed to load users. Verify Admin Key.</p>';
+        }
     } catch (error) {
-        statusEl.textContent = 'Offline';
+        console.error('Error fetching users:', error);
+        listContainer.innerHTML = '<p class="empty-state">Network error.</p>';
     }
-}
-
-function renderMetrics(users, feedbackCount) {
-    const metrics = document.getElementById('adminMetrics');
-    if (!metrics) return;
-    const counts = {
-        total: users.length,
-        student: users.filter(u => u.role === 'STUDENT').length,
-        teacher: users.filter(u => u.role === 'TEACHER').length,
-        parent: users.filter(u => u.role === 'PARENT').length,
-        admin: users.filter(u => u.role === 'ADMIN').length
-    };
-    metrics.innerHTML = [
-        { label: 'Total Users', value: counts.total },
-        { label: 'Students', value: counts.student },
-        { label: 'Teachers', value: counts.teacher },
-        { label: 'Parents', value: counts.parent },
-        { label: 'Admins', value: counts.admin },
-        { label: 'Feedback Reports', value: feedbackCount }
-    ].map(metric => `
-        <div class="metric-card">
-            <span class="metric-label">${metric.label}</span>
-            <strong class="metric-value">${metric.value}</strong>
-        </div>
-    `).join('');
-}
-
-function normalizeUser(u) {
-    return {
-        displayName: u.displayName || u.fullName || u.name || 'User',
-        role: u.role || 'USER',
-        email: u.email || '-'
-    };
 }
 
 function renderUsers(users) {
-    const list = document.getElementById('userList');
-    if (!list) return;
-    if (!users.length) {
-        list.innerHTML = '<p class="empty-state">No users found.</p>';
+    const listContainer = document.getElementById('userList');
+    listContainer.replaceChildren();
+
+    if (users.length === 0) {
+        const p = document.createElement('p');
+        p.className = 'empty-state';
+        p.textContent = 'No users found.';
+        listContainer.appendChild(p);
         return;
     }
-    list.innerHTML = users.map(u => `
-        <div class="user-card-item">
-            <h4>${u.displayName}</h4>
-            <div class="user-meta">${u.role} • ${u.email}</div>
-        </div>
-    `).join('');
-}
 
-function renderTeachers(teachers) {
-    const list = document.getElementById('teacherList');
-    if (!list) return;
-    if (!teachers.length) {
-        list.innerHTML = '<p class="empty-state">No teachers found.</p>';
-        return;
-    }
-    list.innerHTML = teachers.map(t => `
-        <div class="user-card-item">
-            <h4>${t.firstName || ''} ${t.lastName || ''}</h4>
-            <div class="user-meta">${t.email || 'No email'} • ${t.egn}</div>
-            <div class="user-meta">Subjects: ${(t.subjects || []).join(', ') || 'Not assigned'}</div>
-        </div>
-    `).join('');
-}
+    const table = document.createElement('table');
+    table.className = 'admin-table';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>EGN</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Demo</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
 
-function populateTeacherSelect(teachers) {
-    const select = document.getElementById('teacherSelect');
-    if (!select) return;
-    select.innerHTML = '';
-    teachers.forEach(t => {
-        const option = document.createElement('option');
-        option.value = t.egn;
-        option.textContent = `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.email || t.egn;
-        option.dataset.subjects = (t.subjects || []).join(', ');
-        select.appendChild(option);
+    const tbody = table.querySelector('tbody');
+
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        
+        const tdEgn = document.createElement('td');
+        tdEgn.textContent = u.egn;
+        
+        const tdEmail = document.createElement('td');
+        tdEmail.textContent = u.email;
+        
+        const tdRole = document.createElement('td');
+        const selectRole = document.createElement('select');
+        selectRole.className = 'admin-select';
+        ['STUDENT', 'TEACHER', 'PARENT', 'ADMIN'].forEach(role => {
+            const opt = document.createElement('option');
+            opt.value = role;
+            opt.textContent = role;
+            if (u.role === role) opt.selected = true;
+            selectRole.appendChild(opt);
+        });
+        selectRole.addEventListener('change', () => updateUserRole(u.egn, selectRole.value));
+        tdRole.appendChild(selectRole);
+        
+        const tdDemo = document.createElement('td');
+        tdDemo.textContent = u.demo ? '✅' : '❌';
+        
+        const tdActions = document.createElement('td');
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'action-btn danger-btn';
+        btnDelete.textContent = 'Delete';
+        tdActions.appendChild(btnDelete);
+        
+        tr.append(tdEgn, tdEmail, tdRole, tdDemo, tdActions);
+        tbody.appendChild(tr);
     });
-    if (teachers[0]) {
-        document.getElementById('teacherSubjectsInput').value = (teachers[0].subjects || []).join(', ');
-    }
+
+    listContainer.appendChild(table);
 }
 
-function badgeClass(severity) {
-    const key = String(severity || 'low').toLowerCase();
-    if (key.includes('high')) return 'feedback-badge high';
-    if (key.includes('medium')) return 'feedback-badge medium';
-    return 'feedback-badge low';
-}
-
-function renderFeedback(items) {
-    const list = document.getElementById('feedbackList');
-    if (!list) return;
-    if (!items.length) {
-        list.innerHTML = '<p class="empty-state">No feedback yet.</p>';
-        return;
-    }
-    list.innerHTML = items.map(item => `
-        <div class="feedback-card-item">
-            <div class="feedback-meta">${item.page || 'Unknown'} • ${new Date(item.createdAt).toLocaleString()}</div>
-            <h4>${item.sender || item.userDisplayName || 'User'}</h4>
-            <div class="feedback-meta">${item.message}</div>
-            <span class="${badgeClass(item.severity)}">${item.severity || 'Low'}</span>
-        </div>
-    `).join('');
-}
-
-async function loadUsers() {
-    if (isDemo && demoData) {
-        const users = (demoData.users || []).map(normalizeUser);
-        renderUsers(users);
-        return users;
-    }
-    try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/user/all`, {
-            headers: authHeaders()
-        });
-        const rawUsers = res.ok ? await res.json() : [];
-        const users = rawUsers.map(normalizeUser);
-        renderUsers(users);
-        return users;
-    } catch (error) {
-        console.error('Could not load users:', error);
-        renderUsers([]);
-        return [];
-    }
-}
-
-async function loadFeedback() {
-    if (isDemo) {
-        const local = JSON.parse(localStorage.getItem('demo-feedback') || '[]');
-        const items = local.length ? local : (demoData?.feedback || []);
-        renderFeedback(items);
-        return items;
-    }
-    try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/feedback/all`, {
-            headers: authHeaders()
-        });
-        const items = res.ok ? await res.json() : [];
-        renderFeedback(items);
-        return items;
-    } catch (error) {
-        console.error('Could not load feedback:', error);
-        renderFeedback([]);
-        return [];
-    }
-}
-
-async function loadTeachers() {
-    if (isDemo && demoData) {
-        const teachers = (demoData.teachers || [
-            { egn: '2000000003', firstName: 'Maya', lastName: 'Ivanova', email: demoData?.teacher?.email, subjects: ['Maths'] }
-        ]);
-        populateTeacherSelect(teachers);
-        renderTeachers(teachers);
-        return teachers;
-    }
-    try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/teacher/all`, {
-            headers: authHeaders()
-        });
-        const teachers = res.ok ? await res.json() : [];
-        populateTeacherSelect(teachers);
-        renderTeachers(teachers);
-        return teachers;
-    } catch (error) {
-        console.error('Could not load teachers:', error);
-        renderTeachers([]);
-        return [];
-    }
-}
-
-async function saveTeacherSubjects() {
-    const status = document.getElementById('teacherSubjectStatus');
-    const select = document.getElementById('teacherSelect');
-    const input = document.getElementById('teacherSubjectsInput');
-    if (!select || !input) return;
-    const teacherEgn = select.value;
-    const subjects = input.value.split(',').map(s => s.trim()).filter(Boolean);
-
-    if (isDemo) {
-        status.textContent = 'Saved (demo).';
+async function updateUserRole(egn, newRole) {
+    if (!confirm(`Are you sure you want to change user ${egn} to role ${newRole}?`)) {
+        fetchUsers(); // Reset UI
         return;
     }
 
     try {
-        status.textContent = 'Saving...';
-        const res = await fetch(`${BACKEND_BASE_URL}/api/teacher/subjects`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ teacherEgn, subjects })
+        const response = await fetch(`${BACKEND_BASE_URL}/api/user/role/${egn}`, {
+            method: 'PUT',
+            headers: { 
+                'X-Admin-Key': adminKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role: newRole })
         });
-        if (!res.ok) throw new Error('Save failed');
-        status.textContent = 'Saved.';
-        loadTeachers();
+
+        if (response.ok) {
+            alert('User role updated successfully.');
+        } else {
+            alert('Failed to update user role.');
+            fetchUsers();
+        }
     } catch (error) {
-        console.error('Could not save subjects:', error);
-        status.textContent = 'Failed.';
+        console.error('Error updating role:', error);
+        alert('Network error while updating role.');
     }
 }
 
-async function init() {
-    await loadStatus();
-    const [users, feedback] = await Promise.all([loadUsers(), loadFeedback()]);
-    renderMetrics(users, feedback.length);
-    loadTeachers();
+async function runSetup() {
+    if (!confirm('Are you sure you want to run the system setup? This will create demo users.')) return;
+    const res = await fetch(`${BACKEND_BASE_URL}/api/user/setup`, { headers: { 'X-Admin-Key': adminKey } });
+    if (res.ok) { alert('Setup complete!'); fetchUsers(); }
+    else { alert('Setup failed.'); }
 }
 
-window.loadUsers = loadUsers;
-window.loadFeedback = loadFeedback;
-window.loadTeachers = loadTeachers;
-window.saveTeacherSubjects = saveTeacherSubjects;
-
-init();
-
-const teacherSelect = document.getElementById('teacherSelect');
-if (teacherSelect) {
-    teacherSelect.addEventListener('change', (event) => {
-        const option = event.target.selectedOptions[0];
-        const subjects = option?.dataset?.subjects || '';
-        const input = document.getElementById('teacherSubjectsInput');
-        if (input) input.value = subjects;
-    });
-}
+document.addEventListener('DOMContentLoaded', () => {
+    fetchUsers();
+    document.getElementById('runSetupBtn')?.addEventListener('click', runSetup);
+    document.getElementById('refreshUsersBtn')?.addEventListener('click', fetchUsers);
+});

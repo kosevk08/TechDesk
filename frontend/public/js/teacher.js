@@ -2,6 +2,7 @@ const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname
 const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
 const socket = io(window.TECHDESK_SOCKET_URL || 'https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
+const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let studentNames = [];
@@ -48,6 +49,25 @@ async function saveStrokeOffline(strokeData) {
 }
 
 /**
+ * Techie Assistant Logic for Dashboard
+ */
+function initAssistant() {
+    const assistant = document.createElement('div');
+    assistant.id = 'assistant-techie';
+    assistant.className = 'assistant-icon';
+    assistant.innerHTML = '🤖';
+    document.body.appendChild(assistant);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #assistant-techie { position: fixed; bottom: 20px; right: 20px; font-size: 40px; z-index: 1000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0.7; }
+        #assistant-techie.thinking { transform: scale(1.4) rotate(360deg); opacity: 1; filter: drop-shadow(0 0 10px #6366f1); }
+    `;
+    document.head.appendChild(style);
+}
+initAssistant();
+
+/**
  * Updates the UI to show how many items are waiting to be synced.
  */
 async function updateSyncStatus() {
@@ -79,7 +99,7 @@ async function updateSyncStatus() {
 window.addEventListener('online', updateSyncStatus);
 
 function authHeaders(extra = {}) {
-    return extra;
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
 
 /**
@@ -135,17 +155,25 @@ if (isDemo && demoData) {
     document.getElementById('teacherName').textContent = teacherNames[user.email] || user.email;
 }
 
+const supportedLangs = ['en', 'bg', 'sr', 'el', 'tr', 'ro', 'it', 'es', 'fr'];
+let langIndex = 0;
+
 function toggleLanguage() {
-    currentLang = currentLang === 'en' ? 'bg' : 'en';
-    const btn = document.getElementById('langToggle');
-    if (btn) btn.textContent = currentLang === 'en' ? 'BG' : 'EN';
+    langIndex = (langIndex + 1) % supportedLangs.length;
+    currentLang = supportedLangs[langIndex];
     
-    if (currentLang === 'bg' && demoData.translations.bg) {
-        // Apply basic mapping for demo
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            el.textContent = demoData.translations.bg[el.dataset.i18n] || el.textContent;
-        });
-    }
+    const btn = document.getElementById('langToggle');
+    if (btn) btn.textContent = currentLang.toUpperCase();
+    
+    const dict = demoData.translations[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (currentLang === 'en') {
+            // Logic to revert to default English text could go here
+        } else if (dict && dict[key]) {
+            el.textContent = dict[key];
+        }
+    });
 }
 
 if (isDemo) {
@@ -775,7 +803,9 @@ async function loadTeacherPage() {
             return;
         }
         const egn = nameToEgn[currentViewStudent] || '';
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -983,11 +1013,14 @@ function riskBadgeClass(level) {
 
 function setAiStatus(message, type = 'info') {
     if (aiStatusText) aiStatusText.textContent = message;
+    const assistant = document.getElementById('assistant-techie');
     if (!message) {
         aiStatusBanner.style.display = 'none';
         aiStatusBanner.className = 'ai-status-banner';
+        if (assistant) assistant.classList.remove('thinking');
         return;
     }
+    if (assistant) assistant.classList.add('thinking');
     aiStatusBanner.textContent = message;
     aiStatusBanner.className = `ai-status-banner${type === 'error' ? ' error' : ''}`;
     aiStatusBanner.style.display = 'block';
@@ -1171,11 +1204,27 @@ async function loadAiInsights() {
         setAiStatus('Demo AI data loaded for exploration.');
         return;
     }
-    setAiStatus('AI Insights not yet connected to backend.');
-    renderOverview({});
-    renderStudents([]);
-    renderAlerts([]);
-    renderTopics([]);
+
+    setAiStatus('Fetching class performance insights...', 'info');
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/ai/teacher/overview`, {
+            headers: authHeaders()
+        });
+        if (res.ok) {
+            const data = await res.json();
+            renderOverview(data.overview || {});
+            renderHeatmap(data.strugglingStudents || []);
+            renderStudents(data.strugglingStudents || []);
+            renderAlerts(data.alerts || []);
+            renderTopics(data.topicInsights || []);
+            setAiStatus('');
+        } else {
+            setAiStatus('Failed to load AI Insights.', 'error');
+        }
+    } catch (error) {
+        console.error('AI Insight Error:', error);
+        setAiStatus('Connection error while loading insights.', 'error');
+    }
 }
 
 async function loadClasses() {
