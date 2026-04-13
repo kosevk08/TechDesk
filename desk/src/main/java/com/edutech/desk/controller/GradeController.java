@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/grades")
-@CrossOrigin(origins = {"http://localhost:3000", "https://techdesk-frontend.onrender.com"})
 public class GradeController {
 
     @Autowired
