@@ -36,10 +36,11 @@ self.addEventListener('fetch', (event) => {
       caches.open(DATA_CACHE_NAME).then((cache) => {
         return fetch(event.request)
           .then((response) => {
-            if (response.status === 200) {
+            if (response.ok) {
               cache.put(event.request.url, response.clone());
+              return response;
             }
-            return response;
+            throw new Error('Server error, falling back to cache');
           })
           .catch(() => cache.match(event.request));
       })
@@ -68,7 +69,8 @@ async function syncStrokesToServer() {
 
   if (strokes.length > 0 && token) {
     try {
-      const response = await fetch('/api/notebook/sync-strokes', {
+        const backendUrl = 'https://techdesk-backend.onrender.com'; // Should match your production API
+        const response = await fetch(`${backendUrl}/api/notebook/sync-strokes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
