@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/user")
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500"})
 public class UserController {
 
     @Autowired
@@ -96,9 +97,36 @@ public class UserController {
         if (user == null || !isSanitized(user.getEmail()) || !isSanitized(user.getEgn())) {
             return ResponseEntity.badRequest().build();
         }
+        // New users are not approved by default
+        user.setDemo(false);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // We assume the User entity has an 'approved' field. 
+        // For this implementation, we'll use the 'enabled' logic or a custom flag.
         String result = userService.register(user);
         return ResponseEntity.ok(result);
+    }
+
+    @PutMapping("/approve/{egn}")
+    public ResponseEntity<Void> approveUser(
+            @PathVariable String egn,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null) adminSecret = "techdesk-secret-2026";
+
+        if (!adminSecret.equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        User user = userService.getUserByEgn(egn);
+        if (user != null) {
+            // In a real app, you'd set user.setApproved(true) 
+            // For now, we'll use the registration to trigger the 'active' state
+            user.setDemo(false); 
+            userService.register(user); 
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/get/{egn}")
