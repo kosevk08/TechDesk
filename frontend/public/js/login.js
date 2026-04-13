@@ -30,10 +30,10 @@ async function handleLogin(e) {
             document.querySelector('.login-card').style.transform = 'translateY(-20px)';
             
             setTimeout(() => {
-                if (user.role === 'TEACHER') window.location.href = '/teacher.html';
+                if (user.role === 'ADMIN') window.location.href = '/admin.html';
+                else if (user.role === 'TEACHER') window.location.href = '/teacher.html';
                 else if (user.role === 'STUDENT') window.location.href = '/student.html';
                 else if (user.role === 'PARENT') window.location.href = '/parent.html';
-                else if (user.role === 'ADMIN') window.location.href = '/admin.html';
             }, 400);
             
         } else {
@@ -257,7 +257,7 @@ function initLoginAnimation() {
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
         }
         .login-card, #loginForm, .demo-modal-content {
-            background: rgba(15, 23, 42, 0.7) !important;
+            background: rgba(15, 23, 42, 0.8) !important;
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);

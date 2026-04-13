@@ -61,6 +61,17 @@ public class UserController {
             }
         }
 
+        // HARDCODED FALLBACK: Emergency Admin Access
+        // This ensures you can ALWAYS log in even if the database is broken/empty
+        if ("admin@techdesk.edu".equals(loginUser.getEmail()) && "admin123".equals(loginUser.getPassword())) {
+            User superAdmin = new User();
+            superAdmin.setEmail("admin@techdesk.edu");
+            superAdmin.setRole(Role.ADMIN);
+            superAdmin.setDisplayName("System Administrator");
+            superAdmin.setDemo(false);
+            return ResponseEntity.ok(superAdmin);
+        }
+
         String email = loginUser.getEmail();
         String password = loginUser.getPassword();
 
