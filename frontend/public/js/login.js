@@ -1,11 +1,11 @@
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
 
     const loginBtn = e.target.querySelector('button[type="submit"]');
     const originalBtnText = loginBtn.textContent;
     
     const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
+    const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const errorMsg = document.getElementById('errorMsg');

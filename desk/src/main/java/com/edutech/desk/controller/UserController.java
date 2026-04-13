@@ -1,6 +1,7 @@
 package com.edutech.desk.controller;
 
 import com.edutech.desk.entities.User;
+import com.edutech.desk.entities.Role;
 import com.edutech.desk.controller.response.UserPublicResponse;
 import com.edutech.desk.entities.Student;
 import com.edutech.desk.repository.StudentRepository;
@@ -122,7 +123,11 @@ public class UserController {
         if (newRole == null || !isSanitized(newRole)) {
             return ResponseEntity.badRequest().build();
         }
-        userService.updateRole(egn, newRole);
+        User userToUpdate = userService.getUserByEgn(egn);
+        if (userToUpdate != null) {
+            userToUpdate.setRole(Role.valueOf(newRole));
+            userService.register(userToUpdate);
+        }
         return ResponseEntity.ok().build();
     }
 

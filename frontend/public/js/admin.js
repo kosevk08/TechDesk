@@ -1,6 +1,6 @@
 const user = JSON.parse(localStorage.getItem('user'));
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const BACKEND_BASE_URL = window.TECHDESK_API_URL || (isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com');
+const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const adminKey = 'techdesk-secret-2026';
 
 if (!user || user.role !== 'ADMIN') {
