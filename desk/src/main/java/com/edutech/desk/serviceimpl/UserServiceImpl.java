@@ -28,15 +28,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String register(User user) {
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            return "Email already registered";
+        }
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
         return "User registered successfully";
     }
 
     @Override
     public User getUserById(Long id) {
-        // Check if the repository uses Long or String for ID. 
-        // If your User entity @Id is a Long, use findById(id).
-        // If it is a String (like the old EGN), keep the toString().
         return userRepository.findById(id).orElse(null);
     }
 
