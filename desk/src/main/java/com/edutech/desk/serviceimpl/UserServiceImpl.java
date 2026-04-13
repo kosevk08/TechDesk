@@ -33,8 +33,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUserByEgn(String egn) {
-        return userRepository.findById(egn).orElse(null);
+    public User getUserById(Long id) {
+        // Converting id to String if your UserRepository still uses String as the ID type
+        // If you updated UserRepository to <User, Long>, you can remove .toString()
+        return userRepository.findById(id.toString()).orElse(null);
     }
 
     @Override
