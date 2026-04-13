@@ -181,6 +181,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
     document.getElementById('registerForm')?.querySelector('form')?.addEventListener('submit', handleRegister);
 
+    // Role Slider Interaction
+    const roleSlider = document.getElementById('roleSlider');
+    const roleLabels = document.querySelectorAll('.role-labels span');
+    const sliderContainer = document.querySelector('.role-slider-container');
+    const roleColors = ['#6366f1', '#10b981', '#f59e0b']; // Indigo, Emerald, Amber
+
+    roleSlider?.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        
+        // Update dynamic color
+        sliderContainer.style.setProperty('--slider-accent', roleColors[val]);
+
+        // Update label highlighting
+        roleLabels.forEach((label, index) => {
+            label.classList.toggle('active', index === val);
+        });
+    });
+
     // Initialize Demo Modal Logic
     document.getElementById('openDemo')?.addEventListener('click', () => {
         buildDemoProfiles();
