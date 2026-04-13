@@ -16,7 +16,7 @@ let isPlayingBack = false;
 let activeWritingTime = 0; // Effort Monitoring
 let lastStrokeTime = null;
 
-// Register Service Worker for Offline Support
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(reg => {
@@ -63,21 +63,24 @@ async function saveStrokeOffline(strokeData) {
 /**
  * Techie Assistant Logic for Dashboard
  */
-function initAssistant() {
-    const assistant = document.createElement('div');
-    assistant.id = 'assistant-techie';
-    assistant.className = 'assistant-icon';
-    assistant.innerHTML = '🤖';
-    document.body.appendChild(assistant);
+let assistant = null; // Declare globally, initialize in DOMContentLoaded
 
-    const style = document.createElement('style');
-    style.textContent = `
-        #assistant-techie { position: fixed; bottom: 20px; right: 20px; font-size: 40px; z-index: 1000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0.7; }
-        #assistant-techie.thinking { transform: scale(1.4) rotate(360deg); opacity: 1; filter: drop-shadow(0 0 10px #6366f1); }
-    `;
-    document.head.appendChild(style);
+function createAssistant() {
+    if (!assistant) {
+        assistant = document.createElement('div');
+        assistant.id = 'assistant-techie';
+        assistant.className = 'assistant-icon';
+        assistant.innerHTML = '🤖';
+        document.body.appendChild(assistant);
+
+        const style = document.createElement('style');
+        style.textContent = `
+            #assistant-techie { position: fixed; bottom: 20px; right: 20px; font-size: 40px; z-index: 1000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0.7; }
+            #assistant-techie.thinking { transform: scale(1.4) rotate(360deg); opacity: 1; filter: drop-shadow(0 0 10px #6366f1); }
+        `;
+        document.head.appendChild(style);
+    }
 }
-initAssistant();
 
 /**
  * Updates the UI to show how many items are waiting to be synced.
@@ -100,7 +103,7 @@ async function updateSyncStatus() {
             if (indicator) {
                 indicator.style.display = count > 0 ? 'block' : 'none';
                 indicator.textContent = count > 0 
-                    ? `${count} ${currentLang === 'bg' ? 'елемента чакат синхронизация' : 'items pending sync'}`
+                    ? `${count} ${currentLang === 'bg' ? 'елемента чакат синхронизация' : 'items pending sync'}` //
                     : '';
             }
         };
@@ -292,10 +295,11 @@ let currentViewEgn = null;
 let currentViewStudent = null;
 let currentViewSubject = null;
 let currentViewPage = 1;
-const teacherCanvas = document.getElementById('teacherCanvas');
-const tCtx = teacherCanvas.getContext('2d');
-const aiStatusText = document.getElementById('aiStatusText');
-const aiStatusBanner = document.getElementById('aiStatusBanner');
+    // These are now initialized in initTeacherDashboard
+    // const teacherCanvas = document.getElementById('teacherCanvas');
+    // const tCtx = teacherCanvas.getContext('2d');
+    // const aiStatusText = document.getElementById('aiStatusText');
+    // const aiStatusBanner = document.getElementById('aiStatusBanner');
 let teacherTool = 'pen';
 let teacherColor = '#e53e3e'; // Required: Red ink for corrections
 let teacherDrawing = false;
@@ -806,8 +810,7 @@ if (!isDemo) {
     });
 }
 
-loadNotifications();
-attachTeacherCanvasEvents();
+
 
 async function loadTeacherPage() {
     try {
@@ -1027,7 +1030,7 @@ function riskBadgeClass(level) {
 function setAiStatus(message, type = 'info') {
     if (aiStatusText) aiStatusText.textContent = message;
     const assistant = document.getElementById('assistant-techie');
-    if (!message) {
+    if (!message || message === '') { // Clear message means stop thinking
         aiStatusBanner.style.display = 'none';
         aiStatusBanner.className = 'ai-status-banner';
         if (assistant) assistant.classList.remove('thinking');
