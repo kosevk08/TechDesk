@@ -4,7 +4,7 @@ async function handleLogin(e) {
     const loginBtn = e.target.querySelector('button[type="submit"]');
     const originalBtnText = loginBtn.textContent;
     
-    const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const isLocalhost = ['localhost', '127.0.0.1', '::1', ''].includes(window.location.hostname);
     const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -53,6 +53,49 @@ async function handleLogin(e) {
                 <p style="margin-top:10px; font-size:0.8em;">Or <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Explore in Demo Mode</a></p>
             </div>
         `;
+    }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const egn = document.getElementById('regEgn').value;
+    const roleValue = document.getElementById('roleSlider').value;
+    
+    const roles = ['STUDENT', 'PARENT', 'TEACHER'];
+    const role = roles[roleValue];
+
+    const isLocalhost = ['localhost', '127.0.0.1', '::1', ''].includes(window.location.hostname);
+    const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+
+    try {
+        const response = await fetch(`${BACKEND_BASE_URL}/api/user/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, egn, role })
+        });
+
+        if (response.ok) {
+            alert('Registration submitted! An administrator must approve your account before you can log in.');
+            toggleAuthMode();
+        } else {
+            alert('Registration failed. EGN or Email might already exist.');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+    }
+}
+
+function toggleAuthMode() {
+    const loginForm = document.getElementById('loginForm');
+    const regForm = document.getElementById('registerForm');
+    if (loginForm.style.display === 'none') {
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+    } else {
+        loginForm.style.display = 'none';
+        regForm.style.display = 'block';
     }
 }
 
