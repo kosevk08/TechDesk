@@ -6,9 +6,21 @@
     <title>TechDesk - Sign In</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        .role-slider-container { margin: 25px 0; text-align: left; }
-        #roleSlider { width: 100%; cursor: pointer; margin-top: 10px; }
+        .role-slider-container { 
+            margin: 25px 0; 
+            text-align: left; 
+            --slider-accent: #6366f1; 
+        }
+        #roleSlider { 
+            width: 100%; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            accent-color: var(--slider-accent);
+            transition: accent-color 0.3s ease;
+        }
         .role-labels { display: flex; justify-content: space-between; padding: 0 2px; font-size: 0.8em; color: #94a3b8; margin-top: 8px; font-weight: 500; }
+        .role-labels span { transition: color 0.3s ease, transform 0.3s ease; }
+        .role-labels span.active { color: var(--slider-accent); transform: scale(1.1); font-weight: 700; }
         .toggle-auth { margin-top: 20px; font-size: 0.9em; text-align: center; color: #94a3b8; }
         .toggle-auth a { color: #6366f1; text-decoration: none; font-weight: 600; }
     </style>
@@ -37,27 +49,26 @@
         <!-- Registration Form Container -->
         <div id="registerForm" style="display: none;">
             <form>
-                <h2>Create Account</h2>
-                <p class="insight-copy" style="margin-bottom: 20px;">Registration requires admin approval.</p>
+                <h2>Join TechDesk</h2>
                 <div class="input-group">
-                    <input type="email" id="regEmail" placeholder="Email Address" required>
+                    <input type="email" id="regEmail" placeholder="Email Address" required autocomplete="email">
                 </div>
                 <div class="input-group">
-                    <input type="password" id="regPassword" placeholder="Password" required>
+                    <input type="password" id="regPassword" placeholder="Password" required autocomplete="new-password">
                 </div>
 
                 <!-- Role Slider -->
                 <div class="role-slider-container">
-                    <label for="roleSlider">I am registering as a:</label>
+                    <label for="roleSlider" style="font-size: 0.85em; color: #94a3b8;">Account Type:</label>
                     <input type="range" id="roleSlider" min="0" max="2" value="0" step="1">
                     <div class="role-labels">
-                        <span>Student</span>
+                        <span class="active">Student</span>
                         <span>Parent</span>
                         <span>Teacher</span>
                     </div>
                 </div>
 
-                <button type="submit" class="primary-btn">Request Access</button>
+                <button type="submit" class="primary-btn">Create Account</button>
                 <div class="toggle-auth">
                     Already a member? <a href="#" onclick="toggleAuthMode()">Login</a>
                 </div>
