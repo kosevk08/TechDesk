@@ -22,14 +22,16 @@
         .techtron-box {
             width: 280px; height: 450px; border: 2px solid #6366f1; border-radius: 20px;
             display: flex; flex-direction: column; align-items: center; justify-content: space-around;
-            background: rgba(30, 41, 59, 0.8); position: relative; overflow: hidden;
+            background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            position: relative; overflow: hidden;
         }
         .logo-circle {
             width: 150px; height: 150px; border-radius: 50%; border: 3px solid #6366f1;
             position: relative; overflow: hidden; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             background: #0f172a; cursor: pointer; z-index: 2;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
         }
-        .logo-circle:hover { transform: scale(1.25); }
+        .logo-circle:hover { transform: scale(1.25); box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
         .logo-circle img { width: 80%; height: 80%; margin-top: 10%; position: relative; z-index: 3; }
         .rotating-light {
             position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
@@ -40,10 +42,28 @@
         .slogan { font-style: italic; color: #94a3b8; font-size: 0.9rem; margin-top: 20px; }
         
         .login-container { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .login-card { width: 350px; background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .login-card { width: 350px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
         .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.2s; }
         .primary-btn { background: #6366f1; color: white; }
+        .primary-btn:disabled { background: #4f46e5; cursor: not-allowed; }
+        .spinner {
+            display: none; width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
+            border-top-color: #fff; animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn.loading, .btn.success { display: flex; align-items: center; justify-content: center; }
+        .btn.loading .spinner { display: inline-block; }
+        
+        .primary-btn.success { background: #10b981 !important; }
+        .check-icon { display: none; margin-left: 10px; font-size: 1.1rem; animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes scaleIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .btn.success .check-icon { display: inline-block; }
+        .btn.success .spinner { display: none; }
+
         .demo-btn { background: transparent; border: 1px solid #6366f1; color: #6366f1; margin-top: 20px; }
         .demo-btn:hover { background: rgba(99, 102, 241, 0.1); }
         
@@ -74,7 +94,11 @@
             <form id="loginForm">
                 <input type="email" id="email" placeholder="Email Address" required>
                 <input type="password" id="password" placeholder="Password" required>
-                <button type="submit" class="btn primary-btn">Login to TechDesk</button>
+                <button type="submit" id="loginBtn" class="btn primary-btn">
+                    <span>Login to TechDesk</span>
+                    <div class="spinner"></div>
+                    <div class="check-icon">✓</div>
+                </button>
             </form>
             
             <button class="btn demo-btn" onclick="fillLogin('r.paskalev-student@edu-school.bg', 'pass@2026')">Try the Demo Version</button>
@@ -188,6 +212,11 @@
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            let success = false;
 
             const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
             const BACKEND_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
@@ -200,22 +229,35 @@
                 });
 
                 if (response.ok) {
+                    success = true;
                     const user = await response.json();
                     localStorage.setItem('user', JSON.stringify(user));
                     
-                    // Route based on restored roles
-                    switch(user.role) {
-                        case 'STUDENT': window.location.href = '/student'; break;
-                        case 'TEACHER': window.location.href = '/teacher'; break;
-                        case 'PARENT': window.location.href = '/parent'; break;
-                        case 'ADMIN': window.location.href = '/admin'; break;
-                        default: window.location.href = '/dashboard';
-                    }
+                    // Trigger success animation
+                    loginBtn.classList.remove('loading');
+                    loginBtn.classList.add('success');
+                    loginBtn.querySelector('span').textContent = 'Welcome Back!';
+
+                    setTimeout(() => {
+                        // Route based on restored roles
+                        switch(user.role) {
+                            case 'STUDENT': window.location.href = '/student'; break;
+                            case 'TEACHER': window.location.href = '/teacher'; break;
+                            case 'PARENT': window.location.href = '/parent'; break;
+                            case 'ADMIN': window.location.href = '/admin'; break;
+                            default: window.location.href = '/dashboard';
+                        }
+                    }, 800);
                 } else {
                     alert('Invalid credentials. Please try the Demo buttons.');
                 }
             } catch (err) {
                 alert('Connection error. Is the backend running?');
+            } finally {
+                if (!success) {
+                    loginBtn.classList.remove('loading');
+                    loginBtn.disabled = false;
+                }
             }
         };
     </script>
