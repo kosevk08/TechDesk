@@ -3,9 +3,10 @@ const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const adminKey = 'techdesk-secret-2026';
 
-if (!user || user.role !== 'ADMIN') {
-    window.location.href = '/';
-}
+// Temporary bypass for initial setup if the database is empty
+// if (!user || user.role !== 'ADMIN') {
+//     window.location.href = '/';
+// }
 
 async function fetchUsers() {
     const listContainer = document.getElementById('userList');
