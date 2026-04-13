@@ -165,12 +165,6 @@ if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
 }
 
-if (isDemo && demoData) {
-    document.getElementById('teacherName').textContent = demoData.teacher.name;
-} else {
-    document.getElementById('teacherName').textContent = teacherNames[user.email] || user.email;
-}
-
 const supportedLangs = ['en', 'bg', 'sr', 'el', 'tr', 'ro', 'it', 'es', 'fr'];
 let langIndex = 0;
 

@@ -56,20 +56,15 @@ async function handleLogin(e) {
     }
 }
 
-const demoModal = document.getElementById('demoModal');
-const openDemoBtn = document.getElementById('openDemo');
-const closeDemoBtn = document.getElementById('closeDemo');
-const cancelDemoBtn = document.getElementById('demoCancel');
-const demoProfiles = document.getElementById('demoProfiles');
-const demoData = window.DemoData;
-
 function openDemoModal() {
+    const demoModal = document.getElementById('demoModal');
     if (!demoModal) return;
     demoModal.classList.add('active');
     demoModal.setAttribute('aria-hidden', 'false');
 }
 
 function closeDemoModal() {
+    const demoModal = document.getElementById('demoModal');
     if (!demoModal) return;
     demoModal.classList.remove('active');
     demoModal.setAttribute('aria-hidden', 'true');
@@ -90,6 +85,8 @@ function seedDemoProfile(profile) {
 }
 
 function buildDemoProfiles() {
+    const demoProfiles = document.getElementById('demoProfiles');
+    const demoData = window.DemoData;
     if (!demoProfiles) return;
     const profiles = [
         {
@@ -137,32 +134,35 @@ function buildDemoProfiles() {
     });
 }
 
-if (openDemoBtn) openDemoBtn.addEventListener('click', () => {
-    buildDemoProfiles();
-    openDemoModal();
-});
-if (closeDemoBtn) closeDemoBtn.addEventListener('click', closeDemoModal);
-if (cancelDemoBtn) cancelDemoBtn.addEventListener('click', closeDemoModal);
-if (demoModal) demoModal.addEventListener('click', (event) => {
-    if (event.target === demoModal) closeDemoModal();
-});
-
-// Toggle password visibility
-const toggleBtn = document.getElementById('togglePassword');
-const passwordInput = document.getElementById('password');
-
-if (toggleBtn && passwordInput) {
-    toggleBtn.addEventListener('click', () => {
-        const showing = passwordInput.type === 'text';
-        passwordInput.type = showing ? 'password' : 'text';
-        toggleBtn.textContent = showing ? '👁' : '🙈';
-        toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-    });
-}
-
 // Initialize everything only when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+
+    // Initialize Demo Modal Logic
+    document.getElementById('openDemo')?.addEventListener('click', () => {
+        buildDemoProfiles();
+        openDemoModal();
+    });
+    document.getElementById('closeDemo')?.addEventListener('click', closeDemoModal);
+    document.getElementById('demoCancel')?.addEventListener('click', closeDemoModal);
+    
+    const modal = document.getElementById('demoModal');
+    modal?.addEventListener('click', (e) => {
+        if (e.target === modal) closeDemoModal();
+    });
+
+    // Toggle password visibility
+    const toggleBtn = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    if (toggleBtn && passwordInput) {
+        toggleBtn.addEventListener('click', () => {
+            const showing = passwordInput.type === 'text';
+            passwordInput.type = showing ? 'password' : 'text';
+            toggleBtn.textContent = showing ? '👁' : '🙈';
+            toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+        });
+    }
+
     initLoginAnimation();
 });
 
