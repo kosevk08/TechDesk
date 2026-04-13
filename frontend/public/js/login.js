@@ -45,8 +45,11 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         loginBtn.disabled = false;
         loginBtn.textContent = originalBtnText;
         errorMsg.innerHTML = `
-            Offline Mode: Cannot reach server.<br>
-            <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Use Offline Demo Mode instead?</a>
+            <div class="connection-error">
+                <p>Connection lost. Please ensure the TechThrone server is running.</p>
+                <button type="button" class="action-btn secondary-btn" onclick="location.reload()">Retry Connection</button>
+                <p style="margin-top:10px; font-size:0.8em;">Or <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Explore in Demo Mode</a></p>
+            </div>
         `;
     }
 });
