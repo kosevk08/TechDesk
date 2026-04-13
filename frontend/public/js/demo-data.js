@@ -11,7 +11,7 @@ window.DemoData = {
             heatmap: 'Топлинна карта на класа',
             voice_to_notes: 'Глас към записки',
             lesson_replay: 'Повторение на урока',
-            attention_alert: 'Внимание: Студентът напусна прозореца'
+            attention_alert: 'Внимание: Студентът напусна прозореца',
             assistant_name: 'Теки'
         },
         sr: { dashboard: 'Контролна табла' }, // Serbian

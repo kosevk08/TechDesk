@@ -25,27 +25,39 @@ if ('serviceWorker' in navigator) {
         }).catch(err => console.log('SW Registration Failed', err));
     });
     navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data.type === 'SYNC_COMPLETE') updateSyncStatus();
+        if (event.data && event.data.type === 'SYNC_COMPLETE') updateSyncStatus();
     });
 }
 
 /**
  * IndexedDB Helper for Offline Persistence
  */
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('TechDeskDB', 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('strokes')) db.createObjectStore('strokes', { autoIncrement: true });
+            if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
 async function saveStrokeOffline(strokeData) {
-    const dbRequest = indexedDB.open('TechDeskDB', 1);
-    dbRequest.onsuccess = (e) => {
-        const db = e.target.result;
+    try {
+        const db = await openDB();
         const tx = db.transaction(['strokes', 'meta'], 'readwrite');
         tx.objectStore('strokes').add(strokeData);
         tx.objectStore('meta').put(localStorage.getItem('token'), 'auth_token');
         
-        // Register Background Sync
-        navigator.serviceWorker.ready.then(reg => {
-            if (reg.sync) reg.sync.register('sync-strokes');
-            updateSyncStatus();
-        });
-    };
+        const reg = await navigator.serviceWorker.ready;
+        if (reg.sync) await reg.sync.register('sync-strokes');
+        updateSyncStatus();
+    } catch (err) {
+        console.error('Failed to save offline stroke:', err);
+    }
 }
 
 /**
@@ -71,9 +83,8 @@ initAssistant();
  * Updates the UI to show how many items are waiting to be synced.
  */
 async function updateSyncStatus() {
-    const dbRequest = indexedDB.open('TechDeskDB', 1);
-    dbRequest.onsuccess = (e) => {
-        const db = e.target.result;
+    try {
+        const db = await openDB();
         const tx = db.transaction(['strokes'], 'readonly');
         const store = tx.objectStore('strokes');
         const countRequest = store.count();
@@ -93,7 +104,9 @@ async function updateSyncStatus() {
                     : '';
             }
         };
-    };
+    } catch (err) {
+        console.warn('Sync status update skipped (DB not ready):', err);
+    }
 }
 
 window.addEventListener('online', updateSyncStatus);

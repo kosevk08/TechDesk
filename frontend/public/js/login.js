@@ -1,4 +1,4 @@
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+function handleLogin(e) {
     e.preventDefault();
 
     const loginBtn = e.target.querySelector('button[type="submit"]');
@@ -42,17 +42,19 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             loginBtn.textContent = originalBtnText;
         }
     } catch (error) {
+        console.error('Connection Error Details:', error);
         loginBtn.disabled = false;
         loginBtn.textContent = originalBtnText;
         errorMsg.innerHTML = `
             <div class="connection-error">
-                <p>Unable to connect to the TechThrone server. Please check your internet connection or verify the server status in the Render Dashboard.</p>
+                <p><strong>Connection Error:</strong> We can't reach the server at <code>${BACKEND_BASE_URL}</code>.</p>
+                <p style="font-size: 0.85em; color: #94a3b8;">Common causes: Backend is still deploying, CORS policy mismatch, or the URL is incorrect.</p>
                 <button type="button" class="action-btn secondary-btn" onclick="location.reload()">Retry Connection</button>
                 <p style="margin-top:10px; font-size:0.8em;">Or <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Explore in Demo Mode</a></p>
             </div>
         `;
     }
-});
+}
 
 const demoModal = document.getElementById('demoModal');
 const openDemoBtn = document.getElementById('openDemo');
@@ -157,6 +159,12 @@ if (toggleBtn && passwordInput) {
         toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
     });
 }
+
+// Initialize everything only when the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+    initLoginAnimation();
+});
 
 /**
  * Neural Network Background Animation
