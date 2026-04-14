@@ -2,9 +2,6 @@ package com.edutech.desk.controller;
 
 import com.edutech.desk.entities.User;
 import com.edutech.desk.entities.Role;
-import com.edutech.desk.entities.Student;
-import com.edutech.desk.repository.StudentRepository;
-import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,12 +20,6 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private NameLookupService nameLookupService;
-
-    @Autowired
-    private StudentRepository studentRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -82,12 +73,6 @@ public class UserController {
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-
-    private boolean isSanitized(String input) {
-        if (input == null) return true;
-        String lower = input.toLowerCase();
-        return !lower.contains("<script") && !lower.contains("select ") && !lower.contains("drop ");
     }
 
     @GetMapping("/all")
