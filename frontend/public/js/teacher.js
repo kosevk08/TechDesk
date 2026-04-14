@@ -1,184 +1,32 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const socket = io('https://techdesk-frontend.onrender.com');
+const socket = io();
 const user = JSON.parse(localStorage.getItem('user'));
+const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let studentNames = [];
 let gradeAutosaveTimer = null;
 let lastGradeHash = null;
 let testAutosaveTimer = null;
-let currentLang = 'en';
 let lastTestHash = null;
-let strokeHistory = [];
-let isPlayingBack = false;
-let activeWritingTime = 0;
-let lastStrokeTime = null;
-let teacherCanvas = null;
-let tCtx = null;
-let aiStatusText = null;
-let aiStatusBanner = null;
-
-function secondNameOf(fullName, fallback = 'Teacher') {
-    const clean = String(fullName || '').trim();
-    if (!clean) return fallback;
-    const parts = clean.split(/\s+/);
-    return parts[1] || parts[0] || fallback;
-}
 
 function authHeaders(extra = {}) {
-    return extra;
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
-
-function openDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('TechDeskDB', 1);
-        request.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains('strokes')) db.createObjectStore('strokes', { autoIncrement: true });
-            if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
-        };
-        request.onsuccess = (e) => resolve(e.target.result);
-        request.onerror = (e) => reject(e.target.error);
-    });
-}
-
-async function saveStrokeOffline(strokeData) {
-    try {
-        const db = await openDB();
-        const tx = db.transaction(['strokes', 'meta'], 'readwrite');
-        tx.objectStore('strokes').add(strokeData);
-        updateSyncStatus();
-    } catch (err) {
-        console.error('Failed to save offline stroke:', err);
-    }
-}
-
-let assistant = null;
-
-function createAssistant() {
-    if (!assistant) {
-        assistant = document.createElement('div');
-        assistant.id = 'assistant-techie';
-        assistant.className = 'assistant-icon';
-        assistant.innerHTML = '🤖';
-        document.body.appendChild(assistant);
-
-        const style = document.createElement('style');
-        style.textContent = `
-            #assistant-techie { position: fixed; bottom: 20px; right: 20px; font-size: 40px; z-index: 1000; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0.7; }
-            #assistant-techie.thinking { transform: scale(1.4) rotate(360deg); opacity: 1; filter: drop-shadow(0 0 10px #6366f1); }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-async function updateSyncStatus() {
-    try {
-        const db = await openDB();
-        const tx = db.transaction(['strokes'], 'readonly');
-        const store = tx.objectStore('strokes');
-        const countRequest = store.count();
-        countRequest.onsuccess = () => {
-            const count = countRequest.result;
-            let indicator = document.getElementById('syncStatusIndicator');
-            if (!indicator && count > 0) {
-                indicator = document.createElement('div');
-                indicator.id = 'syncStatusIndicator';
-                indicator.className = 'ai-status-banner info';
-                document.body.prepend(indicator);
-            }
-            if (indicator) {
-                indicator.style.display = count > 0 ? 'block' : 'none';
-                indicator.textContent = count > 0 ? `${count} items pending sync` : '';
-            }
-        };
-    } catch (err) {
-        console.warn('Sync status update skipped:', err);
-    }
-}
-
-window.addEventListener('online', updateSyncStatus);
-
-function injectEli5Styles() {
-    if (document.getElementById('eli5Styles')) return;
-    const style = document.createElement('style');
-    style.id = 'eli5Styles';
-    style.textContent = `
-        @keyframes eli5FadeIn {
-            from { opacity: 0; transform: scale(0.95) translateY(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .eli5-content { animation: eli5FadeIn 0.3s ease-out forwards; }
-    `;
-    document.head.appendChild(style);
-}
-
-const teacherNames = {
-    'h.schmidt-teacher@edu-school.bg': 'Miss Schmidt',
-    'a.popescu-teacher@edu-school.bg': 'Mr Popescu',
-    'e.vasileva-teacher@edu-school.bg': 'Mrs Vasileva',
-    'm.ivanova-maths@edu-school.bg': 'Ms Ivanova',
-    'p.georgiev-physics@edu-school.bg': 'Mr Georgiev',
-    'l.stoyanova-chem@edu-school.bg': 'Ms Stoyanova',
-    'd.petrov-biology@edu-school.bg': 'Mr Petrov',
-    's.martin-english@edu-school.bg': 'Mr Martin',
-    't.vasileva-bulgarian@edu-school.bg': 'Ms Vasileva',
-    'g.stefanov-geography@edu-school.bg': 'Mr Stefanov',
-    'r.dimitrova-philosophy@edu-school.bg': 'Ms Dimitrova',
-    'n.koleva-englishlit@edu-school.bg': 'Ms Koleva',
-    'v.georgieva-german@edu-school.bg': 'Ms Georgieva',
-    'i.karaslavova-spanish@edu-school.bg': 'Ms Karaslavova',
-    'e.nikolova-anthro@edu-school.bg': 'Ms Nikolova'
-};
-
-const egnToName = {
-    '1000000001': 'Victor Kolev',
-    '1000000002': 'Konstantin Kosev',
-    '1000000003': 'Ivan Ivanov',
-    '1000000004': 'John Doe',
-    '1000000005': 'Daniel Kovacs',
-    '1000000006': 'Sofia Martinez',
-    '1000000007': 'Marcus Bennett',
-    '1000000008': 'Elena Petrova',
-    '1000000009': 'Liam O\'Connor',
-    '1000000010': 'Victor Ivanov',
-    '1000000011': 'Natalie Fischer',
-    '1000000012': 'Carlos Mendes',
-    '9000000001': 'Radoslav Paskalev'
-};
-
-const nameToEgn = Object.fromEntries(Object.entries(egnToName).map(([egn, name]) => [name, egn]));
 
 if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    teacherCanvas = document.getElementById('teacherCanvas');
-    tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
-    aiStatusText = document.getElementById('aiStatusText');
-    aiStatusBanner = document.getElementById('aiStatusBanner');
-    const teacherNameEl = document.getElementById('teacherName');
-    if (teacherNameEl) {
-        teacherNameEl.textContent = secondNameOf(user?.displayName || teacherNames[user?.email] || 'Teacher', 'Teacher');
-    }
-    attachTeacherCanvasEvents();
-});
-
-const supportedLangs = ['en', 'bg', 'sr', 'el', 'tr', 'ro', 'it', 'es', 'fr'];
-let langIndex = 0;
-
-function toggleLanguage() {
-    langIndex = (langIndex + 1) % supportedLangs.length;
-    currentLang = supportedLangs[langIndex];
-    const btn = document.getElementById('langToggle');
-    if (btn) btn.textContent = currentLang.toUpperCase();
-}
-
 if (isDemo) {
     insertDemoBanner();
     insertDemoTeacherSections();
+}
+
+if (isDemo && demoData) {
+    document.getElementById('teacherName').textContent = demoData.teacher.name;
+} else {
+    document.getElementById('teacherName').textContent = user.displayName || 'Teacher';
 }
 
 function insertDemoBanner() {
@@ -192,7 +40,9 @@ function insertDemoBanner() {
         <p>${demoData?.demoNotice || 'Explore safely with demo data only.'}</p>
         <p class="insight-copy"><strong>Features:</strong> Grades, Attendance, Messages, Schedule, Homework, Tests, Notebooks, AI Insights.</p>
         <div class="insight-card">
-            <div class="insight-top"><h5>What to try</h5></div>
+            <div class="insight-top">
+                <h5>What to try</h5>
+            </div>
             <p class="insight-copy">Create a demo test, add a grade, and preview student notebooks.</p>
         </div>
     `;
@@ -224,14 +74,24 @@ function insertDemoTeacherSections() {
     scheduleSection.className = 'card section-card';
     scheduleSection.id = 'demoScheduleSection';
     scheduleSection.innerHTML = `
-        <div class="section-header"><div><span class="section-eyebrow">Weekly Timetable</span><h3 class="section-title">Schedule</h3></div></div>
+        <div class="section-header">
+            <div>
+                <span class="section-eyebrow">Weekly Timetable</span>
+                <h3 class="section-title">Schedule</h3>
+            </div>
+        </div>
         <div id="demoScheduleList"></div>
     `;
     const homeworkSection = document.createElement('div');
     homeworkSection.className = 'card section-card';
     homeworkSection.id = 'demoHomeworkSection';
     homeworkSection.innerHTML = `
-        <div class="section-header"><div><span class="section-eyebrow">Assignments</span><h3 class="section-title">Homework</h3></div></div>
+        <div class="section-header">
+            <div>
+                <span class="section-eyebrow">Assignments</span>
+                <h3 class="section-title">Homework</h3>
+            </div>
+        </div>
         <div id="demoHomeworkList"></div>
     `;
     container.appendChild(scheduleSection);
@@ -263,93 +123,18 @@ function renderDemoHomework() {
     `).join('');
 }
 
-let currentViewEgn = null;
 let currentViewStudent = null;
 let currentViewSubject = null;
 let currentViewPage = 1;
+const teacherCanvas = document.getElementById('teacherCanvas');
+const tCtx = teacherCanvas.getContext('2d');
+const aiStatusText = document.getElementById('aiStatusText');
+const aiStatusBanner = document.getElementById('aiStatusBanner');
 let teacherTool = 'pen';
 let teacherColor = '#e53e3e';
 let teacherDrawing = false;
 let teacherLastX = 0;
 let teacherLastY = 0;
-
-function toggleClassroomLock(isLocked) {
-    socket.emit('classroom-control', { command: isLocked ? 'LOCK_SCREENS' : 'UNLOCK_SCREENS', className: '11D' });
-    setAiStatus(isLocked ? 'Classroom screens locked.' : 'Classroom screens released.');
-}
-
-function startVoiceToNotes() {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'en-US';
-    recognition.onstart = () => setAiStatus('Listening for notes...');
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setAiStatus(`Transcribed: ${transcript.substring(0, 30)}...`);
-        socket.emit('voice-note-transcribed', { transcript, subject: currentViewSubject });
-    };
-    recognition.start();
-}
-
-async function explainLikeIm5() {
-    if (!currentViewSubject) return;
-    const topic = prompt("What concept should I simplify?");
-    if (!topic) return;
-    setAiStatus('Simplifying concept...', 'info');
-    try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/eli5/${encodeURIComponent(currentViewSubject)}/${encodeURIComponent(topic)}`);
-        if (!res.ok) throw new Error('Failed');
-        const data = await res.json();
-        showEli5Modal(topic, data);
-        setAiStatus('');
-    } catch (err) {
-        setAiStatus('Failed to simplify concept.', 'error');
-    }
-}
-
-function showEli5Modal(topic, data) {
-    injectEli5Styles();
-    let modal = document.getElementById('eli5Modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'eli5Modal';
-        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
-        document.body.appendChild(modal);
-    }
-    modal.replaceChildren();
-    const content = document.createElement('div');
-    content.className = 'card section-card eli5-content';
-    content.style.maxWidth = '500px';
-    content.innerHTML = `
-        <h3>ELI5: ${topic}</h3>
-        <p><strong>Status:</strong> ${data.learningStatus || 'N/A'}</p>
-        <p class="insight-copy" style="font-style:italic">${data.encouragement || ''}</p>
-        <ul>${(data.hints || []).map(h => `<li>${h}</li>`).join('')}</ul>
-        <button class="action-btn" onclick="document.getElementById('eli5Modal').style.display='none'">Close</button>
-    `;
-    modal.appendChild(content);
-    modal.style.display = 'flex';
-}
-
-function syncStudentsToCurrentPage() {
-    if (!currentViewSubject) return;
-    socket.emit('force-page-sync', { subject: currentViewSubject, page: currentViewPage, className: '11D' });
-    setAiStatus(`Students synced to ${currentViewSubject} Page ${currentViewPage}`);
-}
-
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) console.log("Teacher tab inactive.");
-});
-
-socket.on('suspicious-activity', (data) => {
-    const { studentName, reason } = data;
-    const alertsList = document.getElementById('aiAlertsList');
-    if (alertsList) {
-        const card = document.createElement('div');
-        card.className = 'alert-card alert-high';
-        card.innerHTML = `<h5>Suspicious Activity: ${studentName}</h5><p>${reason}</p>`;
-        alertsList.prepend(card);
-    }
-});
 
 function setTeacherTool(tool) {
     teacherTool = tool;
@@ -360,54 +145,25 @@ function setTeacherTool(tool) {
 function setTeacherColor(color, btnId) {
     teacherColor = color;
     document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
-    document.getElementById(btnId)?.classList.add('active');
+    const button = document.getElementById(btnId);
+    if (button) button.classList.add('active');
 }
 
 function clearTeacherCanvas() {
-    if (!tCtx) return;
     tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-    if (currentViewEgn && currentViewSubject) {
-        socket.emit('clear-canvas', { studentEgn: currentViewEgn, subject: currentViewSubject, page: currentViewPage });
+    if (currentViewStudent && currentViewSubject) {
+        socket.emit('clear-canvas', {
+            studentName: currentViewStudent,
+            subject: currentViewSubject,
+            page: currentViewPage,
+            authorRole: 'TEACHER'
+        });
     }
-}
-
-async function replayLesson() {
-    if (strokeHistory.length === 0 || isPlayingBack || !tCtx) return;
-    isPlayingBack = true;
-    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-    const startTime = strokeHistory[0].timestamp;
-    for (const stroke of strokeHistory) {
-        const delay = stroke.timestamp - startTime;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        tCtx.beginPath();
-        tCtx.moveTo(stroke.x0, stroke.y0);
-        tCtx.lineTo(stroke.x1, stroke.y1);
-        tCtx.strokeStyle = stroke.color || '#e53e3e';
-        tCtx.lineWidth = stroke.size;
-        tCtx.lineCap = 'round';
-        tCtx.stroke();
-    }
-    isPlayingBack = false;
 }
 
 function drawTeacher(x0, y0, x1, y1) {
-    if (!currentViewEgn || !currentViewSubject || !tCtx) return;
+    if (!currentViewStudent || !currentViewSubject) return;
     const size = document.getElementById('teacherSize')?.value || 3;
-    const timestamp = Date.now();
-    if (lastStrokeTime) {
-        activeWritingTime += (timestamp - lastStrokeTime < 2000) ? (timestamp - lastStrokeTime) : 0;
-    }
-    lastStrokeTime = timestamp;
-    const strokeData = {
-        x0, y0, x1, y1,
-        color: teacherTool === 'eraser' ? null : teacherColor,
-        size, tool: teacherTool,
-        studentEgn: currentViewEgn,
-        subject: currentViewSubject,
-        page: currentViewPage,
-        timestamp
-    };
-    strokeHistory.push(strokeData);
     if (teacherTool === 'eraser') {
         tCtx.clearRect(x1 - 10, y1 - 10, 20, 20);
     } else {
@@ -420,28 +176,24 @@ function drawTeacher(x0, y0, x1, y1) {
         tCtx.lineJoin = 'round';
         tCtx.stroke();
     }
-    if (socket.connected) {
-        socket.emit('draw-stroke', strokeData);
-    } else {
-        saveStrokeOffline(strokeData);
-        setAiStatus('Offline: Syncing when connection returns.', 'error');
-    }
+    socket.emit('draw-stroke', {
+        x0, y0, x1, y1,
+        color: teacherTool === 'eraser' ? null : teacherColor,
+        size,
+        tool: teacherTool,
+        studentName: currentViewStudent,
+        subject: currentViewSubject,
+        page: currentViewPage,
+        authorRole: 'TEACHER'
+    });
 }
 
 function showSection(sectionId) {
-    ['aiInsightsSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
+    ['aiInsightsSection', 'notebooksSection', 'notebookViewer', 'testsSection', 'gradesSection'].forEach((id) => {
         const element = document.getElementById(id);
-        if (element) element.style.display = 'none';
-    });
-    const target = document.getElementById(sectionId);
-    if (target) target.style.display = 'block';
-}
-
-function sendSilentResponse(studentName, message, isPublic = false) {
-    socket.emit('silent-message-response', {
-        recipient: isPublic ? 'CLASS_11D' : studentName,
-        content: message,
-        teacherName: teacherNames[user.email] || user.displayName || 'Teacher'
+        if (element) {
+            element.style.display = id === sectionId ? 'block' : 'none';
+        }
     });
 }
 
@@ -450,8 +202,7 @@ function subjectMatch(a, b) {
 }
 
 socket.on('draw-stroke', (data) => {
-    if (!tCtx) return;
-    if (data.studentEgn === currentViewEgn &&
+    if (data.studentName === currentViewStudent &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         document.getElementById('liveBadge').style.display = 'inline';
@@ -470,8 +221,7 @@ socket.on('draw-stroke', (data) => {
 });
 
 socket.on('clear-canvas', (data) => {
-    if (!tCtx) return;
-    if (data.studentEgn === currentViewEgn &&
+    if (data.studentName === currentViewStudent &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
@@ -479,8 +229,7 @@ socket.on('clear-canvas', (data) => {
 });
 
 socket.on('page-change', (data) => {
-    if (!tCtx) return;
-    if (data.studentEgn === currentViewEgn && subjectMatch(data.subject, currentViewSubject)) {
+    if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
         currentViewPage = data.page;
         document.getElementById('notebookTitle').textContent =
             `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
@@ -488,12 +237,14 @@ socket.on('page-change', (data) => {
         loadTeacherPage();
     }
 });
+
 async function loadNotifications() {
     const container = document.getElementById('teacherNotifications');
     if (!container) return;
     try {
         if (isDemo && demoData) {
-            container.innerHTML = demoData.notifications.slice(0, 6).map(n => `
+            const notifications = demoData.notifications;
+            container.innerHTML = notifications.slice(0, 6).map(n => `
                 <div class="insight-card">
                     <div class="insight-top">
                         <h5>${n.type}</h5>
@@ -504,7 +255,23 @@ async function loadNotifications() {
             `).join('');
             return;
         }
-        container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notifications/me?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        const notifications = res.ok ? await res.json() : [];
+        if (!notifications.length) {
+            container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
+            return;
+        }
+        container.innerHTML = notifications.slice(0, 6).map(n => `
+            <div class="insight-card">
+                <div class="insight-top">
+                    <h5>${n.type}</h5>
+                    <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
+                </div>
+                <p class="insight-copy">${n.message}</p>
+            </div>
+        `).join('');
     } catch (error) {
         console.error('Could not load notifications:', error);
     }
@@ -512,10 +279,18 @@ async function loadNotifications() {
 
 async function loadStudentNames() {
     if (isDemo && demoData) {
-        studentNames = [{ fullName: demoData.student.name, egn: '9000000001' }];
+        studentNames = [{ fullName: demoData.student.name, className: demoData.student.className }];
         return;
     }
-    studentNames = Object.entries(egnToName).map(([egn, name]) => ({ fullName: name, egn }));
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/student/names`, {
+            headers: authHeaders()
+        });
+        studentNames = res.ok ? await res.json() : [];
+    } catch (error) {
+        console.error('Could not load student names:', error);
+        studentNames = [];
+    }
 }
 
 function setGradeStatus(text) {
@@ -547,14 +322,26 @@ async function addGrade() {
     const subject = document.getElementById('gradeSubject').value.trim();
     const value = parseFloat(document.getElementById('gradeValue').value);
     const comment = document.getElementById('gradeComment').value.trim();
+
     if (!studentName || !subject || Number.isNaN(value)) {
         setGradeStatus('Student, subject, and grade are required.');
         return false;
     }
+
     try {
         setGradeStatus('Saving grade...');
         if (isDemo && demoData) {
-            demoData.grades.unshift({ subject, value, comment: comment || 'Demo grade saved.', createdAt: new Date().toISOString() });
+            demoData.grades.unshift({
+                subject,
+                value,
+                comment: comment || 'Demo grade saved.',
+                createdAt: new Date().toISOString()
+            });
+            demoData.notifications.unshift({
+                type: 'Grade Update',
+                message: `${subject} grade added: ${value}`,
+                createdAt: new Date().toISOString()
+            });
             setGradeStatus('Grade saved (demo).');
             document.getElementById('gradeValue').value = '';
             document.getElementById('gradeComment').value = '';
@@ -562,9 +349,27 @@ async function addGrade() {
             loadNotifications();
             return true;
         }
-        setGradeStatus('Grades not yet connected to backend.');
-        return false;
+        const res = await fetch(`${BACKEND_BASE_URL}/api/grades`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                studentName,
+                subject,
+                value,
+                comment
+            })
+        });
+        if (!res.ok) throw new Error(`Grade failed ${res.status}`);
+        await res.json();
+        setGradeStatus('Grade saved.');
+        document.getElementById('gradeValue').value = '';
+        document.getElementById('gradeComment').value = '';
+        loadGradeHistory();
+        loadNotifications();
+        socket.emit('grade-updated', { studentName });
+        return true;
     } catch (error) {
+        console.error('Could not save grade:', error);
         setGradeStatus('Failed to save grade.');
         return false;
     }
@@ -586,8 +391,9 @@ function scheduleGradeAutosave() {
 }
 
 async function loadGradeHistory() {
+    const studentName = document.getElementById('gradeStudent').value;
     const container = document.getElementById('gradeHistoryList');
-    if (!container) return;
+    if (!container || !studentName) return;
     container.innerHTML = '<p class="empty-state">Loading...</p>';
     try {
         if (isDemo && demoData) {
@@ -605,8 +411,23 @@ async function loadGradeHistory() {
             `).join('');
             return;
         }
-        container.innerHTML = '<p class="empty-state">No grades yet.</p>';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/grades/student/name/${encodeURIComponent(studentName)}?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        const grades = res.ok ? await res.json() : [];
+        if (!grades.length) {
+            container.innerHTML = '<p class="empty-state">No grades yet.</p>';
+            return;
+        }
+        container.innerHTML = grades.map(g => `
+            <div class="test-card">
+                <h5>${g.subject}: ${g.value}</h5>
+                <div class="test-meta">${g.comment || 'No comment'}</div>
+                <div class="test-meta">Saved: ${g.createdAt ? g.createdAt.replace('T', ' ') : '-'}</div>
+            </div>
+        `).join('');
     } catch (error) {
+        console.error('Could not load grades:', error);
         container.innerHTML = '<p class="empty-state">Failed to load grades.</p>';
     }
 }
@@ -619,43 +440,63 @@ async function loadGrades() {
 }
 
 document.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'gradeStudent') loadGradeHistory();
-    if (e.target && e.target.id === 'testClass') scheduleTestAutosave();
+    if (e.target && e.target.id === 'gradeStudent') {
+        loadGradeHistory();
+    }
 });
 
 document.addEventListener('input', (e) => {
     if (!e.target) return;
-    const gradeIds = new Set(['gradeStudent', 'gradeSubject', 'gradeValue', 'gradeComment']);
-    const testIds = new Set(['testTitle', 'testSubject', 'testDescription', 'testQuestions', 'testPoints', 'testDueDate']);
-    if (gradeIds.has(e.target.id)) scheduleGradeAutosave();
-    if (testIds.has(e.target.id)) scheduleTestAutosave();
+    const autosaveIds = new Set(['gradeStudent', 'gradeSubject', 'gradeValue', 'gradeComment']);
+    if (autosaveIds.has(e.target.id)) {
+        scheduleGradeAutosave();
+    }
+});
+
+document.addEventListener('input', (e) => {
+    if (!e.target) return;
+    const autosaveIds = new Set([
+        'testTitle',
+        'testSubject',
+        'testDescription',
+        'testQuestions',
+        'testPoints',
+        'testDueDate'
+    ]);
+    if (autosaveIds.has(e.target.id)) {
+        scheduleTestAutosave();
+    }
+});
+
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'testClass') {
+        scheduleTestAutosave();
+    }
 });
 
 if (!isDemo) {
     socket.on('grade-updated', () => {
-        if (document.getElementById('gradesSection')?.style.display === 'block') loadGradeHistory();
+        if (document.getElementById('gradesSection')?.style.display === 'block') {
+            loadGradeHistory();
+        }
         loadNotifications();
     });
 }
 
+loadNotifications();
+attachTeacherCanvasEvents();
+
 async function loadTeacherPage() {
     try {
         if (isDemo && demoData) {
-            renderDemoNotebookPage(demoData.notebooks[0]);
+            const notebook = demoData.notebooks.find(n => n.studentName === currentViewStudent && subjectMatch(n.subject, currentViewSubject))
+                || demoData.notebooks[0];
+            renderDemoNotebookPage(notebook);
             return;
         }
-        if (!currentViewSubject) return;
-        let res;
-        if (currentViewEgn) {
-            res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${encodeURIComponent(currentViewEgn)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
-                headers: authHeaders()
-            });
-        }
-        if (!res || !res.ok) {
-            res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent || '')}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
-                headers: authHeaders()
-            });
-        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -679,7 +520,6 @@ function renderDemoNotebookPage(notebook) {
     const img = document.getElementById('notebookImage');
     img.src = '';
     img.style.display = 'none';
-    if (!tCtx) return;
     tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
     tCtx.fillStyle = '#1b1b1b';
     tCtx.font = '20px sans-serif';
@@ -693,12 +533,13 @@ function renderDemoNotebookPage(notebook) {
 
 async function loadNotebooks() {
     try {
-        const section = document.getElementById('notebooksSection');
-        const list = document.getElementById('notebooksList');
-        section.style.display = 'block';
-        list.innerHTML = '';
-
         if (isDemo && demoData) {
+            const section = document.getElementById('notebooksSection');
+            const list = document.getElementById('notebooksList');
+            showSection('notebooksSection');
+            section.style.display = 'block';
+            list.innerHTML = '';
+
             demoData.notebooks.forEach(notebook => {
                 const card = document.createElement('div');
                 card.className = 'notebook-card';
@@ -707,17 +548,25 @@ async function loadNotebooks() {
                         <h4>${notebook.studentName}</h4>
                         <p>Subject: ${notebook.subject} | Page: ${notebook.page}</p>
                     </div>
-                    <button class="view-btn">Preview</button>
+                    <button class="view-btn"
+                        data-student="${notebook.studentName}"
+                        data-subject="${notebook.subject}">
+                        Preview
+                    </button>
                 `;
-                card.querySelector('.view-btn').addEventListener('click', () => {
-                    viewNotebook('9000000001', notebook.studentName, notebook.subject);
-                });
                 list.appendChild(card);
+            });
+
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    viewNotebook(null, btn.dataset.student, btn.dataset.subject);
+                });
             });
             return;
         }
-
-        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/list?t=${Date.now()}`);
+        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/teacher?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
         const notebooks = await response.json();
 
         const uniqueNotebooks = [];
@@ -730,14 +579,19 @@ async function loadNotebooks() {
             }
         });
 
+        const section = document.getElementById('notebooksSection');
+        const list = document.getElementById('notebooksList');
+        showSection('notebooksSection');
+        section.style.display = 'block';
+        list.innerHTML = '';
+
         if (uniqueNotebooks.length === 0) {
             list.innerHTML = '<p>No notebooks found.</p>';
             return;
         }
 
         uniqueNotebooks.forEach(notebook => {
-            const studentName = notebook.studentName || 'Unknown';
-            const egn = notebook.studentEgn || nameToEgn[studentName] || '';
+            const studentName = notebook.studentName || 'Student';
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.innerHTML = `
@@ -745,24 +599,31 @@ async function loadNotebooks() {
                     <h4>${studentName}</h4>
                     <p>Subject: ${notebook.subject} | Year: ${notebook.schoolYear}</p>
                 </div>
-                <button class="view-btn">View</button>
+                <button class="view-btn"
+                    data-id="${notebook.id}"
+                    data-student="${studentName}"
+                    data-subject="${notebook.subject}">
+                    View
+                </button>
             `;
-            card.querySelector('.view-btn').addEventListener('click', () => {
-                viewNotebook(egn, studentName, notebook.subject);
-            });
             list.appendChild(card);
         });
+
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                viewNotebook(btn.dataset.id, btn.dataset.student, btn.dataset.subject);
+            });
+        });
+
     } catch (error) {
         console.error('Could not load notebooks:', error);
     }
 }
 
-function viewNotebook(egn, studentName, subject) {
-    currentViewEgn = egn;
+function viewNotebook(id, studentName, subject) {
     currentViewStudent = studentName;
     currentViewSubject = subject;
     currentViewPage = 1;
-    strokeHistory = [];
 
     document.getElementById('notebooksSection').style.display = 'none';
     document.getElementById('notebookViewer').style.display = 'block';
@@ -773,20 +634,14 @@ function viewNotebook(egn, studentName, subject) {
     const isMaths = subject.toLowerCase() === 'maths';
     wrapper.className = 'notebook-canvas-wrapper ' + (isMaths ? 'squared' : 'lined');
 
-    teacherCanvas = document.getElementById('teacherCanvas');
-    tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
-    if (teacherCanvas) {
-        teacherCanvas.width = wrapper.clientWidth;
-        teacherCanvas.height = wrapper.clientHeight;
-    }
-    if (tCtx) tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+    teacherCanvas.width = wrapper.clientWidth;
+    teacherCanvas.height = wrapper.clientHeight;
+    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
 
-    attachTeacherCanvasEvents();
     loadTeacherPage();
 }
 
 function backToList() {
-    currentViewEgn = null;
     currentViewStudent = null;
     currentViewSubject = null;
     currentViewPage = 1;
@@ -797,88 +652,75 @@ function backToList() {
 
 function attachTeacherCanvasEvents() {
     if (!teacherCanvas) return;
-    const newCanvas = teacherCanvas.cloneNode(true);
-    teacherCanvas.parentNode.replaceChild(newCanvas, teacherCanvas);
-    teacherCanvas = newCanvas;
-    tCtx = teacherCanvas.getContext('2d');
-
-    teacherCanvas.addEventListener('mousedown', (e) => {
-        if (!currentViewEgn) return;
+    teacherCanvas.addEventListener('mousedown', (event) => {
+        if (!currentViewStudent) return;
         teacherDrawing = true;
-        [teacherLastX, teacherLastY] = [e.offsetX, e.offsetY];
+        [teacherLastX, teacherLastY] = [event.offsetX, event.offsetY];
     });
-    teacherCanvas.addEventListener('mousemove', (e) => {
+
+    teacherCanvas.addEventListener('mousemove', (event) => {
         if (!teacherDrawing) return;
-        drawTeacher(teacherLastX, teacherLastY, e.offsetX, e.offsetY);
-        [teacherLastX, teacherLastY] = [e.offsetX, e.offsetY];
+        drawTeacher(teacherLastX, teacherLastY, event.offsetX, event.offsetY);
+        [teacherLastX, teacherLastY] = [event.offsetX, event.offsetY];
     });
+
     teacherCanvas.addEventListener('mouseup', () => { teacherDrawing = false; });
     teacherCanvas.addEventListener('mouseout', () => { teacherDrawing = false; });
 
-    teacherCanvas.addEventListener('touchstart', (e) => {
-        if (!currentViewEgn) return;
-        e.preventDefault();
-        const touch = e.touches[0];
+    teacherCanvas.addEventListener('touchstart', (event) => {
+        if (!currentViewStudent) return;
+        event.preventDefault();
+        const touch = event.touches[0];
         const rect = teacherCanvas.getBoundingClientRect();
         teacherDrawing = true;
         teacherLastX = touch.clientX - rect.left;
         teacherLastY = touch.clientY - rect.top;
     }, { passive: false });
-    teacherCanvas.addEventListener('touchmove', (e) => {
+
+    teacherCanvas.addEventListener('touchmove', (event) => {
         if (!teacherDrawing) return;
-        e.preventDefault();
-        const touch = e.touches[0];
+        event.preventDefault();
+        const touch = event.touches[0];
         const rect = teacherCanvas.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         drawTeacher(teacherLastX, teacherLastY, x, y);
         [teacherLastX, teacherLastY] = [x, y];
     }, { passive: false });
+
     teacherCanvas.addEventListener('touchend', () => { teacherDrawing = false; });
     teacherCanvas.addEventListener('touchcancel', () => { teacherDrawing = false; });
 }
-function formatPercent(value) { return `${Number(value || 0).toFixed(1)}%`; }
-function formatSeconds(value) { return `${Math.round(value || 0)}s`; }
-function riskBadgeClass(level) { return `risk-badge risk-${String(level || 'low').toLowerCase()}`; }
 
-function setAiStatus(message, type = 'info') {
-    if (!aiStatusBanner) return;
-    if (aiStatusText) aiStatusText.textContent = message;
-    const assistant = document.getElementById('assistant-techie');
-    if (!message || message === '') { // Clear message means stop thinking
-        aiStatusBanner.style.display = 'none';
-        aiStatusBanner.className = 'ai-status-banner';
-        if (assistant) assistant.classList.remove('thinking');
-        return;
-    }
-    if (assistantEl) assistantEl.classList.add('thinking');
-    if (aiStatusBanner) {
-        aiStatusBanner.textContent = message;
-        aiStatusBanner.className = `ai-status-banner${type === 'error' ? ' error' : ''}`;
-        aiStatusBanner.style.display = 'block';
-    }
+function formatPercent(value) {
+    return `${Number(value || 0).toFixed(1)}%`;
 }
 
-function renderHeatmap(students) {
-    const container = document.getElementById('classroomHeatmap');
-    if (!container) return;
-    container.replaceChildren();
-    students.forEach(student => {
-        const cell = document.createElement('div');
-        cell.className = `heatmap-cell status-${student.riskLevel.toLowerCase()}`;
-        const tooltip = document.createElement('span');
-        tooltip.className = 'heatmap-tooltip';
-        tooltip.textContent = `${student.studentName}: ${student.riskLevel} Risk`;
-        cell.appendChild(tooltip);
-        cell.onclick = () => viewNotebook(student.studentEgn || nameToEgn[student.studentName], student.studentName, currentViewSubject || 'Maths');
-        
-        container.appendChild(cell);
-    });
+function formatSeconds(value) {
+    return `${Math.round(value || 0)}s`;
+}
+
+function riskBadgeClass(level) {
+    return `risk-badge risk-${String(level || 'low').toLowerCase()}`;
+}
+
+function setAiStatus(message, type = 'info') {
+    aiStatusText.textContent = message;
+
+    if (!message) {
+        aiStatusBanner.style.display = 'none';
+        aiStatusBanner.textContent = '';
+        aiStatusBanner.className = 'ai-status-banner';
+        return;
+    }
+
+    aiStatusBanner.textContent = message;
+    aiStatusBanner.className = `ai-status-banner${type === 'error' ? ' error' : ''}`;
+    aiStatusBanner.style.display = 'block';
 }
 
 function renderOverview(overview) {
     const grid = document.getElementById('aiOverviewGrid');
-    if (!grid) return;
     const metrics = [
         { label: 'Tracked Tasks', value: overview.totalTasks ?? 0 },
         { label: 'Accuracy', value: formatPercent(overview.accuracyRate) },
@@ -887,99 +729,160 @@ function renderOverview(overview) {
         { label: 'Struggling Students', value: overview.strugglingStudentsCount ?? 0 },
         { label: 'Attention Alerts', value: overview.attentionAlertsCount ?? 0 }
     ];
-    grid.innerHTML = metrics.map(m => `
+
+    grid.innerHTML = metrics.map((metric) => `
         <div class="metric-card">
-            <span class="metric-label">${m.label}</span>
-            <strong class="metric-value">${m.value}</strong>
+            <span class="metric-label">${metric.label}</span>
+            <strong class="metric-value">${metric.value}</strong>
         </div>
     `).join('');
 }
 
 function renderStudents(students) {
     const container = document.getElementById('aiStudentsList');
-    if (!container) return;
-    if (!students || !students.length) {
+
+    if (!students || students.length === 0) {
         container.innerHTML = '<p class="empty-state">No students currently flagged for attention.</p>';
         return;
     }
-    container.innerHTML = students.map(s => `
+
+    container.innerHTML = students.map((student) => `
         <div class="insight-card">
             <div class="insight-top">
                 <div>
-                    <h5>${s.studentName}</h5>
-                    <p>${s.className} • ${s.adaptiveRecommendation.replaceAll('_', ' ')}</p>
+                    <h5>${student.studentName}</h5>
+                    <p>${student.className} • ${student.adaptiveRecommendation.replaceAll('_', ' ')}</p>
                 </div>
-                <span class="${riskBadgeClass(s.riskLevel)}">${s.riskLevel}</span>
+                <span class="${riskBadgeClass(student.riskLevel)}">${student.riskLevel}</span>
             </div>
-            <p class="insight-copy">${s.recommendedAction}</p>
-            <p class="insight-weaknesses"><strong>Weakness areas:</strong> ${s.weaknessAreas?.join(', ') || 'None'}</p>
+            <div class="insight-stats">
+                <span>Accuracy ${formatPercent(student.accuracyRate)}</span>
+                <span>Time ${formatSeconds(student.averageTimeSpentSeconds)}</span>
+                <span>Attempts ${Number(student.averageAttempts || 0).toFixed(1)}</span>
+            </div>
+            <p class="insight-copy">${student.recommendedAction}</p>
+            <p class="insight-weaknesses"><strong>Weakness areas:</strong> ${(student.weaknessAreas || []).join(', ') || 'No clear pattern yet'}</p>
         </div>
     `).join('');
 }
 
 function renderAlerts(alerts) {
     const container = document.getElementById('aiAlertsList');
-    if (!container) return;
-    if (!alerts || !alerts.length) {
+
+    if (!alerts || alerts.length === 0) {
         container.innerHTML = '<p class="empty-state">No active alerts right now.</p>';
         return;
     }
-    container.innerHTML = alerts.map(a => `
-        <div class="alert-card alert-${String(a.severity || 'medium').toLowerCase()}">
+
+    container.innerHTML = alerts.map((alert) => `
+        <div class="alert-card alert-${String(alert.severity || 'medium').toLowerCase()}">
             <div class="insight-top">
-                <h5>${a.title}</h5>
-                <span class="${riskBadgeClass(a.severity)}">${a.severity}</span>
+                <h5>${alert.title}</h5>
+                <span class="${riskBadgeClass(alert.severity)}">${alert.severity}</span>
             </div>
-            <p class="insight-copy">${a.message}</p>
+            <p class="insight-copy">${alert.message}</p>
         </div>
     `).join('');
 }
 
 function renderTopics(topics) {
     const container = document.getElementById('aiTopicsList');
-    if (!container) return;
-    if (!topics || !topics.length) {
+
+    if (!topics || topics.length === 0) {
         container.innerHTML = '<p class="empty-state">No topic analytics available yet.</p>';
         return;
     }
-    container.innerHTML = topics.map(t => `
+
+    container.innerHTML = topics.map((topic) => `
         <div class="topic-row">
-            <div><h5>${t.label}</h5><p>${t.subject}</p></div>
-            <div class="topic-metrics">
-                <span>${formatPercent(t.accuracyRate)} accuracy</span>
-                <span class="${riskBadgeClass(t.difficultyLevel)}">${t.difficultyLevel}</span>
+            <div>
+                <h5>${topic.label}</h5>
+                <p>${topic.subject}</p>
             </div>
-            <p class="insight-copy">${t.teacherAction}</p>
+            <div class="topic-metrics">
+                <span>${formatPercent(topic.accuracyRate)} accuracy</span>
+                <span>${formatSeconds(topic.averageTimeSpentSeconds)} avg time</span>
+                <span>${Number(topic.averageAttempts || 0).toFixed(1)} attempts</span>
+                <span class="${riskBadgeClass(topic.difficultyLevel)}">${topic.difficultyLevel}</span>
+            </div>
+            <p class="insight-copy">${topic.teacherAction}</p>
         </div>
     `).join('');
 }
 
 async function loadAiInsights() {
-    showSection('aiInsightsSection');
-    if (isDemo) {
-        renderOverview({ totalTasks: 42, accuracyRate: 0.82, averageTimeSpentSeconds: 64, averageAttempts: 1.6, strugglingStudentsCount: 1, attentionAlertsCount: 2 });
-        renderStudents([{ studentName: demoData.student.name, className: demoData.student.className, adaptiveRecommendation: 'FOCUS_REVIEW', riskLevel: 'medium', accuracyRate: 0.68, averageTimeSpentSeconds: 85, averageAttempts: 2.1, recommendedAction: 'Schedule a quick recap on factoring.', weaknessAreas: ['Quadratic factoring', 'Word problems'] }]);
-        renderAlerts([{ title: 'Physics Momentum', severity: 'medium', message: 'Several students spend extra time on momentum problems.' }]);
-        renderTopics([{ label: 'Quadratic Equations', subject: 'Maths', accuracyRate: 0.72, averageTimeSpentSeconds: 88, averageAttempts: 2.4, difficultyLevel: 'medium', teacherAction: 'Re-teach factoring with a short guided example.' }]);
-        setAiStatus('Demo AI data loaded for exploration.');
-        return;
-    }
-    setAiStatus('Fetching class performance insights...', 'info');
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/ai/teacher/overview`);
-        if (res.ok) {
-            const data = await res.json();
-            renderOverview(data.overview || {});
-            renderHeatmap(data.strugglingStudents || []);
-            renderStudents(data.strugglingStudents || []);
-            renderAlerts(data.alerts || []);
-            renderTopics(data.topicInsights || []);
-            setAiStatus('');
+        if (isDemo) {
+            showSection('aiInsightsSection');
+            renderOverview({
+                totalTasks: 42,
+                accuracyRate: 0.82,
+                averageTimeSpentSeconds: 64,
+                averageAttempts: 1.6,
+                strugglingStudentsCount: 1,
+                attentionAlertsCount: 2
+            });
+            renderStudents([
+                {
+                    studentName: demoData.student.name,
+                    className: demoData.student.className,
+                    adaptiveRecommendation: 'FOCUS_REVIEW',
+                    riskLevel: 'medium',
+                    accuracyRate: 0.68,
+                    averageTimeSpentSeconds: 85,
+                    averageAttempts: 2.1,
+                    recommendedAction: 'Schedule a quick recap on factoring.',
+                    weaknessAreas: ['Quadratic factoring', 'Word problems']
+                }
+            ]);
+            renderAlerts([
+                {
+                    title: 'Physics Momentum',
+                    severity: 'medium',
+                    message: 'Several students spend extra time on momentum problems.'
+                }
+            ]);
+            renderTopics([
+                {
+                    label: 'Quadratic Equations',
+                    subject: 'Maths',
+                    accuracyRate: 0.72,
+                    averageTimeSpentSeconds: 88,
+                    averageAttempts: 2.4,
+                    difficultyLevel: 'medium',
+                    teacherAction: 'Re-teach factoring with a short guided example.'
+                }
+            ]);
+            setAiStatus('Demo AI data loaded for exploration.');
+            return;
+        }
+        setAiStatus('Loading live classroom signals from the AI engine...');
+        const response = await fetch(`${BACKEND_BASE_URL}/api/ai/dashboard?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        if (!response.ok) {
+            throw new Error(`Dashboard request failed with status ${response.status}`);
+        }
+
+        const dashboard = await response.json();
+        showSection('aiInsightsSection');
+        renderOverview(dashboard.overview || {});
+        renderStudents(dashboard.strugglingStudents || []);
+        renderAlerts(dashboard.alerts || []);
+        renderTopics(dashboard.topicInsights || []);
+        if ((dashboard.overview?.totalTasks || 0) === 0) {
+            setAiStatus('AI is online. No tracked task activity has been received yet, so the dashboard is waiting for student learning data.');
         } else {
-            setAiStatus('Failed to load AI Insights.', 'error');
+            setAiStatus(`AI is active and analyzing ${dashboard.overview.totalTasks} tracked tasks across the class.`);
         }
     } catch (error) {
-        setAiStatus('Connection error while loading insights.', 'error');
+        console.error('Could not load AI insights:', error);
+        showSection('aiInsightsSection');
+        document.getElementById('aiOverviewGrid').innerHTML = '';
+        document.getElementById('aiStudentsList').innerHTML = '<p class="empty-state">AI insights could not be loaded.</p>';
+        document.getElementById('aiAlertsList').innerHTML = '<p class="empty-state">The teacher page could not reach the backend AI service.</p>';
+        document.getElementById('aiTopicsList').innerHTML = '';
+        setAiStatus(`AI dashboard connection failed. This page is using ${BACKEND_BASE_URL}. Make sure that backend is running and reachable.`, 'error');
     }
 }
 
@@ -987,17 +890,32 @@ async function loadClasses() {
     const select = document.getElementById('testClass');
     if (!select) return;
     select.innerHTML = '';
-    if (isDemo) {
-        const option = document.createElement('option');
-        option.value = demoData.student.className;
-        option.textContent = demoData.student.className;
-        select.appendChild(option);
-        return;
+    try {
+        if (isDemo) {
+            const option = document.createElement('option');
+            option.value = demoData.student.className;
+            option.textContent = demoData.student.className;
+            select.appendChild(option);
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/classes`, {
+            headers: authHeaders()
+        });
+        const classes = res.ok ? await res.json() : [];
+        if (!classes.length) {
+            select.innerHTML = '<option value="">No classes found</option>';
+            return;
+        }
+        classes.forEach(cls => {
+            const option = document.createElement('option');
+            option.value = cls;
+            option.textContent = cls;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        select.innerHTML = '<option value="">No classes found</option>';
+        console.error('Could not load classes:', error);
     }
-    const option = document.createElement('option');
-    option.value = '11D';
-    option.textContent = '11D';
-    select.appendChild(option);
 }
 
 function setTestStatus(text) {
@@ -1014,23 +932,82 @@ async function createTest() {
     const className = document.getElementById('testClass').value;
     const dueDate = document.getElementById('testDueDate').value;
 
-    if (!title || !className) { setTestStatus('Title and class are required.'); return false; }
-    const questions = questionsInput ? questionsInput.split('\n').map(q => q.trim()).filter(Boolean) : [];
+    if (!title || !className) {
+        setTestStatus('Title and class are required.');
+        return false;
+    }
+
+    const questions = questionsInput
+        ? questionsInput.split('\n').map(q => q.trim()).filter(Boolean)
+        : [];
 
     try {
         setTestStatus('Creating test...');
         if (isDemo && demoData) {
             const id = Math.floor(Date.now() / 1000);
-            demoData.teacherTests.unshift({ id, title, subject, assignments: [{ className, dueDate }] });
-            demoData.tests.unshift({ testId: id, title, subject, dueDate, questionsJson: JSON.stringify(questions), status: 'ASSIGNED', score: null, feedback: null });
+            const demoTest = {
+                id,
+                title,
+                subject,
+                assignments: [{ className, dueDate }]
+            };
+            demoData.teacherTests.unshift(demoTest);
+            demoData.tests.unshift({
+                testId: id,
+                title,
+                subject,
+                dueDate,
+                questionsJson: JSON.stringify(questions),
+                status: 'ASSIGNED',
+                score: null,
+                feedback: null
+            });
             setTestStatus('Test created and assigned (demo).');
-            ['testTitle','testSubject','testDescription','testQuestions','testPoints'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            document.getElementById('testTitle').value = '';
+            document.getElementById('testSubject').value = '';
+            document.getElementById('testDescription').value = '';
+            document.getElementById('testQuestions').value = '';
+            document.getElementById('testPoints').value = '';
             loadTests();
             return true;
         }
-        setTestStatus('Tests not yet connected to backend.');
-        return false;
+        const res = await fetch(`${BACKEND_BASE_URL}/api/tests`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                title,
+                subject,
+                description,
+                questionsJson: JSON.stringify(questions),
+                totalPoints
+            })
+        });
+        if (!res.ok) throw new Error(`Create failed ${res.status}`);
+        const created = await res.json();
+
+        setTestStatus('Assigning test...');
+        const assignRes = await fetch(`${BACKEND_BASE_URL}/api/tests/${created.id}/assign`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                className,
+                dueDate
+            })
+        });
+        if (!assignRes.ok) throw new Error(`Assign failed ${assignRes.status}`);
+        await assignRes.json();
+
+        socket.emit('test-assigned', { className, testId: created.id });
+        setTestStatus('Test created and assigned.');
+        document.getElementById('testTitle').value = '';
+        document.getElementById('testSubject').value = '';
+        document.getElementById('testDescription').value = '';
+        document.getElementById('testQuestions').value = '';
+        document.getElementById('testPoints').value = '';
+        loadTests();
+        return true;
     } catch (error) {
+        console.error('Could not create test:', error);
         setTestStatus('Failed to create test.');
         return false;
     }
@@ -1042,8 +1019,14 @@ function scheduleTestAutosave() {
         const title = document.getElementById('testTitle').value.trim();
         const className = document.getElementById('testClass').value;
         if (!title || !className) return;
-        const hash = `${title}|${className}|${document.getElementById('testSubject').value}`;
+        const subject = document.getElementById('testSubject').value.trim();
+        const description = document.getElementById('testDescription').value.trim();
+        const questionsInput = document.getElementById('testQuestions').value.trim();
+        const totalPoints = document.getElementById('testPoints').value.trim();
+        const dueDate = document.getElementById('testDueDate').value;
+        const hash = `${title}|${className}|${subject}|${description}|${questionsInput}|${totalPoints}|${dueDate}`;
         if (hash === lastTestHash) return;
+        setTestStatus('Autosaving...');
         const success = await createTest();
         if (success) lastTestHash = hash;
     }, 1200);
@@ -1052,10 +1035,16 @@ function scheduleTestAutosave() {
 function renderTests(tests) {
     const list = document.getElementById('testsList');
     if (!list) return;
-    if (!tests.length) { list.innerHTML = '<p class="empty-state">No tests created yet.</p>'; return; }
+    if (!tests.length) {
+        list.innerHTML = '<p class="empty-state">No tests created yet.</p>';
+        return;
+    }
+
     list.innerHTML = tests.map(test => {
         const assignments = test.assignments || [];
-        const assignmentText = assignments.length ? assignments.map(a => `${a.className}${a.dueDate ? ` • due ${a.dueDate}` : ''}`).join(', ') : 'Not assigned yet';
+        const assignmentText = assignments.length
+            ? assignments.map(a => `${a.className}${a.dueDate ? ` • due ${a.dueDate}` : ''}`).join(', ')
+            : 'Not assigned yet';
         return `
             <div class="test-card">
                 <h5>${test.title}</h5>
@@ -1074,14 +1063,19 @@ async function loadSubmissions(testId) {
     if (!panel || !list) return;
     panel.style.display = 'block';
     list.innerHTML = '<p class="empty-state">Loading submissions...</p>';
+
     try {
         if (isDemo && demoData) {
             const submissions = demoData.testSubmissions[testId] || [];
-            if (!submissions.length) { list.innerHTML = '<p class="empty-state">No submissions yet.</p>'; return; }
+            if (!submissions.length) {
+                list.innerHTML = '<p class="empty-state">No submissions yet.</p>';
+                return;
+            }
             list.innerHTML = submissions.map(sub => `
                 <div class="submission-card">
                     <strong>Student: ${demoData.student.name}</strong>
                     <div class="test-meta">Status: ${sub.status || 'SUBMITTED'}</div>
+                    <div class="test-meta">Answers:</div>
                     <pre class="test-meta">${sub.answersJson || ''}</pre>
                     <div class="test-row">
                         <input type="number" min="0" placeholder="Score" id="score-${sub.id}" value="${sub.score ?? ''}">
@@ -1092,18 +1086,60 @@ async function loadSubmissions(testId) {
             `).join('');
             return;
         }
-        list.innerHTML = '<p class="empty-state">No submissions yet.</p>';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/submissions/test/${testId}`, {
+            headers: authHeaders()
+        });
+        const submissions = res.ok ? await res.json() : [];
+        if (!submissions.length) {
+            list.innerHTML = '<p class="empty-state">No submissions yet.</p>';
+            return;
+        }
+
+        list.innerHTML = submissions.map(sub => `
+            <div class="submission-card">
+                <strong>Student: ${sub.studentName || 'Student'}</strong>
+                <div class="test-meta">Status: ${sub.status || 'SUBMITTED'}</div>
+                <div class="test-meta">Answers:</div>
+                <pre class="test-meta">${sub.answersJson || ''}</pre>
+                <div class="test-row">
+                    <input type="number" min="0" placeholder="Score" id="score-${sub.id}" value="${sub.score ?? ''}">
+                    <input type="text" placeholder="Feedback" id="feedback-${sub.id}" value="${sub.feedback ?? ''}">
+                    <button class="action-btn" onclick="gradeSubmission(${sub.id}, '${sub.studentName || 'Student'}')">Grade</button>
+                </div>
+            </div>
+        `).join('');
     } catch (error) {
+        console.error('Could not load submissions:', error);
         list.innerHTML = '<p class="empty-state">Failed to load submissions.</p>';
     }
 }
 
-async function gradeSubmission(submissionId) {
-    if (isDemo && demoData) {
-        const submissions = Object.values(demoData.testSubmissions).flat();
-        const sub = submissions.find(s => s.id === submissionId);
-        if (sub) { sub.status = 'GRADED'; sub.feedback = 'Demo feedback saved.'; }
-        return;
+async function gradeSubmission(submissionId, studentName) {
+    const score = document.getElementById(`score-${submissionId}`).value;
+    const feedback = document.getElementById(`feedback-${submissionId}`).value;
+    try {
+        if (isDemo && demoData) {
+            const submissions = Object.values(demoData.testSubmissions).flat();
+            const sub = submissions.find(s => s.id === submissionId);
+            if (sub) {
+                sub.score = score ? parseInt(score, 10) : null;
+                sub.feedback = feedback || 'Demo feedback saved.';
+                sub.status = 'GRADED';
+            }
+            loadSubmissions(Object.keys(demoData.testSubmissions).find(id => (demoData.testSubmissions[id] || []).some(s => s.id === submissionId)) || submissionId);
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/submission/${submissionId}/grade`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ score: score ? parseInt(score, 10) : null, feedback })
+        });
+        if (!res.ok) throw new Error(`Grade failed ${res.status}`);
+        const graded = await res.json();
+        socket.emit('test-graded', { studentName, testId: graded.testId });
+        loadSubmissions(graded.testId);
+    } catch (error) {
+        console.error('Could not grade submission:', error);
     }
 }
 
@@ -1111,9 +1147,24 @@ async function loadTests() {
     showSection('testsSection');
     await loadClasses();
     try {
-        if (isDemo && demoData) { renderTests(demoData.teacherTests || []); return; }
-        renderTests([]);
+        if (isDemo && demoData) {
+            renderTests(demoData.teacherTests || []);
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/tests/teacher/me`, {
+            headers: authHeaders()
+        });
+        const tests = res.ok ? await res.json() : [];
+        renderTests(tests);
     } catch (error) {
         console.error('Could not load tests:', error);
     }
+}
+
+if (!isDemo) {
+    socket.on('test-submitted', () => {
+        if (document.getElementById('testsSection')?.style.display === 'block') {
+            loadTests();
+        }
+    });
 }
