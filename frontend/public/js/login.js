@@ -23,18 +23,11 @@ async function handleLogin(e) {
         if (response.ok) {
             const user = await response.json();
             localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', user.token || 'demo-token');
 
-            // Smooth transition to dashboard
-            document.querySelector('.login-card').style.opacity = '0';
-            document.querySelector('.login-card').style.transform = 'translateY(-20px)';
-            
-            setTimeout(() => {
-                if (user.role === 'ADMIN') window.location.href = '/admin.html';
-                else if (user.role === 'TEACHER') window.location.href = '/teacher.html';
-                else if (user.role === 'STUDENT') window.location.href = '/student.html';
-                else if (user.role === 'PARENT') window.location.href = '/parent.html';
-            }, 400);
+            if (user.role === 'ADMIN') window.location.href = '/admin';
+            else if (user.role === 'TEACHER') window.location.href = '/teacher';
+            else if (user.role === 'STUDENT') window.location.href = '/student';
+            else if (user.role === 'PARENT') window.location.href = '/parent';
             
         } else {
             errorMsg.textContent = 'Access Denied: Invalid email or password.';
@@ -49,8 +42,8 @@ async function handleLogin(e) {
             <div class="connection-error">
                 <p><strong>Connection Error:</strong> We can't reach the server at <code>${BACKEND_BASE_URL}</code>.</p>
                 <p style="font-size: 0.85em; color: #94a3b8;">Common causes: Backend is still deploying, CORS policy mismatch, or the URL is incorrect.</p>
-                <button type="button" class="action-btn secondary-btn" onclick="location.reload()">Retry Connection</button>
-                <p style="margin-top:10px; font-size:0.8em;">Or <a href="#" onclick="openDemoModal()" style="color:var(--accent)">Explore in Demo Mode</a></p>
+                <button type="button" onclick="location.reload()">Retry Connection</button>
+                <p style="margin-top:10px; font-size:0.8em;">Or <a href="#" onclick="openDemoModal()" style="color:#30aaba">Explore in Demo Mode</a></p>
             </div>
         `;
     }
@@ -72,15 +65,12 @@ function closeDemoModal() {
 
 function seedDemoProfile(profile) {
     const demoUser = {
-        displayName: profile.displayName,
+        egn: profile.egn,
+        email: profile.email,
         role: profile.role,
-        demo: true,
-        className: profile.className || null,
-        childName: profile.childName || null,
-        childClassName: profile.childClassName || null
+        demo: true
     };
     localStorage.setItem('user', JSON.stringify(demoUser));
-    localStorage.setItem('token', 'demo-token');
     window.location.href = profile.route;
 }
 
@@ -92,33 +82,26 @@ function buildDemoProfiles() {
         {
             title: 'Student',
             role: 'STUDENT',
-            displayName: demoData?.student?.name || 'Demo Student',
-            className: demoData?.student?.className || '11D',
+            egn: '9000000001',
+            email: 'r.paskalev-student@edu-school.bg',
             description: 'See subjects, tests, and live notebooks.',
             route: '/student'
         },
         {
             title: 'Teacher',
             role: 'TEACHER',
-            displayName: demoData?.teacher?.name || 'Demo Teacher',
+            egn: '9000000002',
+            email: 'e.vasileva-teacher@edu-school.bg',
             description: 'Review notebooks, assign tests, and insights.',
             route: '/teacher'
         },
         {
             title: 'Parent',
             role: 'PARENT',
-            displayName: demoData?.parent?.name || 'Demo Parent',
-            childName: demoData?.parent?.studentName || demoData?.student?.name || 'Demo Student',
-            childClassName: demoData?.student?.className || '11D',
+            egn: '9000000003',
+            email: 'p.stoyanov-parent@edu-school.bg',
             description: 'Monitor attendance, grades, and progress.',
             route: '/parent'
-        },
-        {
-            title: 'Administrator',
-            role: 'ADMIN',
-            displayName: demoData?.admin?.name || 'Demo Admin',
-            description: 'Review users, feedback, and system overview.',
-            route: '/admin'
         }
     ];
 
@@ -134,11 +117,9 @@ function buildDemoProfiles() {
     });
 }
 
-// Initialize everything only when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
 
-    // Initialize Demo Modal Logic
     document.getElementById('openDemo')?.addEventListener('click', () => {
         buildDemoProfiles();
         openDemoModal();
@@ -151,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === modal) closeDemoModal();
     });
 
-    // Toggle password visibility
     const toggleBtn = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
     if (toggleBtn && passwordInput) {
@@ -166,15 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initLoginAnimation();
 });
 
-/**
- * Neural Network Background Animation
- */
 function initLoginAnimation() {
     const canvas = document.createElement('canvas');
     canvas.id = 'login-bg-canvas';
     document.body.prepend(canvas);
 
-    // Create Techie the Assistant
     const assistant = document.createElement('div');
     assistant.id = 'assistant-techie';
     assistant.innerHTML = '🤖';
@@ -195,12 +171,6 @@ function initLoginAnimation() {
             z-index: -1;
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
         }
-        .login-card, #loginForm, .demo-modal-content {
-            background: rgba(15, 23, 42, 0.8) !important;
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
         #assistant-techie {
             animation: float 3s ease-in-out infinite;
         }
@@ -212,9 +182,7 @@ function initLoginAnimation() {
     const ctx = canvas.getContext('2d');
     let particles = [];
     const particleCount = 100;
-    const mouse = { x: null, y: null, radius: 120 };
 
-    // Assistant Speech Bubble
     const speech = document.createElement('div');
     speech.className = 'assistant-speech';
     speech.textContent = "Ready to learn something new?";
@@ -222,11 +190,6 @@ function initLoginAnimation() {
 
     assistant.addEventListener('mouseenter', () => { speech.style.opacity = '1'; });
     assistant.addEventListener('mouseleave', () => { speech.style.opacity = '0'; });
-
-    window.addEventListener('mousemove', (e) => {
-        mouse.x = e.x;
-        mouse.y = e.y;
-    });
 
     window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
