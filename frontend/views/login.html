@@ -2,92 +2,265 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TechDesk - Login</title>
-    <link rel="stylesheet" href="/css/login.css">
+    <script src="/js/demo-data.js"></script>
+    <style>
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; background: #0f172a; color: white; }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        .branding-sidebar {
+            width: 400px; background: #1e293b; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; border-right: 1px solid #334155;
+            padding: 40px; text-align: center;
+        }
+        .techtron-box {
+            width: 280px; height: 450px; border: 2px solid #6366f1; border-radius: 20px;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-around;
+            background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            position: relative; overflow: hidden;
+        }
+        .logo-circle {
+            width: 150px; height: 150px; border-radius: 50%; border: 3px solid #6366f1;
+            position: relative; overflow: hidden; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #0f172a; cursor: pointer; z-index: 2;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+        .logo-circle:hover { transform: scale(1.25); box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
+        .logo-circle img { width: 80%; height: 80%; margin-top: 10%; position: relative; z-index: 3; }
+        .rotating-light {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(99, 102, 241, 0.6) 20%, transparent 45%);
+            animation: rotate 1.5s linear infinite; z-index: 1;
+        }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .slogan { font-style: italic; color: #94a3b8; font-size: 0.9rem; margin-top: 20px; }
+
+        .login-container { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .login-card {
+            width: 350px; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            padding: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        input {
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px;
+            border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box;
+        }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.2s; }
+        .primary-btn { background: #6366f1; color: white; }
+        .primary-btn:disabled { background: #4f46e5; cursor: not-allowed; }
+        .spinner {
+            display: none; width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
+            border-top-color: #fff; animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn.loading, .btn.success { display: flex; align-items: center; justify-content: center; }
+        .btn.loading .spinner { display: inline-block; }
+        .primary-btn.success { background: #10b981 !important; }
+        .check-icon { display: none; margin-left: 10px; font-size: 1.1rem; animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes scaleIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .btn.success .check-icon { display: inline-block; }
+        .btn.success .spinner { display: none; }
+
+        .demo-btn { background: transparent; border: 1px solid #6366f1; color: #6366f1; margin-top: 20px; }
+        .demo-btn:hover { background: rgba(99, 102, 241, 0.1); }
+
+        .profile-links { margin-top: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .profile-btn { padding: 8px; font-size: 0.8rem; background: #334155; border: none; color: #cbd5e1; border-radius: 4px; cursor: pointer; }
+        .profile-btn:hover { background: #475569; color: white; }
+
+        .error-msg { color: #f87171; font-size: 0.85rem; margin-top: 10px; text-align: center; }
+
+        @media (max-width: 768px) {
+            .branding-sidebar { display: none; }
+            .login-container { padding: 20px; }
+            .login-card { width: 100%; max-width: 400px; }
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
-        <a href="/" class="brand-lockup">
-            <span class="logo-shell nav-logo-shell">
-                <img src="/logo.png" alt="TechDesk logo" class="brand-logo">
-            </span>
-            <span class="brand-copy">
-                <span class="brand-kicker">Learning Intelligence</span>
-                <span class="brand-name">TechDesk</span>
-            </span>
-        </a>
-    </nav>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="branding-sidebar">
+        <div class="techtron-box">
+            <h1 style="margin: 0; letter-spacing: 2px;">TechDesk</h1>
+            <div class="logo-circle">
+                <div class="rotating-light"></div>
+                <img src="/logo.png" alt="TechDesk Logo">
+            </div>
+            <p style="padding: 0 20px; font-size: 0.85rem; color: #cbd5e1;">Smart learning support for students, sharp insight for teachers, and clear visibility for parents.</p>
+        </div>
+        <p class="slogan">"Empowering minds, one stroke at a time."</p>
+    </div>
+
     <div class="login-container">
-        <section class="brand-panel">
-            <div class="brand-panel-card">
-                <div class="logo-stage">
-                    <div class="logo-orbit"></div>
-                    <span class="logo-shell hero-logo-shell">
-                        <img src="/logo.png" alt="TechDesk logo" class="brand-logo hero-logo">
-                    </span>
-                </div>
-                <div class="brand-panel-copy">
-                    <span class="panel-kicker">Classroom Intelligence</span>
-                    <h2>TechDesk</h2>
-                    <p>Structured learning support for students, sharp insight for teachers, and clear visibility for parents.</p>
-                </div>
-            </div>
-        </section>
-        <div class="login-box">
-            <span class="login-kicker">Welcome Back</span>
-            <h2>Login</h2>
-            <p class="login-subtitle">Sign in to open your TechDesk workspace.</p>
+        <div class="login-card">
+            <h2 style="margin-top: 0;">Welcome Back</h2>
             <form id="loginForm">
-                <div class="input-group">
-                    <input type="email" id="email" placeholder="Email" required>
-                </div>
-                <div class="input-group password-group">
-                    <input type="password" id="password" placeholder="Password" required>
-                    <button type="button" id="togglePassword" aria-label="Show password">👁</button>
-                </div>
-                <button type="submit" class="login-btn">Login</button>
-                <p id="errorMsg" class="error-msg"></p>
+                <input type="email" id="email" placeholder="Email Address" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit" id="loginBtn" class="btn primary-btn">
+                    <span>Sign In</span>
+                    <div class="spinner"></div>
+                    <div class="check-icon">✓</div>
+                </button>
+                <p class="error-msg" id="errorMsg"></p>
             </form>
-            <div class="demo-launch">
-                <button type="button" class="demo-btn" id="openDemo">Try A Demo</button>
-                <p class="demo-hint">Explore with sample data and live notebooks.</p>
+
+            <button class="btn demo-btn" onclick="fillLogin('r.paskalev-student@edu-school.bg', 'pass@2026')">Try the Demo Version</button>
+
+            <div class="profile-links">
+                <button class="profile-btn" onclick="fillLogin('r.paskalev-student@edu-school.bg', 'pass@2026')">👤 Student</button>
+                <button class="profile-btn" onclick="fillLogin('e.vasileva-teacher@edu-school.bg', 'pass@2026')">👨‍🏫 Teacher</button>
+                <button class="profile-btn" onclick="fillLogin('p.stoyanov-parent@edu-school.bg', 'pass@2026')">👪 Parent</button>
+                <button class="profile-btn" onclick="fillLogin('s.markova-admin@edu-school.bg', 'pass@2026')">⚙️ Admin</button>
             </div>
         </div>
     </div>
-    <div class="demo-modal" id="demoModal" aria-hidden="true">
-        <div class="demo-card">
-            <div class="demo-card-header">
-                <div>
-                    <span class="demo-kicker">Demo Mode</span>
-                    <h3>Choose A Profile</h3>
-                </div>
-                <button type="button" class="demo-close" id="closeDemo">×</button>
-            </div>
-            <p class="demo-subtitle">Pick a role to preview how TechDesk works with real-time notebooks.</p>
-            <div class="demo-profiles" id="demoProfiles"></div>
-            <button type="button" class="demo-secondary" id="demoCancel">Cancel</button>
-        </div>
-    </div>
-    <script src="/js/demo-data.js"></script>
-    <script src="/js/login.js"></script>
+
     <script>
-        function handlePasswordInput() {
-            const val = document.getElementById('password').value;
-            document.getElementById('eyeBtn').style.display = val.length > 0 ? 'flex' : 'none';
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        const particleCount = 80;
+        const mouse = { x: null, y: null, radius: 100 };
+
+        window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
+        window.addEventListener('mouseleave', () => { mouse.x = null; mouse.y = null; });
+
+        class Particle {
+            constructor() { this.init(); }
+            init() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+            }
+            update() {
+                if (mouse.x !== null && mouse.y !== null) {
+                    let dx = this.x - mouse.x;
+                    let dy = this.y - mouse.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < mouse.radius) {
+                        let force = (mouse.radius - dist) / mouse.radius;
+                        this.x += (dx / dist) * force * 5;
+                        this.y += (dy / dist) * force * 5;
+                    }
+                }
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(99, 102, 241, 0.5)';
+                ctx.fill();
+            }
         }
 
-        function showPassword() {
-            document.getElementById('password').type = 'text';
-            document.getElementById('eyeOpen').style.display = 'none';
-            document.getElementById('eyeClosed').style.display = 'block';
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < particleCount; i++) particles.push(new Particle());
         }
 
-        function hidePassword() {
-            document.getElementById('password').type = 'password';
-            document.getElementById('eyeOpen').style.display = 'block';
-            document.getElementById('eyeClosed').style.display = 'none';
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                const p1 = particles[i];
+                p1.update();
+                p1.draw();
+                for (let j = i + 1; j < particles.length; j++) {
+                    const p2 = particles[j];
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(99, 102, 241, ${1 - dist / 150})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
         }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+
+        function fillLogin(email, pass) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = pass;
+        }
+
+        document.getElementById('loginForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMsg');
+
+            loginBtn.classList.add('loading');
+            loginBtn.disabled = true;
+            errorMsg.textContent = '';
+            let success = false;
+
+            const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+            const BACKEND_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    success = true;
+                    const user = await response.json();
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    loginBtn.classList.remove('loading');
+                    loginBtn.classList.add('success');
+                    loginBtn.querySelector('span').textContent = 'Welcome Back!';
+
+                    setTimeout(() => {
+                        switch(user.role) {
+                            case 'STUDENT': window.location.href = '/student'; break;
+                            case 'TEACHER': window.location.href = '/teacher'; break;
+                            case 'PARENT': window.location.href = '/parent'; break;
+                            case 'ADMIN': window.location.href = '/admin'; break;
+                        }
+                    }, 800);
+                } else {
+                    errorMsg.textContent = 'Invalid email or password.';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Could not connect to server. Please try again.';
+            } finally {
+                if (!success) {
+                    loginBtn.classList.remove('loading');
+                    loginBtn.disabled = false;
+                }
+            }
+        };
     </script>
 </body>
 </html>
