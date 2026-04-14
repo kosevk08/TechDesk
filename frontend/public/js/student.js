@@ -58,7 +58,17 @@ if (!user || user.role !== 'STUDENT') {
     window.location.href = '/';
 }
 
-const displayName = user.displayName || user.email.split('@')[0];
+function getFirstName() {
+    if (egnToName[user.egn]) return egnToName[user.egn];
+    if (user.displayName) return user.displayName.split(' ')[0];
+    if (user.email) {
+        const part = user.email.split('@')[0].split('.')[0];
+        return part.charAt(0).toUpperCase() + part.slice(1);
+    }
+    return 'Student';
+}
+
+const displayName = getFirstName();
 
 if (isDemo && demoData) {
     document.getElementById('studentName').textContent = firstNameOf(demoData.student.name);
@@ -86,56 +96,6 @@ function insertDemoBanner() {
         </div>
     `;
     hero.insertAdjacentElement('afterend', banner);
-}
-
-function initTechieAssistant() {
-    const techie = document.getElementById('assistant-techie');
-    if (!techie) return;
-
-    techie.addEventListener('click', () => {
-        const query = prompt("Hi! I'm Techie. How can I help? (Try: 'homework', 'deadline', 'tests', or 'focus')").toLowerCase();
-        if (!query) return;
-
-        let response = "";
-        if (query.includes('homework')) {
-            const hw = demoData.homework[0];
-            response = `You have ${demoData.homework.length} assignments. Your next one is ${hw.subject}: ${hw.title}.`;
-        } else if (query.includes('deadline')) {
-            const hw = demoData.homework[0];
-            response = `Your closest deadline is ${hw.subject} on ${hw.dueDate}.`;
-        } else if (query.includes('test')) {
-            const tests = demoData.tests.filter(t => t.status === 'ASSIGNED');
-            response = `You have ${tests.length} upcoming tests. The next one is "${tests[0].title}" for ${tests[0].subject}.`;
-        } else if (query.includes('focus')) {
-            response = "Based on your recent grades, you should focus on Quadratic Equations in Maths and Narrative Structure in English.";
-        } else {
-            response = "I'm not sure about that. Try asking about 'homework', 'tests', or 'focus areas'!";
-        }
-
-        showTechieSpeech(response);
-    });
-}
-
-function showTechieSpeech(text) {
-    let bubble = document.querySelector('.assistant-speech');
-    if (!bubble) {
-        bubble = document.createElement('div');
-        bubble.className = 'assistant-speech';
-        document.getElementById('assistant-techie').appendChild(bubble);
-    }
-    
-    bubble.textContent = text;
-    bubble.style.opacity = '1';
-    bubble.style.bottom = '70px';
-    bubble.style.right = '0';
-    bubble.style.background = 'white';
-    bubble.style.color = 'black';
-    bubble.style.padding = '15px';
-    bubble.style.borderRadius = '12px';
-    bubble.style.width = '200px';
-    bubble.style.position = 'absolute';
-    
-    setTimeout(() => { bubble.style.opacity = '0'; }, 6000);
 }
 
 function insertDemoStudentSections() {
@@ -314,9 +274,6 @@ function trackTaskCompletion(taskData) {
         studentId: displayName,
         completed: true,
         skipped: false,
-        className: user.className || localStorage.getItem('currentClassName') || null,
-        notebookSubject: localStorage.getItem('currentNotebookSubject') || null,
-        notebookPage: localStorage.getItem('currentNotebookPage') || null,
         ...taskData
     };
 
