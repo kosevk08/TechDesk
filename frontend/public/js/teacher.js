@@ -2,7 +2,6 @@ const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
-const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let studentNames = [];
@@ -11,27 +10,15 @@ let lastGradeHash = null;
 let testAutosaveTimer = null;
 let currentLang = 'en';
 let lastTestHash = null;
-let strokeHistory = []; // For Replay Lesson feature
+let strokeHistory = [];
 let isPlayingBack = false;
-let activeWritingTime = 0; // Effort Monitoring
+let activeWritingTime = 0;
 let lastStrokeTime = null;
 
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(reg => {
-            console.log('TechDesk Service Worker Registered');
-            updateSyncStatus();
-        }).catch(err => console.log('SW Registration Failed', err));
-    });
-    navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'SYNC_COMPLETE') updateSyncStatus();
-    });
+function authHeaders(extra = {}) {
+    return extra;
 }
 
-/**
- * IndexedDB Helper for Offline Persistence
- */
 function openDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('TechDeskDB', 1);
@@ -50,20 +37,13 @@ async function saveStrokeOffline(strokeData) {
         const db = await openDB();
         const tx = db.transaction(['strokes', 'meta'], 'readwrite');
         tx.objectStore('strokes').add(strokeData);
-        tx.objectStore('meta').put(localStorage.getItem('token'), 'auth_token');
-        
-        const reg = await navigator.serviceWorker.ready;
-        if (reg.sync) await reg.sync.register('sync-strokes');
         updateSyncStatus();
     } catch (err) {
         console.error('Failed to save offline stroke:', err);
     }
 }
 
-/**
- * Techie Assistant Logic for Dashboard
- */
-let assistant = null; // Declare globally, initialize in DOMContentLoaded
+let assistant = null;
 
 function createAssistant() {
     if (!assistant) {
@@ -82,9 +62,6 @@ function createAssistant() {
     }
 }
 
-/**
- * Updates the UI to show how many items are waiting to be synced.
- */
 async function updateSyncStatus() {
     try {
         const db = await openDB();
@@ -102,25 +79,16 @@ async function updateSyncStatus() {
             }
             if (indicator) {
                 indicator.style.display = count > 0 ? 'block' : 'none';
-                indicator.textContent = count > 0 
-                    ? `${count} ${currentLang === 'bg' ? 'елемента чакат синхронизация' : 'items pending sync'}` //
-                    : '';
+                indicator.textContent = count > 0 ? `${count} items pending sync` : '';
             }
         };
     } catch (err) {
-        console.warn('Sync status update skipped (DB not ready):', err);
+        console.warn('Sync status update skipped:', err);
     }
 }
 
 window.addEventListener('online', updateSyncStatus);
 
-function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
-}
-
-/**
- * Injects CSS animations for the ELI5 Modal
- */
 function injectEli5Styles() {
     if (document.getElementById('eli5Styles')) return;
     const style = document.createElement('style');
@@ -130,9 +98,7 @@ function injectEli5Styles() {
             from { opacity: 0; transform: scale(0.95) translateY(10px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .eli5-content {
-            animation: eli5FadeIn 0.3s ease-out forwards;
-        }
+        .eli5-content { animation: eli5FadeIn 0.3s ease-out forwards; }
     `;
     document.head.appendChild(style);
 }
@@ -140,7 +106,19 @@ function injectEli5Styles() {
 const teacherNames = {
     'h.schmidt-teacher@edu-school.bg': 'Miss Schmidt',
     'a.popescu-teacher@edu-school.bg': 'Mr Popescu',
-    'e.vasileva-teacher@edu-school.bg': 'Mrs Vasileva'
+    'e.vasileva-teacher@edu-school.bg': 'Mrs Vasileva',
+    'm.ivanova-maths@edu-school.bg': 'Ms Ivanova',
+    'p.georgiev-physics@edu-school.bg': 'Mr Georgiev',
+    'l.stoyanova-chem@edu-school.bg': 'Ms Stoyanova',
+    'd.petrov-biology@edu-school.bg': 'Mr Petrov',
+    's.martin-english@edu-school.bg': 'Mr Martin',
+    't.vasileva-bulgarian@edu-school.bg': 'Ms Vasileva',
+    'g.stefanov-geography@edu-school.bg': 'Mr Stefanov',
+    'r.dimitrova-philosophy@edu-school.bg': 'Ms Dimitrova',
+    'n.koleva-englishlit@edu-school.bg': 'Ms Koleva',
+    'v.georgieva-german@edu-school.bg': 'Ms Georgieva',
+    'i.karaslavova-spanish@edu-school.bg': 'Ms Karaslavova',
+    'e.nikolova-anthro@edu-school.bg': 'Ms Nikolova'
 };
 
 const egnToName = {
@@ -165,25 +143,30 @@ if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
 }
 
+// Initialize canvas and AI elements
+let teacherCanvas = document.getElementById('teacherCanvas');
+let tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
+let aiStatusText = document.getElementById('aiStatusText');
+let aiStatusBanner = document.getElementById('aiStatusBanner');
+
+// Set teacher name
+const teacherNameEl = document.getElementById('teacherName');
+if (teacherNameEl) {
+    if (isDemo && demoData) {
+        teacherNameEl.textContent = demoData.teacher.name;
+    } else {
+        teacherNameEl.textContent = teacherNames[user.email] || user.displayName || user.email || 'Teacher';
+    }
+}
+
 const supportedLangs = ['en', 'bg', 'sr', 'el', 'tr', 'ro', 'it', 'es', 'fr'];
 let langIndex = 0;
 
 function toggleLanguage() {
     langIndex = (langIndex + 1) % supportedLangs.length;
     currentLang = supportedLangs[langIndex];
-    
     const btn = document.getElementById('langToggle');
     if (btn) btn.textContent = currentLang.toUpperCase();
-    
-    const dict = demoData.translations[currentLang];
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.dataset.i18n;
-        if (currentLang === 'en') {
-            // Logic to revert to default English text could go here
-        } else if (dict && dict[key]) {
-            el.textContent = dict[key];
-        }
-    });
 }
 
 if (isDemo) {
@@ -202,9 +185,7 @@ function insertDemoBanner() {
         <p>${demoData?.demoNotice || 'Explore safely with demo data only.'}</p>
         <p class="insight-copy"><strong>Features:</strong> Grades, Attendance, Messages, Schedule, Homework, Tests, Notebooks, AI Insights.</p>
         <div class="insight-card">
-            <div class="insight-top">
-                <h5>What to try</h5>
-            </div>
+            <div class="insight-top"><h5>What to try</h5></div>
             <p class="insight-copy">Create a demo test, add a grade, and preview student notebooks.</p>
         </div>
     `;
@@ -236,24 +217,14 @@ function insertDemoTeacherSections() {
     scheduleSection.className = 'card section-card';
     scheduleSection.id = 'demoScheduleSection';
     scheduleSection.innerHTML = `
-        <div class="section-header">
-            <div>
-                <span class="section-eyebrow">Weekly Timetable</span>
-                <h3 class="section-title">Schedule</h3>
-            </div>
-        </div>
+        <div class="section-header"><div><span class="section-eyebrow">Weekly Timetable</span><h3 class="section-title">Schedule</h3></div></div>
         <div id="demoScheduleList"></div>
     `;
     const homeworkSection = document.createElement('div');
     homeworkSection.className = 'card section-card';
     homeworkSection.id = 'demoHomeworkSection';
     homeworkSection.innerHTML = `
-        <div class="section-header">
-            <div>
-                <span class="section-eyebrow">Assignments</span>
-                <h3 class="section-title">Homework</h3>
-            </div>
-        </div>
+        <div class="section-header"><div><span class="section-eyebrow">Assignments</span><h3 class="section-title">Homework</h3></div></div>
         <div id="demoHomeworkList"></div>
     `;
     container.appendChild(scheduleSection);
@@ -289,72 +260,41 @@ let currentViewEgn = null;
 let currentViewStudent = null;
 let currentViewSubject = null;
 let currentViewPage = 1;
-    // These are now initialized in initTeacherDashboard
-    // const teacherCanvas = document.getElementById('teacherCanvas');
-    // const tCtx = teacherCanvas.getContext('2d');
-    // const aiStatusText = document.getElementById('aiStatusText');
-    // const aiStatusBanner = document.getElementById('aiStatusBanner');
 let teacherTool = 'pen';
-let teacherColor = '#e53e3e'; // Required: Red ink for corrections
+let teacherColor = '#e53e3e';
 let teacherDrawing = false;
 let teacherLastX = 0;
 let teacherLastY = 0;
 
-/**
- * Feature 1: Smart Classroom Control
- * Locks student devices to the current TechDesk view.
- */
 function toggleClassroomLock(isLocked) {
-    socket.emit('classroom-control', {
-        command: isLocked ? 'LOCK_SCREENS' : 'UNLOCK_SCREENS',
-        className: '11D'
-    });
+    socket.emit('classroom-control', { command: isLocked ? 'LOCK_SCREENS' : 'UNLOCK_SCREENS', className: '11D' });
     setAiStatus(isLocked ? 'Classroom screens locked.' : 'Classroom screens released.');
 }
 
-/**
- * Feature: Offline Sync
- * Attempts to send any strokes that were saved while the Wi-Fi was down.
- */
-/**
- * Feature 2: Voice-to-Notes
- */
 function startVoiceToNotes() {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = currentLang === 'bg' ? 'bg-BG' : 'en-US';
+    recognition.lang = 'en-US';
     recognition.onstart = () => setAiStatus('Listening for notes...');
     recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         setAiStatus(`Transcribed: ${transcript.substring(0, 30)}...`);
-        // Send to backend to structure as notes
         socket.emit('voice-note-transcribed', { transcript, subject: currentViewSubject });
     };
     recognition.start();
 }
 
-/**
- * Feature: Explain Like I'm 5 (ELI5)
- * Calls the AI to simplify a complex topic for the student.
- */
 async function explainLikeIm5() {
     if (!currentViewSubject) return;
-
-    const topic = prompt(currentLang === 'bg' ? "Коя концепция да опростя?" : "What concept should I simplify?");
+    const topic = prompt("What concept should I simplify?");
     if (!topic) return;
-
     setAiStatus('Simplifying concept...', 'info');
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/eli5/${encodeURIComponent(currentViewSubject)}/${encodeURIComponent(topic)}`, {
-            headers: authHeaders()
-        });
-
-        if (!res.ok) throw new Error('Failed to fetch explanation');
-
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/eli5/${encodeURIComponent(currentViewSubject)}/${encodeURIComponent(topic)}`);
+        if (!res.ok) throw new Error('Failed');
         const data = await res.json();
         showEli5Modal(topic, data);
         setAiStatus('');
     } catch (err) {
-        console.error(err);
         setAiStatus('Failed to simplify concept.', 'error');
     }
 }
@@ -365,82 +305,41 @@ function showEli5Modal(topic, data) {
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'eli5Modal';
-        modal.className = 'modal-overlay'; // Assuming styling for full-screen overlay
+        modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
         document.body.appendChild(modal);
     }
-
     modal.replaceChildren();
     const content = document.createElement('div');
     content.className = 'card section-card eli5-content';
-
-    const h3 = document.createElement('h3');
-    h3.textContent = `ELI5: ${topic}`;
-
-    const pStatus = document.createElement('p');
-    pStatus.innerHTML = `<strong>Status:</strong> ${data.learningStatus}`;
-
-    const pEnc = document.createElement('p');
-    pEnc.className = 'insight-copy';
-    pEnc.style.fontStyle = 'italic';
-    pEnc.textContent = data.encouragement;
-
-    const ul = document.createElement('ul');
-    data.hints.forEach(hint => {
-        const li = document.createElement('li');
-        li.textContent = hint;
-        ul.appendChild(li);
-    });
-
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'action-btn';
-    closeBtn.textContent = 'Close';
-    closeBtn.onclick = () => modal.style.display = 'none';
-
-    content.append(h3, pStatus, pEnc, ul, closeBtn);
+    content.style.maxWidth = '500px';
+    content.innerHTML = `
+        <h3>ELI5: ${topic}</h3>
+        <p><strong>Status:</strong> ${data.learningStatus || 'N/A'}</p>
+        <p class="insight-copy" style="font-style:italic">${data.encouragement || ''}</p>
+        <ul>${(data.hints || []).map(h => `<li>${h}</li>`).join('')}</ul>
+        <button class="action-btn" onclick="document.getElementById('eli5Modal').style.display='none'">Close</button>
+    `;
     modal.appendChild(content);
     modal.style.display = 'flex';
 }
 
-/**
- * Feature 1: Open Page
- * Forces all students to sync to the teacher's current subject and page.
- */
 function syncStudentsToCurrentPage() {
     if (!currentViewSubject) return;
-    socket.emit('force-page-sync', {
-        subject: currentViewSubject,
-        page: currentViewPage,
-        className: '11D'
-    });
+    socket.emit('force-page-sync', { subject: currentViewSubject, page: currentViewPage, className: '11D' });
     setAiStatus(`Students synced to ${currentViewSubject} Page ${currentViewPage}`);
 }
 
-/**
- * Feature 10: Attention Detection
- * Monitors if the teacher's dashboard is active (can be applied to student client)
- */
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        console.log("Teacher tab inactive. Monitoring paused.");
-    }
+    if (document.hidden) console.log("Teacher tab inactive.");
 });
 
-/**
- * Feature 2: Exam Mode Monitoring
- * Listens for suspicious behavior reported by student clients.
- */
 socket.on('suspicious-activity', (data) => {
     const { studentName, reason } = data;
-    // Create an alert in the teacher's dashboard
     const alertsList = document.getElementById('aiAlertsList');
     if (alertsList) {
         const card = document.createElement('div');
         card.className = 'alert-card alert-high';
-        const h5 = document.createElement('h5');
-        h5.textContent = `Suspicious Activity: ${studentName}`;
-        const p = document.createElement('p');
-        p.textContent = reason;
-        card.append(h5, p);
+        card.innerHTML = `<h5>Suspicious Activity: ${studentName}</h5><p>${reason}</p>`;
         alertsList.prepend(card);
     }
 });
@@ -454,37 +353,25 @@ function setTeacherTool(tool) {
 function setTeacherColor(color, btnId) {
     teacherColor = color;
     document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
-    const button = document.getElementById(btnId);
-    if (button) button.classList.add('active');
+    document.getElementById(btnId)?.classList.add('active');
 }
 
 function clearTeacherCanvas() {
+    if (!tCtx) return;
     tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-    if (currentViewStudent && currentViewSubject) {
-        socket.emit('clear-canvas', {
-            studentName: currentViewStudent,
-            subject: currentViewSubject,
-            page: currentViewPage,
-            authorRole: 'TEACHER'
-        });
+    if (currentViewEgn && currentViewSubject) {
+        socket.emit('clear-canvas', { studentEgn: currentViewEgn, subject: currentViewSubject, page: currentViewPage });
     }
 }
 
-/**
- * Feature: Replay Lesson
- * Animates the stored strokes to show the writing process.
- */
 async function replayLesson() {
-    if (strokeHistory.length === 0 || isPlayingBack) return;
+    if (strokeHistory.length === 0 || isPlayingBack || !tCtx) return;
     isPlayingBack = true;
     tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-
     const startTime = strokeHistory[0].timestamp;
-
     for (const stroke of strokeHistory) {
         const delay = stroke.timestamp - startTime;
         await new Promise(resolve => setTimeout(resolve, delay));
-        
         tCtx.beginPath();
         tCtx.moveTo(stroke.x0, stroke.y0);
         tCtx.lineTo(stroke.x1, stroke.y1);
@@ -497,30 +384,23 @@ async function replayLesson() {
 }
 
 function drawTeacher(x0, y0, x1, y1) {
-    if (!currentViewStudent || !currentViewSubject) return;
+    if (!currentViewEgn || !currentViewSubject || !tCtx) return;
     const size = document.getElementById('teacherSize')?.value || 3;
     const timestamp = Date.now();
-
-    // Effort Monitoring
     if (lastStrokeTime) {
         activeWritingTime += (timestamp - lastStrokeTime < 2000) ? (timestamp - lastStrokeTime) : 0;
     }
     lastStrokeTime = timestamp;
-
     const strokeData = {
         x0, y0, x1, y1,
         color: teacherTool === 'eraser' ? null : teacherColor,
-        size,
-        tool: teacherTool,
-        studentName: currentViewStudent,
+        size, tool: teacherTool,
+        studentEgn: currentViewEgn,
         subject: currentViewSubject,
         page: currentViewPage,
-        authorRole: 'TEACHER',
         timestamp
     };
-
     strokeHistory.push(strokeData);
-
     if (teacherTool === 'eraser') {
         tCtx.clearRect(x1 - 10, y1 - 10, 20, 20);
     } else {
@@ -533,7 +413,6 @@ function drawTeacher(x0, y0, x1, y1) {
         tCtx.lineJoin = 'round';
         tCtx.stroke();
     }
-
     if (socket.connected) {
         socket.emit('draw-stroke', strokeData);
     } else {
@@ -551,26 +430,21 @@ function showSection(sectionId) {
     if (target) target.style.display = 'block';
 }
 
-/**
- * Feature 3: Silent Communication
- * Responds to a student message privately or globally.
- */
 function sendSilentResponse(studentName, message, isPublic = false) {
-    const sender = (isDemo && demoData) ? demoData.teacher.name : (user.displayName || user.email);
     socket.emit('silent-message-response', {
         recipient: isPublic ? 'CLASS_11D' : studentName,
         content: message,
-        teacherName: sender
+        teacherName: teacherNames[user.email] || user.displayName || 'Teacher'
     });
 }
-
 
 function subjectMatch(a, b) {
     return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
 socket.on('draw-stroke', (data) => {
-    if (data.studentName === currentViewStudent &&
+    if (!tCtx) return;
+    if (data.studentEgn === currentViewEgn &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         document.getElementById('liveBadge').style.display = 'inline';
@@ -589,7 +463,8 @@ socket.on('draw-stroke', (data) => {
 });
 
 socket.on('clear-canvas', (data) => {
-    if (data.studentName === currentViewStudent &&
+    if (!tCtx) return;
+    if (data.studentEgn === currentViewEgn &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
@@ -597,7 +472,8 @@ socket.on('clear-canvas', (data) => {
 });
 
 socket.on('page-change', (data) => {
-    if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
+    if (!tCtx) return;
+    if (data.studentEgn === currentViewEgn && subjectMatch(data.subject, currentViewSubject)) {
         currentViewPage = data.page;
         document.getElementById('notebookTitle').textContent =
             `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
@@ -605,30 +481,20 @@ socket.on('page-change', (data) => {
         loadTeacherPage();
     }
 });
-
 async function loadNotifications() {
     const container = document.getElementById('teacherNotifications');
     if (!container) return;
     try {
         if (isDemo && demoData) {
-            container.replaceChildren();
-            demoData.notifications.slice(0, 6).forEach(n => {
-                const card = document.createElement('div');
-                card.className = 'insight-card';
-                const top = document.createElement('div');
-                top.className = 'insight-top';
-                const h5 = document.createElement('h5');
-                h5.textContent = n.type;
-                const span = document.createElement('span');
-                span.className = 'metric-label';
-                span.textContent = (n.createdAt || '').replace('T', ' ');
-                top.append(h5, span);
-                const p = document.createElement('p');
-                p.className = 'insight-copy';
-                p.textContent = n.message;
-                card.append(top, p);
-                container.appendChild(card);
-            });
+            container.innerHTML = demoData.notifications.slice(0, 6).map(n => `
+                <div class="insight-card">
+                    <div class="insight-top">
+                        <h5>${n.type}</h5>
+                        <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
+                    </div>
+                    <p class="insight-copy">${n.message}</p>
+                </div>
+            `).join('');
             return;
         }
         container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
@@ -689,25 +555,8 @@ async function addGrade() {
             loadNotifications();
             return true;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/grades`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-                studentName,
-                subject,
-                value,
-                comment
-            })
-        });
-        if (!res.ok) throw new Error(`Grade failed ${res.status}`);
-        await res.json();
-        setGradeStatus('Grade saved.');
-        document.getElementById('gradeValue').value = '';
-        document.getElementById('gradeComment').value = '';
-        loadGradeHistory();
-        loadNotifications();
-        socket.emit('grade-updated', { studentName });
-        return true;
+        setGradeStatus('Grades not yet connected to backend.');
+        return false;
     } catch (error) {
         setGradeStatus('Failed to save grade.');
         return false;
@@ -764,47 +613,23 @@ async function loadGrades() {
 
 document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'gradeStudent') loadGradeHistory();
+    if (e.target && e.target.id === 'testClass') scheduleTestAutosave();
 });
 
 document.addEventListener('input', (e) => {
     if (!e.target) return;
-    const autosaveIds = new Set(['gradeStudent', 'gradeSubject', 'gradeValue', 'gradeComment']);
-    if (autosaveIds.has(e.target.id)) {
-        scheduleGradeAutosave();
-    }
-});
-
-document.addEventListener('input', (e) => {
-    if (!e.target) return;
-    const autosaveIds = new Set([
-        'testTitle',
-        'testSubject',
-        'testDescription',
-        'testQuestions',
-        'testPoints',
-        'testDueDate'
-    ]);
-    if (autosaveIds.has(e.target.id)) {
-        scheduleTestAutosave();
-    }
-});
-
-document.addEventListener('change', (e) => {
-    if (e.target && e.target.id === 'testClass') {
-        scheduleTestAutosave();
-    }
+    const gradeIds = new Set(['gradeStudent', 'gradeSubject', 'gradeValue', 'gradeComment']);
+    const testIds = new Set(['testTitle', 'testSubject', 'testDescription', 'testQuestions', 'testPoints', 'testDueDate']);
+    if (gradeIds.has(e.target.id)) scheduleGradeAutosave();
+    if (testIds.has(e.target.id)) scheduleTestAutosave();
 });
 
 if (!isDemo) {
     socket.on('grade-updated', () => {
-        if (document.getElementById('gradesSection')?.style.display === 'block') {
-            loadGradeHistory();
-        }
+        if (document.getElementById('gradesSection')?.style.display === 'block') loadGradeHistory();
         loadNotifications();
     });
 }
-
-
 
 async function loadTeacherPage() {
     try {
@@ -812,10 +637,8 @@ async function loadTeacherPage() {
             renderDemoNotebookPage(demoData.notebooks[0]);
             return;
         }
-        const egn = nameToEgn[currentViewStudent] || '';
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
+        const egn = currentViewEgn || nameToEgn[currentViewStudent] || '';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -825,11 +648,6 @@ async function loadTeacherPage() {
             } else {
                 img.src = '';
                 img.style.display = 'none';
-            }
-            // Feature 2.3: Second Brain Summary display
-            const summaryEl = document.getElementById('notebookAiSummary');
-            if (summaryEl) {
-                summaryEl.textContent = notebook.summary || "AI is generating a summary of this lesson...";
             }
         } else {
             img.src = '';
@@ -844,6 +662,7 @@ function renderDemoNotebookPage(notebook) {
     const img = document.getElementById('notebookImage');
     img.src = '';
     img.style.display = 'none';
+    if (!tCtx) return;
     tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
     tCtx.fillStyle = '#1b1b1b';
     tCtx.font = '20px sans-serif';
@@ -880,9 +699,8 @@ async function loadNotebooks() {
             });
             return;
         }
-        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/teacher?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
+
+        const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/list?t=${Date.now()}`);
         const notebooks = await response.json();
 
         const uniqueNotebooks = [];
@@ -917,7 +735,6 @@ async function loadNotebooks() {
             });
             list.appendChild(card);
         });
-
     } catch (error) {
         console.error('Could not load notebooks:', error);
     }
@@ -928,32 +745,26 @@ function viewNotebook(egn, studentName, subject) {
     currentViewStudent = studentName;
     currentViewSubject = subject;
     currentViewPage = 1;
+    strokeHistory = [];
 
     document.getElementById('notebooksSection').style.display = 'none';
     document.getElementById('notebookViewer').style.display = 'block';
     document.getElementById('notebookTitle').textContent = `${studentName} - ${subject} (Page 1)`;
     document.getElementById('liveBadge').style.display = 'none';
 
-    // Add ELI5 Button to the viewer if not present
-    if (!document.getElementById('eli5Btn')) {
-        const eli5Btn = document.createElement('button');
-        eli5Btn.id = 'eli5Btn';
-        eli5Btn.className = 'action-btn secondary-btn';
-        eli5Btn.style.marginLeft = '10px';
-        eli5Btn.setAttribute('data-i18n', 'eli5_button');
-        eli5Btn.textContent = currentLang === 'bg' ? 'Обясни като на 5-годишен' : 'ELI5';
-        eli5Btn.onclick = explainLikeIm5;
-        document.querySelector('#notebookViewer .section-header div').appendChild(eli5Btn);
-    }
-
     const wrapper = document.getElementById('notebookCanvasWrapper');
     const isMaths = subject.toLowerCase() === 'maths';
     wrapper.className = 'notebook-canvas-wrapper ' + (isMaths ? 'squared' : 'lined');
 
-    teacherCanvas.width = wrapper.clientWidth;
-    teacherCanvas.height = wrapper.clientHeight;
-    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+    teacherCanvas = document.getElementById('teacherCanvas');
+    tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
+    if (teacherCanvas) {
+        teacherCanvas.width = wrapper.clientWidth;
+        teacherCanvas.height = wrapper.clientHeight;
+    }
+    if (tCtx) tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
 
+    attachTeacherCanvasEvents();
     loadTeacherPage();
 }
 
@@ -969,93 +780,78 @@ function backToList() {
 
 function attachTeacherCanvasEvents() {
     if (!teacherCanvas) return;
-    teacherCanvas.addEventListener('mousedown', (event) => {
-        if (!currentViewStudent) return;
+    const newCanvas = teacherCanvas.cloneNode(true);
+    teacherCanvas.parentNode.replaceChild(newCanvas, teacherCanvas);
+    teacherCanvas = newCanvas;
+    tCtx = teacherCanvas.getContext('2d');
+
+    teacherCanvas.addEventListener('mousedown', (e) => {
+        if (!currentViewEgn) return;
         teacherDrawing = true;
-        [teacherLastX, teacherLastY] = [event.offsetX, event.offsetY];
+        [teacherLastX, teacherLastY] = [e.offsetX, e.offsetY];
     });
-
-    teacherCanvas.addEventListener('mousemove', (event) => {
+    teacherCanvas.addEventListener('mousemove', (e) => {
         if (!teacherDrawing) return;
-        drawTeacher(teacherLastX, teacherLastY, event.offsetX, event.offsetY);
-        [teacherLastX, teacherLastY] = [event.offsetX, event.offsetY];
+        drawTeacher(teacherLastX, teacherLastY, e.offsetX, e.offsetY);
+        [teacherLastX, teacherLastY] = [e.offsetX, e.offsetY];
     });
-
     teacherCanvas.addEventListener('mouseup', () => { teacherDrawing = false; });
     teacherCanvas.addEventListener('mouseout', () => { teacherDrawing = false; });
 
-    teacherCanvas.addEventListener('touchstart', (event) => {
-        if (!currentViewStudent) return;
-        event.preventDefault();
-        const touch = event.touches[0];
+    teacherCanvas.addEventListener('touchstart', (e) => {
+        if (!currentViewEgn) return;
+        e.preventDefault();
+        const touch = e.touches[0];
         const rect = teacherCanvas.getBoundingClientRect();
         teacherDrawing = true;
         teacherLastX = touch.clientX - rect.left;
         teacherLastY = touch.clientY - rect.top;
     }, { passive: false });
-
-    teacherCanvas.addEventListener('touchmove', (event) => {
+    teacherCanvas.addEventListener('touchmove', (e) => {
         if (!teacherDrawing) return;
-        event.preventDefault();
-        const touch = event.touches[0];
+        e.preventDefault();
+        const touch = e.touches[0];
         const rect = teacherCanvas.getBoundingClientRect();
         const x = touch.clientX - rect.left;
         const y = touch.clientY - rect.top;
         drawTeacher(teacherLastX, teacherLastY, x, y);
         [teacherLastX, teacherLastY] = [x, y];
     }, { passive: false });
-
     teacherCanvas.addEventListener('touchend', () => { teacherDrawing = false; });
     teacherCanvas.addEventListener('touchcancel', () => { teacherDrawing = false; });
 }
-
-function formatPercent(value) {
-    return `${Number(value || 0).toFixed(1)}%`;
-}
-
-function formatSeconds(value) {
-    return `${Math.round(value || 0)}s`;
-}
-
-function riskBadgeClass(level) {
-    return `risk-badge risk-${String(level || 'low').toLowerCase()}`;
-}
+function formatPercent(value) { return `${Number(value || 0).toFixed(1)}%`; }
+function formatSeconds(value) { return `${Math.round(value || 0)}s`; }
+function riskBadgeClass(level) { return `risk-badge risk-${String(level || 'low').toLowerCase()}`; }
 
 function setAiStatus(message, type = 'info') {
-    if (aiStatusText) aiStatusText.textContent = message;
-    const assistant = document.getElementById('assistant-techie');
-    if (!message || message === '') { // Clear message means stop thinking
-        aiStatusBanner.style.display = 'none';
-        aiStatusBanner.className = 'ai-status-banner';
-        if (assistant) assistant.classList.remove('thinking');
+    if (aiStatusText) aiStatusText.textContent = message || '';
+    const assistantEl = document.getElementById('assistant-techie');
+    if (!message) {
+        if (aiStatusBanner) { aiStatusBanner.style.display = 'none'; aiStatusBanner.className = 'ai-status-banner'; }
+        if (assistantEl) assistantEl.classList.remove('thinking');
         return;
     }
-    if (assistant) assistant.classList.add('thinking');
-    aiStatusBanner.textContent = message;
-    aiStatusBanner.className = `ai-status-banner${type === 'error' ? ' error' : ''}`;
-    aiStatusBanner.style.display = 'block';
+    if (assistantEl) assistantEl.classList.add('thinking');
+    if (aiStatusBanner) {
+        aiStatusBanner.textContent = message;
+        aiStatusBanner.className = `ai-status-banner${type === 'error' ? ' error' : ''}`;
+        aiStatusBanner.style.display = 'block';
+    }
 }
 
-/**
- * Feature 5: Classroom Heatmap
- * Visualizes the understanding levels of the entire class.
- */
 function renderHeatmap(students) {
     const container = document.getElementById('classroomHeatmap');
     if (!container) return;
-    
     container.replaceChildren();
     students.forEach(student => {
         const cell = document.createElement('div');
         cell.className = `heatmap-cell status-${student.riskLevel.toLowerCase()}`;
-        
         const tooltip = document.createElement('span');
         tooltip.className = 'heatmap-tooltip';
         tooltip.textContent = `${student.studentName}: ${student.riskLevel} Risk`;
-        
         cell.appendChild(tooltip);
-        cell.onclick = () => viewNotebook(nameToEgn[student.studentName], student.studentName, currentViewSubject || 'Maths');
-        
+        cell.onclick = () => viewNotebook(nameToEgn[student.studentName] || '', student.studentName, currentViewSubject || 'Maths');
         container.appendChild(cell);
     });
 }
@@ -1063,7 +859,6 @@ function renderHeatmap(students) {
 function renderOverview(overview) {
     const grid = document.getElementById('aiOverviewGrid');
     if (!grid) return;
-    
     const metrics = [
         { label: 'Tracked Tasks', value: overview.totalTasks ?? 0 },
         { label: 'Accuracy', value: formatPercent(overview.accuracyRate) },
@@ -1072,136 +867,71 @@ function renderOverview(overview) {
         { label: 'Struggling Students', value: overview.strugglingStudentsCount ?? 0 },
         { label: 'Attention Alerts', value: overview.attentionAlertsCount ?? 0 }
     ];
-
-    grid.replaceChildren();
-    metrics.forEach(m => {
-        const card = document.createElement('div');
-        card.className = 'metric-card';
-        const label = document.createElement('span');
-        label.className = 'metric-label';
-        label.textContent = m.label;
-        const value = document.createElement('strong');
-        value.className = 'metric-value';
-        value.textContent = m.value;
-        card.append(label, value);
-        grid.appendChild(card);
-    });
+    grid.innerHTML = metrics.map(m => `
+        <div class="metric-card">
+            <span class="metric-label">${m.label}</span>
+            <strong class="metric-value">${m.value}</strong>
+        </div>
+    `).join('');
 }
 
 function renderStudents(students) {
     const container = document.getElementById('aiStudentsList');
+    if (!container) return;
     if (!students || !students.length) {
-        container.replaceChildren();
-        const p = document.createElement('p');
-        p.className = 'empty-state';
-        p.textContent = 'No students currently flagged for attention.';
-        container.appendChild(p);
+        container.innerHTML = '<p class="empty-state">No students currently flagged for attention.</p>';
         return;
     }
-
-    container.replaceChildren();
-    students.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'insight-card';
-        
-        const top = document.createElement('div');
-        top.className = 'insight-top';
-        const nameDiv = document.createElement('div');
-        const h5 = document.createElement('h5');
-        h5.textContent = s.studentName;
-        const pMeta = document.createElement('p');
-        pMeta.textContent = `${s.className} • ${s.adaptiveRecommendation.replaceAll('_', ' ')}`;
-        nameDiv.append(h5, pMeta);
-        const riskSpan = document.createElement('span');
-        riskSpan.className = riskBadgeClass(s.riskLevel);
-        riskSpan.textContent = s.riskLevel;
-        top.append(nameDiv, riskSpan);
-
-        const copy = document.createElement('p');
-        copy.className = 'insight-copy';
-        copy.textContent = s.recommendedAction;
-
-        const weaknesses = document.createElement('p');
-        weaknesses.className = 'insight-weaknesses';
-        weaknesses.innerHTML = `<strong>Weakness areas:</strong> ${s.weaknessAreas?.join(', ') || 'None'}`;
-
-        card.append(top, copy, weaknesses);
-        container.appendChild(card);
-    });
+    container.innerHTML = students.map(s => `
+        <div class="insight-card">
+            <div class="insight-top">
+                <div>
+                    <h5>${s.studentName}</h5>
+                    <p>${s.className} • ${s.adaptiveRecommendation.replaceAll('_', ' ')}</p>
+                </div>
+                <span class="${riskBadgeClass(s.riskLevel)}">${s.riskLevel}</span>
+            </div>
+            <p class="insight-copy">${s.recommendedAction}</p>
+            <p class="insight-weaknesses"><strong>Weakness areas:</strong> ${s.weaknessAreas?.join(', ') || 'None'}</p>
+        </div>
+    `).join('');
 }
 
 function renderAlerts(alerts) {
     const container = document.getElementById('aiAlertsList');
-    container.replaceChildren();
+    if (!container) return;
     if (!alerts || !alerts.length) {
-        const p = document.createElement('p');
-        p.className = 'empty-state';
-        p.textContent = 'No active alerts right now.';
-        container.appendChild(p);
+        container.innerHTML = '<p class="empty-state">No active alerts right now.</p>';
         return;
     }
-    alerts.forEach((a) => {
-        const card = document.createElement('div');
-        card.className = `alert-card alert-${String(a.severity || 'medium').toLowerCase()}`;
-        const top = document.createElement('div');
-        top.className = 'insight-top';
-        const h5 = document.createElement('h5');
-        h5.textContent = a.title;
-        const span = document.createElement('span');
-        span.className = riskBadgeClass(a.severity);
-        span.textContent = a.severity;
-        top.append(h5, span);
-        const p = document.createElement('p');
-        p.className = 'insight-copy';
-        p.textContent = a.message;
-        card.append(top, p);
-        container.appendChild(card);
-    });
+    container.innerHTML = alerts.map(a => `
+        <div class="alert-card alert-${String(a.severity || 'medium').toLowerCase()}">
+            <div class="insight-top">
+                <h5>${a.title}</h5>
+                <span class="${riskBadgeClass(a.severity)}">${a.severity}</span>
+            </div>
+            <p class="insight-copy">${a.message}</p>
+        </div>
+    `).join('');
 }
-
-/**
- * Updated to trigger Heatmap rendering.
- */
 
 function renderTopics(topics) {
     const container = document.getElementById('aiTopicsList');
+    if (!container) return;
     if (!topics || !topics.length) {
-        container.replaceChildren();
-        const p = document.createElement('p');
-        p.className = 'empty-state';
-        p.textContent = 'No topic analytics available yet.';
-        container.appendChild(p);
+        container.innerHTML = '<p class="empty-state">No topic analytics available yet.</p>';
         return;
     }
-
-    container.replaceChildren();
-    topics.forEach(t => {
-        const row = document.createElement('div');
-        row.className = 'topic-row';
-        
-        const info = document.createElement('div');
-        const h5 = document.createElement('h5');
-        h5.textContent = t.label;
-        const pSub = document.createElement('p');
-        pSub.textContent = t.subject;
-        info.append(h5, pSub);
-
-        const metrics = document.createElement('div');
-        metrics.className = 'topic-metrics';
-        const acc = document.createElement('span');
-        acc.textContent = `${formatPercent(t.accuracyRate)} accuracy`;
-        const diff = document.createElement('span');
-        diff.className = riskBadgeClass(t.difficultyLevel);
-        diff.textContent = t.difficultyLevel;
-        metrics.append(acc, diff);
-
-        const action = document.createElement('p');
-        action.className = 'insight-copy';
-        action.textContent = t.teacherAction;
-
-        row.append(info, metrics, action);
-        container.appendChild(row);
-    });
+    container.innerHTML = topics.map(t => `
+        <div class="topic-row">
+            <div><h5>${t.label}</h5><p>${t.subject}</p></div>
+            <div class="topic-metrics">
+                <span>${formatPercent(t.accuracyRate)} accuracy</span>
+                <span class="${riskBadgeClass(t.difficultyLevel)}">${t.difficultyLevel}</span>
+            </div>
+            <p class="insight-copy">${t.teacherAction}</p>
+        </div>
+    `).join('');
 }
 
 async function loadAiInsights() {
@@ -1214,12 +944,9 @@ async function loadAiInsights() {
         setAiStatus('Demo AI data loaded for exploration.');
         return;
     }
-
     setAiStatus('Fetching class performance insights...', 'info');
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/ai/teacher/overview`, {
-            headers: authHeaders()
-        });
+        const res = await fetch(`${BACKEND_BASE_URL}/api/ai/teacher/overview`);
         if (res.ok) {
             const data = await res.json();
             renderOverview(data.overview || {});
@@ -1232,7 +959,6 @@ async function loadAiInsights() {
             setAiStatus('Failed to load AI Insights.', 'error');
         }
     } catch (error) {
-        console.error('AI Insight Error:', error);
         setAiStatus('Connection error while loading insights.', 'error');
     }
 }
@@ -1268,11 +994,7 @@ async function createTest() {
     const className = document.getElementById('testClass').value;
     const dueDate = document.getElementById('testDueDate').value;
 
-    if (!title || !className) {
-        setTestStatus('Title and class are required.');
-        return false;
-    }
-
+    if (!title || !className) { setTestStatus('Title and class are required.'); return false; }
     const questions = questionsInput ? questionsInput.split('\n').map(q => q.trim()).filter(Boolean) : [];
 
     try {
@@ -1282,49 +1004,12 @@ async function createTest() {
             demoData.teacherTests.unshift({ id, title, subject, assignments: [{ className, dueDate }] });
             demoData.tests.unshift({ testId: id, title, subject, dueDate, questionsJson: JSON.stringify(questions), status: 'ASSIGNED', score: null, feedback: null });
             setTestStatus('Test created and assigned (demo).');
-            document.getElementById('testTitle').value = '';
-            document.getElementById('testSubject').value = '';
-            document.getElementById('testDescription').value = '';
-            document.getElementById('testQuestions').value = '';
-            document.getElementById('testPoints').value = '';
+            ['testTitle','testSubject','testDescription','testQuestions','testPoints'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             loadTests();
             return true;
         }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/tests`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-                title,
-                subject,
-                description,
-                questionsJson: JSON.stringify(questions),
-                totalPoints
-            })
-        });
-        if (!res.ok) throw new Error(`Create failed ${res.status}`);
-        const created = await res.json();
-
-        setTestStatus('Assigning test...');
-        const assignRes = await fetch(`${BACKEND_BASE_URL}/api/tests/${created.id}/assign`, {
-            method: 'POST',
-            headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({
-                className,
-                dueDate
-            })
-        });
-        if (!assignRes.ok) throw new Error(`Assign failed ${assignRes.status}`);
-        await assignRes.json();
-
-        socket.emit('test-assigned', { className, testId: created.id });
-        setTestStatus('Test created and assigned.');
-        document.getElementById('testTitle').value = '';
-        document.getElementById('testSubject').value = '';
-        document.getElementById('testDescription').value = '';
-        document.getElementById('testQuestions').value = '';
-        document.getElementById('testPoints').value = '';
-        loadTests();
-        return true;
+        setTestStatus('Tests not yet connected to backend.');
+        return false;
     } catch (error) {
         setTestStatus('Failed to create test.');
         return false;
@@ -1337,14 +1022,8 @@ function scheduleTestAutosave() {
         const title = document.getElementById('testTitle').value.trim();
         const className = document.getElementById('testClass').value;
         if (!title || !className) return;
-        const subject = document.getElementById('testSubject').value.trim();
-        const description = document.getElementById('testDescription').value.trim();
-        const questionsInput = document.getElementById('testQuestions').value.trim();
-        const totalPoints = document.getElementById('testPoints').value.trim();
-        const dueDate = document.getElementById('testDueDate').value;
-        const hash = `${title}|${className}|${subject}|${description}|${questionsInput}|${totalPoints}|${dueDate}`;
+        const hash = `${title}|${className}|${document.getElementById('testSubject').value}`;
         if (hash === lastTestHash) return;
-        setTestStatus('Autosaving...');
         const success = await createTest();
         if (success) lastTestHash = hash;
     }, 1200);
@@ -1353,10 +1032,7 @@ function scheduleTestAutosave() {
 function renderTests(tests) {
     const list = document.getElementById('testsList');
     if (!list) return;
-    if (!tests.length) {
-        list.innerHTML = '<p class="empty-state">No tests created yet.</p>';
-        return;
-    }
+    if (!tests.length) { list.innerHTML = '<p class="empty-state">No tests created yet.</p>'; return; }
     list.innerHTML = tests.map(test => {
         const assignments = test.assignments || [];
         const assignmentText = assignments.length ? assignments.map(a => `${a.className}${a.dueDate ? ` • due ${a.dueDate}` : ''}`).join(', ') : 'Not assigned yet';
@@ -1381,15 +1057,11 @@ async function loadSubmissions(testId) {
     try {
         if (isDemo && demoData) {
             const submissions = demoData.testSubmissions[testId] || [];
-            if (!submissions.length) {
-                list.innerHTML = '<p class="empty-state">No submissions yet.</p>';
-                return;
-            }
+            if (!submissions.length) { list.innerHTML = '<p class="empty-state">No submissions yet.</p>'; return; }
             list.innerHTML = submissions.map(sub => `
                 <div class="submission-card">
                     <strong>Student: ${demoData.student.name}</strong>
                     <div class="test-meta">Status: ${sub.status || 'SUBMITTED'}</div>
-                    <div class="test-meta">Answers:</div>
                     <pre class="test-meta">${sub.answersJson || ''}</pre>
                     <div class="test-row">
                         <input type="number" min="0" placeholder="Score" id="score-${sub.id}" value="${sub.score ?? ''}">
@@ -1406,11 +1078,11 @@ async function loadSubmissions(testId) {
     }
 }
 
-async function gradeSubmission(submissionId, studentName) {
+async function gradeSubmission(submissionId) {
     if (isDemo && demoData) {
         const submissions = Object.values(demoData.testSubmissions).flat();
         const sub = submissions.find(s => s.id === submissionId);
-        if (sub) { sub.score = null; sub.feedback = 'Demo feedback saved.'; sub.status = 'GRADED'; }
+        if (sub) { sub.status = 'GRADED'; sub.feedback = 'Demo feedback saved.'; }
         return;
     }
 }
@@ -1419,12 +1091,12 @@ async function loadTests() {
     showSection('testsSection');
     await loadClasses();
     try {
-        if (isDemo && demoData) {
-            renderTests(demoData.teacherTests || []);
-            return;
-        }
+        if (isDemo && demoData) { renderTests(demoData.teacherTests || []); return; }
         renderTests([]);
     } catch (error) {
         console.error('Could not load tests:', error);
     }
 }
+
+loadNotifications();
+createAssistant();
