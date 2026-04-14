@@ -32,14 +32,18 @@ public class UserServiceImpl implements UserService {
         if (userRepository.findByEmail(user.getEmail()) != null) {
             return "Email already registered";
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
         return "User registered successfully";
     }
 
     @Override
+    public User getUserByEgn(String egn) {
+        return userRepository.findById(egn).orElse(null);
+    }
+
+    @Override
     public User getUserById(Long id) {
-        return userRepository.findById(id).orElse(null);
+        return null;
     }
 
     @Override
