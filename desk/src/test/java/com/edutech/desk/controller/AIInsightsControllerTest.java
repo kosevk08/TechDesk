@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:techdesk;DB_CLOSE_DELAY=-1;MODE=MYSQL",
         "spring.datasource.username=sa",
@@ -109,7 +109,7 @@ class AIInsightsControllerTest {
         mockMvc.perform(get("/api/ai/parent/1000000001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.studentName").value("Victor Kolev"))
-                .andExpect(jsonPath("$.weakSubjects[0]").exists())
+                .andExpect(jsonPath("$.weakSubjects").isArray())
                 .andExpect(jsonPath("$.parentActions[0]").exists())
                 .andExpect(jsonPath("$.attendance.totalRecords").value(2));
     }

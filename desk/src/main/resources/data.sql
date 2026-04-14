@@ -1,4 +1,19 @@
-INSERT IGNORE INTO users (egn, email, password, role, demo, student_egn) VALUES
+INSERT INTO subjects (name, description) VALUES
+('Bulgarian Language and Literature', 'Bulgarian language and literature studies'),
+('English', 'English language studies'),
+('Chemistry', 'Chemistry studies'),
+('Physics', 'Physics studies'),
+('Maths', 'Mathematics studies'),
+('Biology', 'Biology studies'),
+('Social Anthropology', 'Social anthropology studies'),
+('Geography', 'Geography studies'),
+('English Literature', 'English literature studies'),
+('German (A1)', 'German language for beginners'),
+('Spanish (A1)', 'Spanish language for beginners'),
+('Philosophy', 'Philosophy studies')
+;
+
+INSERT INTO users (egn, email, password, role, demo, student_egn) VALUES
 ('1000000001', 'v.kolev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
 ('1000000002', 'k.kosev-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
 ('1000000003', 'i.ivanov-student@edu-school.bg', '$2a$10$Xwuz72m4OxyhXYTlYjgtg.yDSxIj0RRlPkKzCSnoP0yw40ytzmudG', 'STUDENT', FALSE, NULL),
@@ -32,20 +47,20 @@ INSERT IGNORE INTO users (egn, email, password, role, demo, student_egn) VALUES
 ('9000000003', 'p.stoyanov-parent@edu-school.bg', '$2a$10$sLbo6Npo.RVqdTeLjLCbCO1gEhWtYDwg7uFOz5D38QnNTZJw.Hi6.', 'PARENT', TRUE, '9000000001'),
 ('9000000004', 's.markova-admin@edu-school.bg', '$2a$10$sLbo6Npo.RVqdTeLjLCbCO1gEhWtYDwg7uFOz5D38QnNTZJw.Hi6.', 'ADMIN', TRUE, NULL);
 
-INSERT IGNORE INTO students (egn, first_name, last_name, email, grade, class_name) VALUES
-('1000000001', 'Victor', 'Kolev', 'v.kolev-student@edu-school.bg', '11', '11D'),
-('1000000002', 'Konstantin', 'Kosev', 'k.kosev-student@edu-school.bg', '11', '11D'),
-('1000000003', 'Ivan', 'Ivanov', 'i.ivanov-student@edu-school.bg', '11', '11D'),
-('1000000004', 'John', 'Doe', 'j.doe-student@edu-school.bg', '11', '11D'),
-('1000000005', 'Daniel', 'Kovacs', 'd.kovacs-student@edu-school.bg', '11', '11D'),
-('1000000006', 'Sofia', 'Martinez', 's.martinez-student@edu-school.bg', '11', '11D'),
-('1000000007', 'Marcus', 'Bennett', 'm.bennett-student@edu-school.bg', '11', '11D'),
-('1000000008', 'Elena', 'Petrova', 'e.petrova-student@edu-school.bg', '11', '11D'),
-('1000000009', 'Liam', 'OConnor', 'l.oconnor-student@edu-school.bg', '11', '11D'),
-('1000000010', 'Victor', 'Ivanov', 'v.ivanov-student@edu-school.bg', '11', '11D'),
-('1000000011', 'Natalie', 'Fischer', 'n.fischer-student@edu-school.bg', '11', '11D'),
-('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11D'),
-('9000000001', 'Radoslav', 'Paskalev', 'r.paskalev-student@edu-school.bg', '11', '11D');
+INSERT INTO students (egn, first_name, last_name, email, grade, class_name) VALUES
+('1000000001', 'Victor', 'Kolev', 'v.kolev-student@edu-school.bg', '10', '10A'),
+('1000000002', 'Konstantin', 'Kosev', 'k.kosev-student@edu-school.bg', '10', '10A'),
+('1000000003', 'Ivan', 'Ivanov', 'i.ivanov-student@edu-school.bg', '10', '10A'),
+('1000000004', 'John', 'Doe', 'j.doe-student@edu-school.bg', '10', '10B'),
+('1000000005', 'Daniel', 'Kovacs', 'd.kovacs-student@edu-school.bg', '10', '10B'),
+('1000000006', 'Sofia', 'Martinez', 's.martinez-student@edu-school.bg', '10', '10B'),
+('1000000007', 'Marcus', 'Bennett', 'm.bennett-student@edu-school.bg', '11', '11A'),
+('1000000008', 'Elena', 'Petrova', 'e.petrova-student@edu-school.bg', '11', '11A'),
+('1000000009', 'Liam', 'OConnor', 'l.oconnor-student@edu-school.bg', '11', '11A'),
+('1000000010', 'Victor', 'Ivanov', 'v.ivanov-student@edu-school.bg', '11', '11B'),
+('1000000011', 'Natalie', 'Fischer', 'n.fischer-student@edu-school.bg', '11', '11B'),
+('1000000012', 'Carlos', 'Mendes', 'c.mendes-student@edu-school.bg', '11', '11B')
+;
 
 INSERT IGNORE INTO teachers (egn, first_name, last_name) VALUES
 ('2000000001', 'Hannah', 'Schmidt'),
@@ -83,27 +98,72 @@ INSERT IGNORE INTO subjects (name, description) VALUES
 ('Spanish (A1)', 'Spanish Language A1'),
 ('History', 'History');
 
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000003', '2026-04-01', 'Introduction to Quadratic Equations' FROM subjects s WHERE s.name = 'Maths';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000004', '2026-04-01', 'Newton Laws of Motion' FROM subjects s WHERE s.name = 'Physics';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000005', '2026-04-01', 'Periodic Table Overview' FROM subjects s WHERE s.name = 'Chemistry';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000006', '2026-04-01', 'Cell Structure and Function' FROM subjects s WHERE s.name = 'Biology';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000007', '2026-04-01', 'Reading Comprehension Skills' FROM subjects s WHERE s.name = 'English';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000008', '2026-04-01', 'Bulgarian Grammar Review' FROM subjects s WHERE s.name = 'Bulgarian Language and Literature';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000011', '2026-04-01', 'Shakespeare Introduction' FROM subjects s WHERE s.name = 'English Literature';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000009', '2026-04-01', 'Physical Geography Basics' FROM subjects s WHERE s.name = 'Geography';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000010', '2026-04-01', 'Introduction to Ethics' FROM subjects s WHERE s.name = 'Philosophy';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000014', '2026-04-01', 'Culture and Society' FROM subjects s WHERE s.name = 'Social Anthropology';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000012', '2026-04-01', 'German Alphabet and Greetings' FROM subjects s WHERE s.name = 'German (A1)';
-INSERT IGNORE INTO lessons (subject_id, teacher_egn, date, content)
-SELECT s.id, '2000000013', '2026-04-01', 'Spanish Basics and Introductions' FROM subjects s WHERE s.name = 'Spanish (A1)';
+MERGE INTO notebooks (student_egn, subject, school_year, format, style, color, content, page_number) KEY(student_egn, subject, school_year, page_number) VALUES
+('1000000001', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000001', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000001', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000001', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000001', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000001', 'German (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000002', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000002', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000002', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000002', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000002', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000002', 'German (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000003', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000003', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000003', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000003', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000003', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000003', 'German (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000004', 'Biology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000004', 'Chemistry', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000004', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000004', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000004', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000004', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000005', 'Biology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000005', 'Chemistry', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000005', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000005', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000005', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000005', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000006', 'Biology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000006', 'Chemistry', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000006', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000006', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000006', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000006', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000007', 'Biology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000007', 'Chemistry', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000007', 'Physics', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000007', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000007', 'English Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000007', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000008', 'Geography', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000008', 'Social Anthropology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000008', 'Philosophy', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000008', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000008', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000009', 'Geography', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000009', 'Philosophy', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000009', 'Spanish (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000009', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000009', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000010', 'Social Anthropology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000010', 'Geography', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000010', 'Philosophy', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000010', 'Spanish (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000010', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000011', 'Chemistry', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000011', 'Geography', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000011', 'German (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000011', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000011', 'Bulgarian Language and Literature', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000012', 'Social Anthropology', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000012', 'Philosophy', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000012', 'Spanish (A1)', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000012', 'Maths', '2025-2026', 'A4', 'lined', 'blue', '', 1),
+('1000000012', 'English', '2025-2026', 'A4', 'lined', 'blue', '', 1)
+;

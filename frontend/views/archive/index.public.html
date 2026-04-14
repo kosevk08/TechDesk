@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDesk - Sign In</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <div class="logo-icon">🚀</div>
+            <h1>TechDesk</h1>
+            <p class="tagline">Next-Generation Learning Platform</p>
+        </div>
+
+        <div class="login-card">
+        <!-- Login Form Container -->
+        <div id="loginForm">
+            <form>
+                <h2>Welcome Back</h2>
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Email Address" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <button type="button" id="togglePassword" aria-label="Toggle Password">👁</button>
+                </div>
+                <p id="errorMsg" class="error"></p>
+                <button type="submit" class="primary-btn">Sign In</button>
+            </form>
+        </div>
+        
+        <div class="demo-link" style="text-align: center; margin-top: 15px;">
+            <a href="#" id="openDemo" style="font-size: 0.85em; color: #6366f1;">Explore in Demo Mode</a>
+        </div>
+    </div>
+
+    <!-- Modal for Demo (required by login.js) -->
+    <div id="demoModal" class="modal" aria-hidden="true">
+        <div class="demo-modal-content">
+            <div id="demoProfiles"></div>
+            <button id="closeDemo" class="secondary-btn">Cancel</button>
+        </div>
+    </div>
+
+    <script src="/js/demo-data.js"></script>
+    <script src="/js/login.js"></script>
+</body>
+</html>

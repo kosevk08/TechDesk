@@ -25,6 +25,7 @@ public class ParentController {
         if (notebook != null) {
             NotebookResponse response = new NotebookResponse();
             response.setId(notebook.getId());
+            response.setStudentEgn(notebook.getStudentEgn());
             response.setStudentName(nameLookupService.studentName(notebook.getStudentEgn()));
             response.setSubject(notebook.getSubject());
             response.setSchoolYear(notebook.getSchoolYear());

@@ -5,21 +5,11 @@ const socket = io('https://techdesk-frontend.onrender.com');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
-const egnToName = {
-    '1000000001': 'Victor',
-    '1000000002': 'Konstantin',
-    '1000000003': 'Ivan',
-    '1000000004': 'John',
-    '1000000005': 'Daniel',
-    '1000000006': 'Sofia',
-    '1000000007': 'Marcus',
-    '1000000008': 'Elena',
-    '1000000009': 'Liam',
-    '1000000010': 'Victor',
-    '1000000011': 'Natalie',
-    '1000000012': 'Carlos',
-    '9000000001': 'Radoslav'
-};
+function firstNameOf(fullName) {
+    const clean = String(fullName || '').trim();
+    if (!clean) return 'Student';
+    return clean.split(/\s+/)[0];
+}
 
 function authHeaders(extra = {}) {
     return extra;
@@ -81,10 +71,10 @@ function getFirstName() {
 const displayName = getFirstName();
 
 if (isDemo && demoData) {
-    document.getElementById('studentName').textContent = demoData.student.name;
+    document.getElementById('studentName').textContent = firstNameOf(demoData.student.name);
     document.getElementById('studentClass').textContent = demoData.student.className;
 } else {
-    document.getElementById('studentName').textContent = displayName;
+    document.getElementById('studentName').textContent = firstNameOf(displayName);
     document.getElementById('studentClass').textContent = '11D';
 }
 
@@ -300,7 +290,7 @@ window.trackTaskCompletion = trackTaskCompletion;
 
 function openSubject(subjectId) {
     localStorage.setItem('currentSubject', subjectId);
-    window.location.href = '/notebook';
+    window.open('/notebook', '_blank', 'noopener,noreferrer');
 }
 
 if (isDemo) {

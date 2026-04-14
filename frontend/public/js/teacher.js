@@ -14,6 +14,17 @@ let strokeHistory = [];
 let isPlayingBack = false;
 let activeWritingTime = 0;
 let lastStrokeTime = null;
+let teacherCanvas = null;
+let tCtx = null;
+let aiStatusText = null;
+let aiStatusBanner = null;
+
+function secondNameOf(fullName, fallback = 'Teacher') {
+    const clean = String(fullName || '').trim();
+    if (!clean) return fallback;
+    const parts = clean.split(/\s+/);
+    return parts[1] || parts[0] || fallback;
+}
 
 function authHeaders(extra = {}) {
     return extra;
@@ -143,21 +154,17 @@ if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
 }
 
-// Initialize canvas and AI elements
-let teacherCanvas = document.getElementById('teacherCanvas');
-let tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
-let aiStatusText = document.getElementById('aiStatusText');
-let aiStatusBanner = document.getElementById('aiStatusBanner');
-
-// Set teacher name
-const teacherNameEl = document.getElementById('teacherName');
-if (teacherNameEl) {
-    if (isDemo && demoData) {
-        teacherNameEl.textContent = demoData.teacher.name;
-    } else {
-        teacherNameEl.textContent = teacherNames[user.email] || user.displayName || user.email || 'Teacher';
+document.addEventListener('DOMContentLoaded', () => {
+    teacherCanvas = document.getElementById('teacherCanvas');
+    tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
+    aiStatusText = document.getElementById('aiStatusText');
+    aiStatusBanner = document.getElementById('aiStatusBanner');
+    const teacherNameEl = document.getElementById('teacherName');
+    if (teacherNameEl) {
+        teacherNameEl.textContent = secondNameOf(user?.displayName || teacherNames[user?.email] || 'Teacher', 'Teacher');
     }
-}
+    attachTeacherCanvasEvents();
+});
 
 const supportedLangs = ['en', 'bg', 'sr', 'el', 'tr', 'ro', 'it', 'es', 'fr'];
 let langIndex = 0;
@@ -637,8 +644,18 @@ async function loadTeacherPage() {
             renderDemoNotebookPage(demoData.notebooks[0]);
             return;
         }
-        const egn = currentViewEgn || nameToEgn[currentViewStudent] || '';
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`);
+        if (!currentViewSubject) return;
+        let res;
+        if (currentViewEgn) {
+            res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${encodeURIComponent(currentViewEgn)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
+                headers: authHeaders()
+            });
+        }
+        if (!res || !res.ok) {
+            res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent || '')}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
+                headers: authHeaders()
+            });
+        }
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -720,7 +737,7 @@ async function loadNotebooks() {
 
         uniqueNotebooks.forEach(notebook => {
             const studentName = notebook.studentName || 'Unknown';
-            const egn = nameToEgn[studentName] || '';
+            const egn = notebook.studentEgn || nameToEgn[studentName] || '';
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.innerHTML = `
@@ -825,11 +842,13 @@ function formatSeconds(value) { return `${Math.round(value || 0)}s`; }
 function riskBadgeClass(level) { return `risk-badge risk-${String(level || 'low').toLowerCase()}`; }
 
 function setAiStatus(message, type = 'info') {
-    if (aiStatusText) aiStatusText.textContent = message || '';
-    const assistantEl = document.getElementById('assistant-techie');
-    if (!message) {
-        if (aiStatusBanner) { aiStatusBanner.style.display = 'none'; aiStatusBanner.className = 'ai-status-banner'; }
-        if (assistantEl) assistantEl.classList.remove('thinking');
+    if (!aiStatusBanner) return;
+    if (aiStatusText) aiStatusText.textContent = message;
+    const assistant = document.getElementById('assistant-techie');
+    if (!message || message === '') { // Clear message means stop thinking
+        aiStatusBanner.style.display = 'none';
+        aiStatusBanner.className = 'ai-status-banner';
+        if (assistant) assistant.classList.remove('thinking');
         return;
     }
     if (assistantEl) assistantEl.classList.add('thinking');
@@ -851,7 +870,8 @@ function renderHeatmap(students) {
         tooltip.className = 'heatmap-tooltip';
         tooltip.textContent = `${student.studentName}: ${student.riskLevel} Risk`;
         cell.appendChild(tooltip);
-        cell.onclick = () => viewNotebook(nameToEgn[student.studentName] || '', student.studentName, currentViewSubject || 'Maths');
+        cell.onclick = () => viewNotebook(student.studentEgn || nameToEgn[student.studentName], student.studentName, currentViewSubject || 'Maths');
+        
         container.appendChild(cell);
     });
 }
@@ -1097,6 +1117,3 @@ async function loadTests() {
         console.error('Could not load tests:', error);
     }
 }
-
-loadNotifications();
-createAssistant();

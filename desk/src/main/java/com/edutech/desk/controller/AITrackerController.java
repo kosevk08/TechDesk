@@ -13,7 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "*")
+@CrossOrigin(originPatterns = "*")
 public class AITrackerController {
 
     private static final Logger logger = LoggerFactory.getLogger(AITrackerController.class);

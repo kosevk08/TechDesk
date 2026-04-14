@@ -22,12 +22,25 @@ async function handleLogin(e) {
 
         if (response.ok) {
             const user = await response.json();
+            if (!user.token) {
+                throw new Error('Missing auth token in login response');
+            }
             localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', user.token);
 
-            if (user.role === 'ADMIN') window.location.href = '/admin';
-            else if (user.role === 'TEACHER') window.location.href = '/teacher';
-            else if (user.role === 'STUDENT') window.location.href = '/student';
-            else if (user.role === 'PARENT') window.location.href = '/parent';
+            // Smooth transition to dashboard
+            const loginCard = document.querySelector('.login-box');
+            if (loginCard) {
+                loginCard.style.opacity = '0';
+                loginCard.style.transform = 'translateY(-20px)';
+            }
+            
+            setTimeout(() => {
+                if (user.role === 'ADMIN') window.location.href = '/admin';
+                else if (user.role === 'TEACHER') window.location.href = '/teacher';
+                else if (user.role === 'STUDENT') window.location.href = '/student';
+                else if (user.role === 'PARENT') window.location.href = '/parent';
+            }, 400);
             
         } else {
             errorMsg.textContent = 'Access Denied: Invalid email or password.';
@@ -118,6 +131,9 @@ function buildDemoProfiles() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Always start with demo modal closed after refresh/navigation.
+    closeDemoModal();
+
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
 
     document.getElementById('openDemo')?.addEventListener('click', () => {
@@ -170,6 +186,12 @@ function initLoginAnimation() {
             height: 100%;
             z-index: -1;
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+        }
+        .login-box, #loginForm, .demo-card {
+            background: rgba(15, 23, 42, 0.8) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
         #assistant-techie {
             animation: float 3s ease-in-out infinite;
