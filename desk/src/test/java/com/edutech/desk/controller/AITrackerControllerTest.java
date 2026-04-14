@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Duration;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:techdesk;DB_CLOSE_DELAY=-1;MODE=MYSQL",
         "spring.datasource.username=sa",
@@ -46,7 +46,7 @@ class AITrackerControllerTest {
     void shouldAcceptAndPersistTaskData() throws Exception {
         String payload = "{\"studentId\":\"1000000001\",\"taskId\":\"task-123\",\"timeSpent\":50,\"attempts\":2,\"correct\":true,\"corrections\":1}";
 
-        mockMvc.perform(post("/ai/task-data")
+        mockMvc.perform(post("/api/ai/task-data")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isAccepted());
@@ -68,7 +68,7 @@ class AITrackerControllerTest {
     void shouldAcceptTaskDataWithoutOptionalCorrections() throws Exception {
         String payload = "{\"studentId\":\"1000000002\",\"taskId\":\"task-456\",\"timeSpent\":75,\"attempts\":1,\"correct\":false}";
 
-        mockMvc.perform(post("/ai/task-data")
+        mockMvc.perform(post("/api/ai/task-data")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isAccepted());
@@ -90,7 +90,7 @@ class AITrackerControllerTest {
     void shouldRejectInvalidTaskData() throws Exception {
         String payload = "{\"studentId\":\"\",\"taskId\":\"task-789\",\"timeSpent\":-5,\"attempts\":1,\"correct\":true}";
 
-        mockMvc.perform(post("/ai/task-data")
+        mockMvc.perform(post("/api/ai/task-data")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())
@@ -105,7 +105,7 @@ class AITrackerControllerTest {
     void shouldRejectNegativeCorrections() throws Exception {
         String payload = "{\"studentId\":\"1000000001\",\"taskId\":\"task-999\",\"timeSpent\":12,\"attempts\":1,\"correct\":true,\"corrections\":-1}";
 
-        mockMvc.perform(post("/ai/task-data")
+        mockMvc.perform(post("/api/ai/task-data")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest())

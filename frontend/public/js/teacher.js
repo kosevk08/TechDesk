@@ -15,6 +15,17 @@ let strokeHistory = []; // For Replay Lesson feature
 let isPlayingBack = false;
 let activeWritingTime = 0; // Effort Monitoring
 let lastStrokeTime = null;
+let teacherCanvas = null;
+let tCtx = null;
+let aiStatusText = null;
+let aiStatusBanner = null;
+
+function secondNameOf(fullName, fallback = 'Teacher') {
+    const clean = String(fullName || '').trim();
+    if (!clean) return fallback;
+    const parts = clean.split(/\s+/);
+    return parts[1] || parts[0] || fallback;
+}
 
 // Service Worker Registration
 if ('serviceWorker' in navigator) {
@@ -164,6 +175,18 @@ const nameToEgn = Object.fromEntries(Object.entries(egnToName).map(([egn, name])
 if (!user || user.role !== 'TEACHER') {
     window.location.href = '/';
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    teacherCanvas = document.getElementById('teacherCanvas');
+    tCtx = teacherCanvas ? teacherCanvas.getContext('2d') : null;
+    aiStatusText = document.getElementById('aiStatusText');
+    aiStatusBanner = document.getElementById('aiStatusBanner');
+    const teacherNameEl = document.getElementById('teacherName');
+    if (teacherNameEl) {
+        teacherNameEl.textContent = secondNameOf(user?.displayName || teacherNames[user?.email] || 'Teacher', 'Teacher');
+    }
+    attachTeacherCanvasEvents();
+});
 
 const supportedLangs = ['en', 'bg', 'sr', 'el', 'tr', 'ro', 'it', 'es', 'fr'];
 let langIndex = 0;
@@ -812,10 +835,18 @@ async function loadTeacherPage() {
             renderDemoNotebookPage(demoData.notebooks[0]);
             return;
         }
-        const egn = nameToEgn[currentViewStudent] || '';
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${egn}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
+        if (!currentViewSubject) return;
+        let res;
+        if (currentViewEgn) {
+            res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${encodeURIComponent(currentViewEgn)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
+                headers: authHeaders()
+            });
+        }
+        if (!res || !res.ok) {
+            res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent || '')}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
+                headers: authHeaders()
+            });
+        }
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
@@ -902,7 +933,7 @@ async function loadNotebooks() {
 
         uniqueNotebooks.forEach(notebook => {
             const studentName = notebook.studentName || 'Unknown';
-            const egn = nameToEgn[studentName] || '';
+            const egn = notebook.studentEgn || nameToEgn[studentName] || '';
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.innerHTML = `
@@ -1022,6 +1053,7 @@ function riskBadgeClass(level) {
 }
 
 function setAiStatus(message, type = 'info') {
+    if (!aiStatusBanner) return;
     if (aiStatusText) aiStatusText.textContent = message;
     const assistant = document.getElementById('assistant-techie');
     if (!message || message === '') { // Clear message means stop thinking
@@ -1054,7 +1086,7 @@ function renderHeatmap(students) {
         tooltip.textContent = `${student.studentName}: ${student.riskLevel} Risk`;
         
         cell.appendChild(tooltip);
-        cell.onclick = () => viewNotebook(nameToEgn[student.studentName], student.studentName, currentViewSubject || 'Maths');
+        cell.onclick = () => viewNotebook(student.studentEgn || nameToEgn[student.studentName], student.studentName, currentViewSubject || 'Maths');
         
         container.appendChild(cell);
     });

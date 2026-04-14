@@ -16,10 +16,16 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins(allowedOrigins)
+        var cors = registry.addMapping("/**")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
+
+        // Spring rejects allowCredentials(true) when allowedOrigins contains "*".
+        if (java.util.Arrays.stream(allowedOrigins).anyMatch("*"::equals)) {
+            cors.allowedOriginPatterns(allowedOrigins);
+        } else {
+            cors.allowedOrigins(allowedOrigins);
+        }
     }
 }

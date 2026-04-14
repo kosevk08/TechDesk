@@ -46,11 +46,8 @@ public class TeacherServiceImpl implements TeacherService {
 
     @Override
     public List<String> getTeacherSubjects(String egn) {
-        Teacher teacher = teacherRepository.findById(egn).orElse(null);
-        if (teacher == null || teacher.getSubjects() == null) {
-            return Collections.emptyList();
-        }
-        return teacher.getSubjects();
+        List<String> subjects = teacherRepository.findSubjectsByTeacherEgn(egn);
+        return subjects == null ? Collections.emptyList() : subjects;
     }
 
     @Override

@@ -6,6 +6,13 @@ const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
+function secondNameOf(fullName, fallback = 'Parent') {
+    const clean = String(fullName || '').trim();
+    if (!clean) return fallback;
+    const parts = clean.split(/\s+/);
+    return parts[1] || parts[0] || fallback;
+}
+
 function authHeaders(extra = {}) {
     return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
@@ -19,10 +26,10 @@ if (isDemo) {
 }
 
 if (isDemo && demoData) {
-    document.getElementById('parentName').textContent = demoData.parent.name;
+    document.getElementById('parentName').textContent = secondNameOf(demoData.parent.name, 'Parent');
     document.getElementById('studentName').textContent = demoData.student.name;
 } else {
-    document.getElementById('parentName').textContent = user.displayName || 'Parent';
+    document.getElementById('parentName').textContent = secondNameOf(user.displayName, 'Parent');
     document.getElementById('studentName').textContent = user.childName || 'Student';
 }
 

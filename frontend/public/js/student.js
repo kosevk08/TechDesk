@@ -5,6 +5,12 @@ const socket = io('https://techdesk-frontend.onrender.com');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
+function firstNameOf(fullName) {
+    const clean = String(fullName || '').trim();
+    if (!clean) return 'Student';
+    return clean.split(/\s+/)[0];
+}
+
 function authHeaders(extra = {}) {
     return extra;
 }
@@ -55,10 +61,10 @@ if (!user || user.role !== 'STUDENT') {
 const displayName = user.displayName || user.email.split('@')[0];
 
 if (isDemo && demoData) {
-    document.getElementById('studentName').textContent = demoData.student.name;
+    document.getElementById('studentName').textContent = firstNameOf(demoData.student.name);
     document.getElementById('studentClass').textContent = demoData.student.className;
 } else {
-    document.getElementById('studentName').textContent = displayName;
+    document.getElementById('studentName').textContent = firstNameOf(displayName);
     document.getElementById('studentClass').textContent = '11D';
 }
 
@@ -327,7 +333,7 @@ window.trackTaskCompletion = trackTaskCompletion;
 
 function openSubject(subjectId) {
     localStorage.setItem('currentSubject', subjectId);
-    window.location.href = '/notebook';
+    window.open('/notebook', '_blank', 'noopener,noreferrer');
 }
 
 if (isDemo) {

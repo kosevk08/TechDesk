@@ -67,6 +67,7 @@ public class TeacherController {
     private NotebookResponse toResponse(Notebook notebook) {
         NotebookResponse response = new NotebookResponse();
         response.setId(notebook.getId());
+        response.setStudentEgn(notebook.getStudentEgn());
         response.setStudentName(nameLookupService.studentName(notebook.getStudentEgn()));
         response.setSubject(notebook.getSubject());
         response.setSchoolYear(notebook.getSchoolYear());

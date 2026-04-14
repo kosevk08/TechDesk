@@ -92,10 +92,18 @@ public class NotebookController {
         String egn = currentUserService.getEgn();
         if (egn == null) return ResponseEntity.ok(List.of());
         List<String> subjects = teacherService.getTeacherSubjects(egn);
-        List<NotebookResponse> responses = notebookService.getNotebooksBySubjects(subjects)
-            .stream()
-            .map(n -> toResponse(n, true))
-            .collect(Collectors.toList());
+        List<NotebookResponse> responses;
+        if (subjects == null || subjects.isEmpty()) {
+            responses = notebookService.getAllNotebooks()
+                .stream()
+                .map(n -> toResponse(n, true))
+                .collect(Collectors.toList());
+        } else {
+            responses = notebookService.getNotebooksBySubjects(subjects)
+                .stream()
+                .map(n -> toResponse(n, true))
+                .collect(Collectors.toList());
+        }
         return ResponseEntity.ok(responses);
     }
 
@@ -187,6 +195,7 @@ public class NotebookController {
     private NotebookResponse toResponse(Notebook notebook, boolean includeContent) {
         NotebookResponse response = new NotebookResponse();
         response.setId(notebook.getId());
+        response.setStudentEgn(notebook.getStudentEgn());
         response.setStudentName(nameLookupService.studentName(notebook.getStudentEgn()));
         response.setSubject(notebook.getSubject());
         response.setSchoolYear(notebook.getSchoolYear());

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class NotebookResponse {
     private Long id;
+    private String studentEgn;
     private String studentName;
     private String subject;
     private String schoolYear;
@@ -16,6 +17,8 @@ public class NotebookResponse {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public String getStudentEgn() { return studentEgn; }
+    public void setStudentEgn(String studentEgn) { this.studentEgn = studentEgn; }
     public String getStudentName() { return studentName; }
     public void setStudentName(String studentName) { this.studentName = studentName; }
     public String getSubject() { return subject; }

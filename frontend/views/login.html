@@ -72,23 +72,5 @@
     </div>
     <script src="/js/demo-data.js"></script>
     <script src="/js/login.js"></script>
-    <script>
-        function handlePasswordInput() {
-            const val = document.getElementById('password').value;
-            document.getElementById('eyeBtn').style.display = val.length > 0 ? 'flex' : 'none';
-        }
-
-        function showPassword() {
-            document.getElementById('password').type = 'text';
-            document.getElementById('eyeOpen').style.display = 'none';
-            document.getElementById('eyeClosed').style.display = 'block';
-        }
-
-        function hidePassword() {
-            document.getElementById('password').type = 'password';
-            document.getElementById('eyeOpen').style.display = 'block';
-            document.getElementById('eyeClosed').style.display = 'none';
-        }
-    </script>
 </body>
 </html>

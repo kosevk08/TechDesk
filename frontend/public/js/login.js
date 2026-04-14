@@ -22,18 +22,24 @@ async function handleLogin(e) {
 
         if (response.ok) {
             const user = await response.json();
+            if (!user.token) {
+                throw new Error('Missing auth token in login response');
+            }
             localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', user.token || 'demo-token');
+            localStorage.setItem('token', user.token);
 
             // Smooth transition to dashboard
-            document.querySelector('.login-card').style.opacity = '0';
-            document.querySelector('.login-card').style.transform = 'translateY(-20px)';
+            const loginCard = document.querySelector('.login-box');
+            if (loginCard) {
+                loginCard.style.opacity = '0';
+                loginCard.style.transform = 'translateY(-20px)';
+            }
             
             setTimeout(() => {
-                if (user.role === 'ADMIN') window.location.href = '/admin.html';
-                else if (user.role === 'TEACHER') window.location.href = '/teacher.html';
-                else if (user.role === 'STUDENT') window.location.href = '/student.html';
-                else if (user.role === 'PARENT') window.location.href = '/parent.html';
+                if (user.role === 'ADMIN') window.location.href = '/admin';
+                else if (user.role === 'TEACHER') window.location.href = '/teacher';
+                else if (user.role === 'STUDENT') window.location.href = '/student';
+                else if (user.role === 'PARENT') window.location.href = '/parent';
             }, 400);
             
         } else {
@@ -136,6 +142,9 @@ function buildDemoProfiles() {
 
 // Initialize everything only when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    // Always start with demo modal closed after refresh/navigation.
+    closeDemoModal();
+
     document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
 
     // Initialize Demo Modal Logic
@@ -195,7 +204,7 @@ function initLoginAnimation() {
             z-index: -1;
             background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
         }
-        .login-card, #loginForm, .demo-modal-content {
+        .login-box, #loginForm, .demo-card {
             background: rgba(15, 23, 42, 0.8) !important;
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
