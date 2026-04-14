@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500", "https://techdesk-frontend.onrender.com"})
 public class UserController {
 
     @Autowired
@@ -37,7 +37,7 @@ public class UserController {
     private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
     private static final int MAX_ATTEMPTS = 5;
-    private static final long BLOCK_DURATION = 15 * 60 * 1000L; // 15 minutes
+    private static final long BLOCK_DURATION = 15 * 60 * 1000L;
 
     @GetMapping("/health")
     public ResponseEntity<String> health() {
@@ -59,17 +59,6 @@ public class UserController {
                 blockedIps.remove(ip);
                 failedAttempts.remove(ip);
             }
-        }
-
-        // HARDCODED FALLBACK: Emergency Admin Access
-        // This ensures you can ALWAYS log in even if the database is broken/empty
-        if ("admin@techdesk.edu".equals(loginUser.getEmail()) && "admin123".equals(loginUser.getPassword())) {
-            User superAdmin = new User();
-            superAdmin.setEmail("admin@techdesk.edu");
-            superAdmin.setRole(Role.ADMIN);
-            superAdmin.setDisplayName("System Administrator");
-            superAdmin.setDemo(false);
-            return ResponseEntity.ok(superAdmin);
         }
 
         String email = loginUser.getEmail();
@@ -99,7 +88,6 @@ public class UserController {
     private boolean isSanitized(String input) {
         if (input == null) return true;
         String lower = input.toLowerCase();
-        // Basic injection/malformity check
         return !lower.contains("<script") && !lower.contains("select ") && !lower.contains("drop ");
     }
 
@@ -158,7 +146,6 @@ public class UserController {
         }
 
         String[][] users = {
-            // EGN, Email, Password, Role, Demo, DisplayName
             {"1000000001", "v.kolev-student@edu-school.bg", "password123", "STUDENT", "false", "Victor Kolev"},
             {"1000000002", "k.kosev-student@edu-school.bg", "password123", "STUDENT", "false", "Konstantin Kosev"},
             {"1000000003", "i.ivanov-student@edu-school.bg", "password123", "STUDENT", "false", "Ivan Ivanov"},
@@ -171,27 +158,26 @@ public class UserController {
             {"1000000010", "v.ivanov-student@edu-school.bg", "password123", "STUDENT", "false", "Victor Ivanov"},
             {"1000000011", "n.fischer-student@edu-school.bg", "password123", "STUDENT", "false", "Natalie Fischer"},
             {"1000000012", "c.mendes-student@edu-school.bg", "password123", "STUDENT", "false", "Carlos Mendes"},
-            {"2000000002", "h.schmidt-teacher@edu-school.bg", "password123", "TEACHER", "false", "Miss Schmidt"},
-            {"2000000003", "a.popescu-teacher@edu-school.bg", "password123", "TEACHER", "false", "Mr Popescu"},
-            {"2000000004", "m.ivanova-maths@edu-school.bg", "password123", "TEACHER", "false", "Maya Ivanova"},
-            {"2000000005", "p.georgiev-physics@edu-school.bg", "password123", "TEACHER", "false", "Petar Georgiev"},
-            {"2000000006", "l.stoyanova-chem@edu-school.bg", "password123", "TEACHER", "false", "Lily Stoyanova"},
-            {"2000000007", "d.petrov-biology@edu-school.bg", "password123", "TEACHER", "false", "Dimitar Petrov"},
-            {"2000000008", "s.martin-english@edu-school.bg", "password123", "TEACHER", "false", "Simeon Martin"},
-            {"2000000009", "t.vasileva-bulgarian@edu-school.bg", "password123", "TEACHER", "false", "Tanya Vasileva"},
-            {"2000000010", "g.stefanov-geography@edu-school.bg", "password123", "TEACHER", "false", "Georgi Stefanov"},
-            {"2000000011", "r.dimitrova-philosophy@edu-school.bg", "password123", "TEACHER", "false", "Raya Dimitrova"},
-            {"2000000012", "n.koleva-englishlit@edu-school.bg", "password123", "TEACHER", "false", "Nina Koleva"},
-            {"2000000013", "v.georgieva-german@edu-school.bg", "password123", "TEACHER", "false", "Vanya Georgieva"},
-            {"2000000014", "i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false", "Iva Karaslavova"},
-            {"2000000015", "e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false", "Elena Nikolova"},
-            {"3000000002", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false", "Lucia Navarro"},
-            {"4000000002", "victor-admin@techdesk.edu", "admin2026", "ADMIN", "false", "Victor Admin"},
-            {"4000000003", "admin@edu-school.bg", "password123", "ADMIN", "false", "System Admin"},
+            {"2000000001", "h.schmidt-teacher@edu-school.bg", "password123", "TEACHER", "false", "Miss Schmidt"},
+            {"2000000002", "a.popescu-teacher@edu-school.bg", "password123", "TEACHER", "false", "Mr Popescu"},
+            {"2000000003", "m.ivanova-maths@edu-school.bg", "password123", "TEACHER", "false", "Ms Ivanova"},
+            {"2000000004", "p.georgiev-physics@edu-school.bg", "password123", "TEACHER", "false", "Mr Georgiev"},
+            {"2000000005", "l.stoyanova-chem@edu-school.bg", "password123", "TEACHER", "false", "Ms Stoyanova"},
+            {"2000000006", "d.petrov-biology@edu-school.bg", "password123", "TEACHER", "false", "Mr Petrov"},
+            {"2000000007", "s.martin-english@edu-school.bg", "password123", "TEACHER", "false", "Mr Martin"},
+            {"2000000008", "t.vasileva-bulgarian@edu-school.bg", "password123", "TEACHER", "false", "Ms Vasileva"},
+            {"2000000009", "g.stefanov-geography@edu-school.bg", "password123", "TEACHER", "false", "Mr Stefanov"},
+            {"2000000010", "r.dimitrova-philosophy@edu-school.bg", "password123", "TEACHER", "false", "Ms Dimitrova"},
+            {"2000000011", "n.koleva-englishlit@edu-school.bg", "password123", "TEACHER", "false", "Ms Koleva"},
+            {"2000000012", "v.georgieva-german@edu-school.bg", "password123", "TEACHER", "false", "Ms Georgieva"},
+            {"2000000013", "i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false", "Ms Karaslavova"},
+            {"2000000014", "e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false", "Ms Nikolova"},
+            {"3000000001", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false", "Luis Navarro"},
+            {"4000000001", "admin@edu-school.bg", "password123", "ADMIN", "false", "System Admin"},
             {"9000000001", "r.paskalev-student@edu-school.bg", "pass@2026", "STUDENT", "true", "Radoslav Paskalev"},
-            {"2000000001", "e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true", "Elena Vasileva"},
-            {"3000000001", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true", "Plamen Stoyanov"},
-            {"4000000001", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true", "Sofia Markova"}
+            {"9000000002", "e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true", "Elena Vasileva"},
+            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true", "Petar Stoyanov"},
+            {"9000000004", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true", "Sofia Markova"}
         };
 
         for (String[] u : users) {
@@ -204,7 +190,7 @@ public class UserController {
             user.setDisplayName(u[5]);
             userService.register(user);
         }
-        return ResponseEntity.ok("All demo and standard users created successfully!");
+        return ResponseEntity.ok("All users created successfully!");
     }
 
     private UserPublicResponse toPublicUser(User user) {
