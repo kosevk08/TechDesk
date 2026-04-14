@@ -81,7 +81,7 @@
             <h1 style="margin: 0; letter-spacing: 2px;">TECHTRON</h1>
             <div class="logo-circle">
                 <div class="rotating-light"></div>
-                <img src="/assets/logo.png" alt="Techtron Logo">
+                <img src="assets/logo.png" alt="Techtron Logo">
             </div>
             <p style="padding: 0 20px; font-size: 0.85rem; color: #cbd5e1;">Revolutionizing the educational experience through AI-integrated handwriting analysis and real-time monitoring.</p>
         </div>
@@ -218,7 +218,7 @@
             loginBtn.disabled = true;
             let success = false;
 
-            const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+            const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const BACKEND_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 
             try {
