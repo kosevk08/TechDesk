@@ -215,6 +215,14 @@ body.notebook-focus {
     overflow: hidden;
 }
 
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(125deg, rgba(255, 255, 255, 0.05), transparent 45%);
+    pointer-events: none;
+}
+
 .dashboard-grid .card {
     grid-column: span 1;
 }
@@ -288,6 +296,7 @@ body.notebook-focus {
     transition: transform 0.18s ease, box-shadow 0.18s ease;
     background: linear-gradient(135deg, #0d1b3e, #1c3d72);
     box-shadow: 0 10px 22px rgba(13, 27, 62, 0.16);
+    letter-spacing: 0.01em;
 }
 
 .action-btn:hover,
@@ -311,6 +320,7 @@ body.notebook-focus {
     color: #0d1b3e;
     font-size: 1.5rem;
     font-weight: 800;
+    letter-spacing: 0.01em;
 }
 
 #notebooksSection,
@@ -810,6 +820,40 @@ body.notebook-focus {
 
 .alert-medium {
     background: #fff7ed;
+}
+
+.student-presence-list {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.presence-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 8px 10px;
+    color: #f8fafc;
+}
+
+.presence-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 999px;
+}
+
+.presence-pill.active {
+    background: rgba(22, 163, 74, 0.26);
+    color: #dcfce7;
+}
+
+.presence-pill.inactive {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fecaca;
 }
 
 @media (max-width: 768px) {

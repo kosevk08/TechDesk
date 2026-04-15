@@ -1,6 +1,6 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const socket = io();
+const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = '/';
 const token = localStorage.getItem('token');
@@ -8,7 +8,10 @@ const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
 function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    if (user?.email) headers['X-User-Email'] = user.email;
+    if (user?.egn) headers['X-User-Egn'] = user.egn;
+    return headers;
 }
 
 let userClassName = null;

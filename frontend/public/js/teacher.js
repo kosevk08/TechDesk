@@ -12,7 +12,10 @@ let testAutosaveTimer = null;
 let lastTestHash = null;
 
 function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    if (user?.email) headers['X-User-Email'] = user.email;
+    if (user?.egn) headers['X-User-Egn'] = user.egn;
+    return headers;
 }
 
 if (!user || user.role !== 'TEACHER') {
@@ -139,10 +142,55 @@ let teacherLastX = 0;
 let teacherLastY = 0;
 let teacherAutosaveTimer = null;
 const liveActivityMap = new Map();
+const studentPresenceMap = new Map();
 
 function setTeacherTool(tool) {
     teacherTool = 'pen';
     document.getElementById('teacherPenBtn')?.classList.add('active');
+}
+
+function setClassroomControlStatus(text) {
+    const status = document.getElementById('classroomControlStatus');
+    if (status) status.textContent = text;
+}
+
+function renderStudentPresence() {
+    const list = document.getElementById('studentPresenceList');
+    if (!list) return;
+    const items = Array.from(studentPresenceMap.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    if (!items.length) {
+        list.innerHTML = '<p class="empty-state">No live status yet.</p>';
+        return;
+    }
+    list.innerHTML = items.map((item) => `
+        <div class="presence-item">
+            <strong>${item.studentName || 'Student'}</strong>
+            <span class="presence-pill ${item.state === 'active' ? 'active' : 'inactive'}">${item.state === 'active' ? 'Active' : 'Inactive'}</span>
+        </div>
+    `).join('');
+}
+
+function lockClassroom() {
+    const className = user?.className || null;
+    socket.emit('classroom-lock', {
+        className,
+        message: 'Teacher presentation mode is active. Please stay focused on this page.'
+    });
+    setClassroomControlStatus('Screens locked.');
+}
+
+function unlockClassroom() {
+    const className = user?.className || null;
+    socket.emit('classroom-unlock', { className });
+    setClassroomControlStatus('Screens unlocked.');
+}
+
+function syncClassroomPanel(panel) {
+    const allowed = ['home', 'subjects', 'schedule', 'homework', 'practice', 'attendance', 'grades', 'tests', 'notifications'];
+    const target = allowed.includes(panel) ? panel : 'subjects';
+    const className = user?.className || null;
+    socket.emit('classroom-sync-page', { className, panel: target });
+    setClassroomControlStatus(`Synced panel: ${target}`);
 }
 
 function setNotebookVisualStyle(style) {
@@ -356,6 +404,17 @@ socket.on('page-change', (data) => {
         tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
         loadTeacherPage();
     }
+});
+
+socket.on('student-presence', (data) => {
+    if (!data?.studentName) return;
+    studentPresenceMap.set(data.studentName, {
+        studentName: data.studentName,
+        className: data.className || null,
+        state: data.state === 'inactive' ? 'inactive' : 'active',
+        updatedAt: data.updatedAt || Date.now()
+    });
+    renderStudentPresence();
 });
 
 async function loadNotifications() {
@@ -1392,3 +1451,7 @@ if (!isDemo) {
         }
     });
 }
+
+window.lockClassroom = lockClassroom;
+window.unlockClassroom = unlockClassroom;
+window.syncClassroomPanel = syncClassroomPanel;

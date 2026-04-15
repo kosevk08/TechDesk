@@ -41,6 +41,22 @@
         </section>
 
         <div class="dashboard-grid">
+            <div class="card card-highlight">
+                <h3>Classroom Control</h3>
+                <p>Lock screens, sync student view, and monitor who is active live.</p>
+                <div class="test-row" style="margin-top:10px;">
+                    <button class="action-btn" onclick="lockClassroom()">Lock Screens</button>
+                    <button class="action-btn secondary-btn" onclick="unlockClassroom()">Unlock</button>
+                </div>
+                <div class="test-row" style="margin-top:8px;">
+                    <button class="action-btn secondary-btn" onclick="syncClassroomPanel('subjects')">Sync Subjects</button>
+                    <button class="action-btn secondary-btn" onclick="syncClassroomPanel('tests')">Sync Tests</button>
+                </div>
+                <div class="test-status" id="classroomControlStatus">Ready</div>
+                <div id="studentPresenceList" class="student-presence-list">
+                    <p class="empty-state">No live status yet.</p>
+                </div>
+            </div>
             <div class="card">
                 <h3>Notebook Review</h3>
                 <p>View and correct student work</p>

@@ -4,7 +4,10 @@ const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techde
 const token = localStorage.getItem('token');
 
 function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    if (user?.email) headers['X-User-Email'] = user.email;
+    if (user?.egn) headers['X-User-Egn'] = user.egn;
+    return headers;
 }
 if (!user || user.role !== 'STUDENT') {
     window.location.href = '/';

@@ -107,7 +107,9 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {})
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                    ...(user?.email ? { 'X-User-Email': user.email } : {}),
+                    ...(user?.egn ? { 'X-User-Egn': user.egn } : {})
                 },
                 body: JSON.stringify(payload)
             });

@@ -22,7 +22,10 @@
                 </div>
             </div>
         </div>
-        <a href="/" class="logout">Logout</a>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <button class="logout" type="button" id="languageToggleBtn" onclick="toggleStudentLanguage()">BG</button>
+            <a href="/" class="logout">Logout</a>
+        </div>
     </nav>
 
     <div class="container">
@@ -47,6 +50,7 @@
             <button class="student-tab" type="button" data-panel-btn="subjects" onclick="switchStudentPanel('subjects')">Subjects</button>
             <button class="student-tab" type="button" data-panel-btn="schedule" onclick="switchStudentPanel('schedule')">Schedule</button>
             <button class="student-tab" type="button" data-panel-btn="homework" onclick="switchStudentPanel('homework')">Homework</button>
+            <button class="student-tab" type="button" data-panel-btn="practice" onclick="switchStudentPanel('practice')">Practice</button>
             <button class="student-tab" type="button" data-panel-btn="attendance" onclick="switchStudentPanel('attendance')">Attendance</button>
             <button class="student-tab" type="button" data-panel-btn="grades" onclick="switchStudentPanel('grades')">Grades</button>
             <button class="student-tab" type="button" data-panel-btn="tests" onclick="switchStudentPanel('tests')">Tests</button>
@@ -98,6 +102,11 @@
                     <button class="action-btn" onclick="switchStudentPanel('homework')">Open Homework</button>
                 </div>
                 <div class="card">
+                    <h3>Practice</h3>
+                    <p>3 quick questions to warm up before studying.</p>
+                    <button class="action-btn" onclick="switchStudentPanel('practice')">Start Practice</button>
+                </div>
+                <div class="card">
                     <h3>Attendance</h3>
                     <p>Check your attendance history.</p>
                     <button class="action-btn" onclick="switchStudentPanel('attendance')">View Attendance</button>
@@ -111,6 +120,44 @@
                     <h3>Tests</h3>
                     <p>See assigned tests and submit your answers.</p>
                     <button class="action-btn" onclick="switchStudentPanel('tests')">Open Tests</button>
+                </div>
+            </div>
+
+            <div class="card section-card rewards-board">
+                <div class="section-header">
+                    <div>
+                        <span class="section-eyebrow">Motivation</span>
+                        <h3 class="section-title">Rewards</h3>
+                    </div>
+                </div>
+                <div class="rewards-grid" id="rewardsGrid"></div>
+            </div>
+        </div>
+
+        <div class="card section-card student-panel" data-panel="practice" id="practiceSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Micro Learning Game</span>
+                    <h3 class="section-title">Flash Sprint</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="startPracticeGame()">New Round</button>
+            </div>
+            <div class="practice-game-tabs">
+                <button type="button" class="practice-game-tab active" data-game="flash" onclick="setPracticeGame('flash')">Flash Sprint</button>
+                <button type="button" class="practice-game-tab" data-game="mistake" onclick="setPracticeGame('mistake')">Mistake Hunter</button>
+                <button type="button" class="practice-game-tab" data-game="match" onclick="setPracticeGame('match')">Formula Match</button>
+            </div>
+            <div class="practice-shell">
+                <div class="practice-meta">
+                    <span id="practiceProgress">Question 1 / 3</span>
+                    <strong id="practiceScore">Score: 0</strong>
+                </div>
+                <h4 id="practiceQuestion">Loading question...</h4>
+                <div class="practice-choices" id="practiceChoices"></div>
+                <div class="practice-feedback" id="practiceFeedback"></div>
+                <div class="practice-badges" id="practiceBadges"></div>
+                <div class="practice-actions">
+                    <button class="action-btn" id="practiceNextBtn" onclick="nextPracticeQuestion()" disabled>Next</button>
                 </div>
             </div>
         </div>
@@ -261,6 +308,13 @@
                     <textarea id="testExtraNote" class="student-answer" placeholder="Optional short note for the teacher..."></textarea>
                 </section>
             </div>
+        </div>
+    </div>
+
+    <div class="classroom-lock-overlay" id="classroomLockOverlay" style="display:none;">
+        <div class="classroom-lock-card">
+            <h3>Classroom Focus Mode</h3>
+            <p id="classroomLockMessage">Teacher is presenting. Stay on this screen.</p>
         </div>
     </div>
 

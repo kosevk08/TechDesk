@@ -43,6 +43,10 @@ io.on('connection', (socket) => {
     socket.on('test-submitted', (data) => { socket.broadcast.emit('test-submitted', data); });
     socket.on('test-graded', (data) => { socket.broadcast.emit('test-graded', data); });
     socket.on('grade-updated', (data) => { socket.broadcast.emit('grade-updated', data); });
+    socket.on('classroom-lock', (data) => { socket.broadcast.emit('classroom-lock', data); });
+    socket.on('classroom-unlock', (data) => { socket.broadcast.emit('classroom-unlock', data); });
+    socket.on('classroom-sync-page', (data) => { socket.broadcast.emit('classroom-sync-page', data); });
+    socket.on('student-presence', (data) => { socket.broadcast.emit('student-presence', data); });
 
     socket.on('disconnect', () => { console.log('User disconnected:', socket.id); });
 });

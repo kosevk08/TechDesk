@@ -10,6 +10,9 @@ function authHeaders(extra = {}) {
     if (user?.email) {
         headers['X-User-Email'] = user.email;
     }
+    if (user?.egn) {
+        headers['X-User-Egn'] = user.egn;
+    }
     return headers;
 }
 

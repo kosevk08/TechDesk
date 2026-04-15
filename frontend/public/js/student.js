@@ -14,11 +14,111 @@ let testDrawing = false;
 let testLastX = 0;
 let testLastY = 0;
 let testGuardEnabled = false;
+let practiceQuestions = [];
+let practiceIndex = 0;
+let practiceScore = 0;
+let practiceAnswered = false;
+let currentPracticeGame = 'flash';
+let studentLang = localStorage.getItem('studentLang') || 'en';
+let currentClassroomLock = false;
+const rewardsStorageKey = `techdesk_rewards_${user?.email || user?.egn || 'student'}`;
+let rewardsState = {
+    xp: 0,
+    streak: 1,
+    testsSubmitted: 0,
+    practiceRounds: 0,
+    badges: []
+};
 const testCanvas = document.getElementById('testAnswerCanvas');
 const testCtx = testCanvas ? testCanvas.getContext('2d') : null;
 
 function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    if (user?.email) headers['X-User-Email'] = user.email;
+    if (user?.egn) headers['X-User-Egn'] = user.egn;
+    return headers;
+}
+
+function loadRewardsState() {
+    try {
+        const raw = localStorage.getItem(rewardsStorageKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return;
+        rewardsState = { ...rewardsState, ...parsed, badges: Array.isArray(parsed.badges) ? parsed.badges : [] };
+    } catch {
+        // Keep defaults if parsing fails.
+    }
+}
+
+function saveRewardsState() {
+    localStorage.setItem(rewardsStorageKey, JSON.stringify(rewardsState));
+}
+
+function addReward(xp, badge, reason) {
+    rewardsState.xp += Math.max(0, Number(xp || 0));
+    if (badge && !rewardsState.badges.includes(badge)) rewardsState.badges.push(badge);
+    if (reason) botMessage(`Reward unlocked: ${reason}`, false);
+    saveRewardsState();
+    renderRewards();
+}
+
+function renderRewards() {
+    const grid = document.getElementById('rewardsGrid');
+    const badges = document.getElementById('practiceBadges');
+    if (grid) {
+        grid.innerHTML = `
+            <div class="reward-tile"><span>XP</span><strong>${rewardsState.xp}</strong></div>
+            <div class="reward-tile"><span>Streak</span><strong>${rewardsState.streak} days</strong></div>
+            <div class="reward-tile"><span>Practice Rounds</span><strong>${rewardsState.practiceRounds}</strong></div>
+            <div class="reward-tile"><span>Tests Submitted</span><strong>${rewardsState.testsSubmitted}</strong></div>
+        `;
+    }
+    if (badges) {
+        badges.innerHTML = rewardsState.badges.length
+            ? rewardsState.badges.map((badge) => `<span class="practice-badge">${badge}</span>`).join('')
+            : '<span class="practice-badge muted">No badges yet. Complete a round to unlock one.</span>';
+    }
+}
+
+function updateLanguageTexts() {
+    const isBg = studentLang === 'bg';
+    const btn = document.getElementById('languageToggleBtn');
+    if (btn) btn.textContent = isBg ? 'EN' : 'BG';
+
+    const greetings = document.querySelector('.greeting p:last-child');
+    if (greetings) {
+        greetings.textContent = isBg
+            ? 'Следи уроците си, пиши бележки на живо и бъди свързан с учителя.'
+            : 'Track your lessons, write live notes, and stay connected with your teacher.';
+    }
+    const heroPill = document.querySelector('.hero-pill');
+    if (heroPill) heroPill.textContent = isBg ? 'Инструменти за учене' : 'Live study tools';
+}
+
+function toggleStudentLanguage() {
+    studentLang = studentLang === 'en' ? 'bg' : 'en';
+    localStorage.setItem('studentLang', studentLang);
+    updateLanguageTexts();
+}
+
+function setClassroomLock(enabled, message = 'Teacher is presenting. Stay on this screen.') {
+    currentClassroomLock = Boolean(enabled);
+    const overlay = document.getElementById('classroomLockOverlay');
+    const msg = document.getElementById('classroomLockMessage');
+    if (msg && message) msg.textContent = message;
+    if (overlay) overlay.style.display = currentClassroomLock ? 'flex' : 'none';
+}
+
+function emitStudentPresence(state = 'active') {
+    if (isDemo) return;
+    socket.emit('student-presence', {
+        studentName: user?.displayName || 'Student',
+        studentEgn: user?.egn || null,
+        className: user?.className || null,
+        state,
+        updatedAt: Date.now()
+    });
 }
 
 if (!user || user.role !== 'STUDENT') {
@@ -283,6 +383,217 @@ function switchStudentPanel(panelName) {
 
     if (!found && panelName !== 'subjects') {
         switchStudentPanel('subjects');
+        return;
+    }
+
+    if (panelName === 'practice' && !practiceQuestions.length) {
+        startPracticeGame();
+    }
+}
+
+function shuffle(list) {
+    const arr = [...list];
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function buildFlashQuestions() {
+    const pool = [];
+    const bySubject = {};
+
+    (studentTestsCache || []).forEach(test => {
+        const subject = test.subject || 'General';
+        bySubject[subject] = (bySubject[subject] || 0) + 1;
+    });
+    (studentHomeworkCache || []).forEach(hw => {
+        const subject = hw.subject || 'General';
+        bySubject[subject] = (bySubject[subject] || 0) + 1;
+    });
+
+    Object.entries(bySubject).forEach(([subject, count]) => {
+        pool.push({
+            text: `Which subject currently needs the most attention?`,
+            correct: subject,
+            choices: shuffle([subject, 'English', 'Maths', 'Physics'].filter((v, i, a) => a.indexOf(v) === i)).slice(0, 4)
+        });
+        pool.push({
+            text: `How many active tasks are currently linked to ${subject}?`,
+            correct: String(count),
+            choices: shuffle([String(count), String(Math.max(0, count - 1)), String(count + 1), String(count + 2)]).slice(0, 4)
+        });
+    });
+
+    (studentTestsCache || []).slice(0, 5).forEach(test => {
+        const status = test.status || 'ASSIGNED';
+        pool.push({
+            text: `What is the current status of "${test.title}"?`,
+            correct: status,
+            choices: shuffle([status, 'GRADED', 'SUBMITTED', 'ASSIGNED']).slice(0, 4)
+        });
+    });
+
+    if (!pool.length) {
+        pool.push(
+            {
+                text: 'Quick check: which action helps most before a test?',
+                correct: 'Review key mistakes',
+                choices: shuffle(['Review key mistakes', 'Skip revision', 'Study random topics', 'Ignore due dates'])
+            },
+            {
+                text: 'Best first step when homework is due tomorrow?',
+                correct: 'Start with the hardest task first',
+                choices: shuffle(['Start with the hardest task first', 'Wait until morning', 'Do nothing', 'Only read title'])
+            },
+            {
+                text: 'What improves focus in short study sessions?',
+                correct: 'Clear target + short timer',
+                choices: shuffle(['Clear target + short timer', 'Multiple tabs open', 'No plan', 'Endless scrolling'])
+            }
+        );
+    }
+
+    return shuffle(pool).slice(0, 3);
+}
+
+function buildMistakeQuestions() {
+    const pool = [
+        {
+            text: 'Which statement is the study mistake?',
+            correct: 'Start revision the night before only',
+            choices: shuffle([
+                'Review with spaced sessions',
+                'Start revision the night before only',
+                'Check solved examples',
+                'Track due dates in advance'
+            ])
+        },
+        {
+            text: 'Find the weak strategy before a test:',
+            correct: 'Skip feedback and only read answers',
+            choices: shuffle([
+                'Solve and analyze mistakes',
+                'Skip feedback and only read answers',
+                'Do short timed sets',
+                'Ask for help on unclear topics'
+            ])
+        },
+        {
+            text: 'Which one hurts long-term memory most?',
+            correct: 'Passive rereading without recall',
+            choices: shuffle([
+                'Active recall with short notes',
+                'Passive rereading without recall',
+                'Mini quizzes',
+                'Explaining concept aloud'
+            ])
+        }
+    ];
+    return pool;
+}
+
+function buildMatchQuestions() {
+    const pool = [
+        {
+            text: 'Match: Area of rectangle = ?',
+            correct: 'a × b',
+            choices: shuffle(['a × b', '2(a+b)', 'a²+b²', 'a/b'])
+        },
+        {
+            text: 'Match: Speed = ?',
+            correct: 'distance / time',
+            choices: shuffle(['distance / time', 'mass × acceleration', 'force / area', 'time / distance'])
+        },
+        {
+            text: 'Match: Density = ?',
+            correct: 'mass / volume',
+            choices: shuffle(['mass / volume', 'volume / mass', 'force / mass', 'mass × volume'])
+        }
+    ];
+    return pool;
+}
+
+function buildPracticeQuestions() {
+    if (currentPracticeGame === 'mistake') return buildMistakeQuestions();
+    if (currentPracticeGame === 'match') return buildMatchQuestions();
+    return buildFlashQuestions();
+}
+
+function renderPracticeQuestion() {
+    const progress = document.getElementById('practiceProgress');
+    const score = document.getElementById('practiceScore');
+    const qEl = document.getElementById('practiceQuestion');
+    const choicesEl = document.getElementById('practiceChoices');
+    const feedback = document.getElementById('practiceFeedback');
+    const nextBtn = document.getElementById('practiceNextBtn');
+    if (!qEl || !choicesEl || !feedback || !progress || !score || !nextBtn) return;
+
+    const q = practiceQuestions[practiceIndex];
+    if (!q) {
+        qEl.textContent = `Round complete! Final score: ${practiceScore}/${practiceQuestions.length}`;
+        choicesEl.innerHTML = '';
+        feedback.textContent = 'Great job. Start a new round to keep practicing.';
+        nextBtn.disabled = true;
+        return;
+    }
+
+    progress.textContent = `Question ${practiceIndex + 1} / ${practiceQuestions.length}`;
+    score.textContent = `Score: ${practiceScore}`;
+    qEl.textContent = q.text;
+    feedback.textContent = '';
+    nextBtn.disabled = true;
+    practiceAnswered = false;
+
+    choicesEl.innerHTML = q.choices.map(choice => `
+        <button type="button" class="practice-choice" data-choice="${choice.replaceAll('"', '&quot;')}">${choice}</button>
+    `).join('');
+
+    choicesEl.querySelectorAll('.practice-choice').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (practiceAnswered) return;
+            practiceAnswered = true;
+            const isCorrect = btn.textContent === q.correct;
+            if (isCorrect) practiceScore += 1;
+            choicesEl.querySelectorAll('.practice-choice').forEach(option => {
+                option.disabled = true;
+                if (option.textContent === q.correct) option.classList.add('correct');
+            });
+            if (!isCorrect) btn.classList.add('wrong');
+            score.textContent = `Score: ${practiceScore}`;
+            feedback.textContent = isCorrect ? 'Correct. Nice focus.' : `Not quite. Correct answer: ${q.correct}`;
+            nextBtn.disabled = false;
+        });
+    });
+}
+
+function startPracticeGame() {
+    practiceQuestions = buildPracticeQuestions();
+    practiceIndex = 0;
+    practiceScore = 0;
+    rewardsState.practiceRounds += 1;
+    addReward(8, rewardsState.practiceRounds >= 3 ? 'Warmup Hero' : null, null);
+    renderPracticeQuestion();
+}
+
+function setPracticeGame(game) {
+    currentPracticeGame = ['flash', 'mistake', 'match'].includes(game) ? game : 'flash';
+    document.querySelectorAll('.practice-game-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.game === currentPracticeGame);
+    });
+    startPracticeGame();
+}
+
+function nextPracticeQuestion() {
+    if (practiceIndex < practiceQuestions.length - 1) {
+        practiceIndex += 1;
+        renderPracticeQuestion();
+    } else {
+        practiceIndex += 1;
+        renderPracticeQuestion();
+        const ratio = practiceQuestions.length ? (practiceScore / practiceQuestions.length) : 0;
+        if (ratio >= 0.66) addReward(20, 'Quiz Sprinter', 'Strong practice result');
     }
 }
 
@@ -564,6 +875,10 @@ window.askStudyBot = askStudyBot;
 window.askStudyBotQuick = askStudyBotQuick;
 window.quickOpenNotebook = quickOpenNotebook;
 window.switchStudentPanel = switchStudentPanel;
+window.startPracticeGame = startPracticeGame;
+window.nextPracticeQuestion = nextPracticeQuestion;
+window.setPracticeGame = setPracticeGame;
+window.toggleStudentLanguage = toggleStudentLanguage;
 
 if (isDemo) {
     insertDemoBanner();
@@ -577,7 +892,12 @@ loadStudentGrades();
 loadStudentNotifications();
 renderScheduleFallback();
 renderHomeworkFromCache();
+startPracticeGame();
 switchStudentPanel('home');
+loadRewardsState();
+renderRewards();
+updateLanguageTexts();
+emitStudentPresence('active');
 
 if (!isDemo) {
     socket.on('attendance-updated', (data) => {
@@ -600,6 +920,31 @@ if (!isDemo) {
         if (data?.studentName && data.studentName === user.displayName) {
             loadStudentGrades();
             loadStudentNotifications();
+        }
+    });
+
+    socket.on('classroom-lock', (data) => {
+        const targetClass = data?.className;
+        if (!targetClass || !user?.className || targetClass === user.className) {
+            setClassroomLock(true, data?.message || 'Teacher is presenting. Stay on this screen.');
+        }
+    });
+
+    socket.on('classroom-unlock', (data) => {
+        const targetClass = data?.className;
+        if (!targetClass || !user?.className || targetClass === user.className) {
+            setClassroomLock(false);
+        }
+    });
+
+    socket.on('classroom-sync-page', (data) => {
+        const targetClass = data?.className;
+        if (targetClass && user?.className && targetClass !== user.className) return;
+        const panel = String(data?.panel || 'subjects');
+        switchStudentPanel(panel);
+        if (panel === 'subjects') {
+            const section = document.getElementById('subjectsSection');
+            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
 }
@@ -697,6 +1042,8 @@ async function submitTest(testId, preparedAnswersJson = null, closeWorkspace = f
                 test.status = 'SUBMITTED';
                 test.feedback = 'Submission received (demo).';
             }
+            rewardsState.testsSubmitted += 1;
+            addReward(24, rewardsState.testsSubmitted >= 1 ? 'First Submission' : null, 'Test submitted');
             if (closeWorkspace) await closeFullscreenTest();
             loadStudentTests();
             return;
@@ -709,6 +1056,8 @@ async function submitTest(testId, preparedAnswersJson = null, closeWorkspace = f
         if (!res.ok) throw new Error(`Submit failed ${res.status}`);
         await res.json();
         socket.emit('test-submitted', { testId, studentName: user.displayName });
+        rewardsState.testsSubmitted += 1;
+        addReward(24, rewardsState.testsSubmitted >= 1 ? 'First Submission' : null, 'Test submitted');
         if (closeWorkspace) await closeFullscreenTest();
         loadStudentTests();
     } catch (error) {
@@ -851,3 +1200,11 @@ document.addEventListener('fullscreenchange', () => {
     }
     if (guard) guard.textContent = 'Fullscreen lock: on';
 });
+
+window.addEventListener('visibilitychange', () => {
+    emitStudentPresence(document.hidden ? 'inactive' : 'active');
+});
+
+window.addEventListener('focus', () => emitStudentPresence('active'));
+window.addEventListener('blur', () => emitStudentPresence('inactive'));
+setInterval(() => emitStudentPresence(document.hidden ? 'inactive' : 'active'), 20000);
