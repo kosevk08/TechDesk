@@ -8,6 +8,11 @@
     gap: 6px;
 }
 
+body {
+    position: relative;
+    isolation: isolate;
+}
+
 .feedback-btn {
     width: 52px;
     height: 52px;

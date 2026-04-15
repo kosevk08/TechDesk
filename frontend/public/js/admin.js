@@ -64,6 +64,7 @@ function renderMetrics(users, feedbackCount) {
 
 function normalizeUser(u) {
     return {
+        egn: u.egn || '',
         displayName: u.displayName || u.fullName || u.name || 'User',
         role: u.role || 'USER',
         email: u.email || '-'
@@ -83,6 +84,22 @@ function renderUsers(users) {
             <div class="user-meta">${u.role} • ${u.email}</div>
         </div>
     `).join('');
+}
+
+function populateRoleUsers(users) {
+    const select = document.getElementById('roleUserSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    users.forEach((u) => {
+        const option = document.createElement('option');
+        option.value = u.egn || '';
+        option.textContent = `${u.displayName} (${u.role})`;
+        option.dataset.role = u.role || 'STUDENT';
+        select.appendChild(option);
+    });
+    if (users.length) {
+        document.getElementById('roleValueSelect').value = users[0].role || 'STUDENT';
+    }
 }
 
 function renderTeachers(teachers) {
@@ -190,11 +207,44 @@ async function loadUsers() {
         const rawUsers = res.ok ? await res.json() : [];
         const users = rawUsers.map(normalizeUser);
         renderUsers(users);
+        populateRoleUsers(users);
         return users;
     } catch (error) {
         console.error('Could not load users:', error);
         renderUsers([]);
+        populateRoleUsers([]);
         return [];
+    }
+}
+
+async function saveUserRole() {
+    const userSelect = document.getElementById('roleUserSelect');
+    const roleSelect = document.getElementById('roleValueSelect');
+    const status = document.getElementById('roleStatus');
+    if (!userSelect || !roleSelect || !status) return;
+    const egn = userSelect.value;
+    const role = roleSelect.value;
+    if (!egn || !role) {
+        status.textContent = 'Select user and role.';
+        return;
+    }
+    if (isDemo) {
+        status.textContent = 'Saved (demo).';
+        return;
+    }
+    try {
+        status.textContent = 'Saving...';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/role`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ egn, role })
+        });
+        if (!res.ok) throw new Error(`Role update failed ${res.status}`);
+        status.textContent = 'Saved.';
+        await Promise.all([loadUsers(), loadTeachers()]);
+    } catch (error) {
+        console.error('Could not save role:', error);
+        status.textContent = 'Failed.';
     }
 }
 
@@ -330,6 +380,7 @@ window.loadUsers = loadUsers;
 window.loadFeedback = loadFeedback;
 window.loadTeachers = loadTeachers;
 window.saveTeacherSubjects = saveTeacherSubjects;
+window.saveUserRole = saveUserRole;
 window.setAdminLanguage = setAdminLanguage;
 
 init();
@@ -342,5 +393,15 @@ if (teacherSelect) {
         const subjects = option?.dataset?.subjects || '';
         const input = document.getElementById('teacherSubjectsInput');
         if (input) input.value = subjects;
+    });
+}
+
+const roleUserSelect = document.getElementById('roleUserSelect');
+if (roleUserSelect) {
+    roleUserSelect.addEventListener('change', (event) => {
+        const selected = event.target.selectedOptions[0];
+        const role = selected?.dataset?.role || 'STUDENT';
+        const roleValueSelect = document.getElementById('roleValueSelect');
+        if (roleValueSelect) roleValueSelect.value = role;
     });
 }

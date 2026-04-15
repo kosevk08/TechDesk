@@ -97,6 +97,27 @@
                 </div>
             </div>
         </div>
+
+        <div class="card section-card">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Roles</span>
+                    <h3 class="section-title">User Roles</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadUsers()">Refresh</button>
+            </div>
+            <div class="assignment-form">
+                <select id="roleUserSelect"></select>
+                <select id="roleValueSelect">
+                    <option value="STUDENT">STUDENT</option>
+                    <option value="TEACHER">TEACHER</option>
+                    <option value="PARENT">PARENT</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+                <button class="action-btn" onclick="saveUserRole()">Save Role</button>
+                <span class="assignment-status" id="roleStatus">Ready</span>
+            </div>
+        </div>
     </div>
 
     <script src="/js/demo-data.js"></script>

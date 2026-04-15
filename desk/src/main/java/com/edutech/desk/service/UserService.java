@@ -8,5 +8,6 @@ public interface UserService {
     String register(User user);
     User getUserByEgn(String egn);
     User getUserById(Long id);
+    User getUserByEmail(String email);
     List<User> getAllUsers();
 }

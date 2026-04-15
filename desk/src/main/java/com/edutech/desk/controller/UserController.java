@@ -8,6 +8,7 @@ import com.edutech.desk.entities.Parent;
 import com.edutech.desk.repository.StudentRepository;
 import com.edutech.desk.repository.TeacherRepository;
 import com.edutech.desk.repository.ParentRepository;
+import com.edutech.desk.repository.UserRepository;
 import com.edutech.desk.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,6 +40,9 @@ public class UserController {
 
     @Autowired
     private ParentRepository parentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
@@ -227,6 +231,66 @@ public class UserController {
             created++;
         }
         return ResponseEntity.ok("Users setup complete. Created: " + created + ", skipped: " + skipped);
+    }
+
+    @PostMapping("/role")
+    public ResponseEntity<String> updateUserRole(
+            @RequestBody Map<String, String> body,
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail,
+            @RequestHeader(value = "X-User-Egn", required = false) String userEgn) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null) adminSecret = "techdesk-secret-2026";
+        boolean keyAuthorized = adminSecret.equals(key);
+        boolean emailAuthorized = false;
+        boolean egnAuthorized = false;
+        if (userEmail != null && !userEmail.isBlank()) {
+            User admin = userService.getUserByEmail(userEmail.trim());
+            emailAuthorized = admin != null && admin.getRole() == Role.ADMIN;
+        }
+        if (userEgn != null && !userEgn.isBlank()) {
+            User admin = userService.getUserByEgn(userEgn.trim());
+            egnAuthorized = admin != null && admin.getRole() == Role.ADMIN;
+        }
+        if (!keyAuthorized && !emailAuthorized && !egnAuthorized) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Forbidden");
+        }
+
+        String targetEgn = body == null ? null : body.get("egn");
+        String roleText = body == null ? null : body.get("role");
+        if (targetEgn == null || targetEgn.isBlank() || roleText == null || roleText.isBlank()) {
+            return ResponseEntity.badRequest().body("egn and role are required");
+        }
+
+        Role newRole;
+        try {
+            newRole = Role.valueOf(roleText.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body("Invalid role");
+        }
+
+        User target = userRepository.findById(targetEgn.trim()).orElse(null);
+        if (target == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        target.setRole(newRole);
+        userRepository.save(target);
+
+        if (newRole == Role.TEACHER) {
+            Teacher teacher = teacherRepository.findById(target.getEgn()).orElse(null);
+            if (teacher == null) teacher = teacherRepository.findByEmail(target.getEmail());
+            if (teacher == null) {
+                teacher = new Teacher();
+                teacher.setEgn(target.getEgn());
+                teacher.setEmail(target.getEmail());
+                String display = (target.getDisplayName() == null || target.getDisplayName().isBlank()) ? "Teacher User" : target.getDisplayName();
+                String[] parts = display.trim().split("\\s+");
+                teacher.setFirstName(parts.length > 0 ? parts[0] : "Teacher");
+                teacher.setLastName(parts.length > 1 ? String.join(" ", java.util.Arrays.copyOfRange(parts, 1, parts.length)) : "User");
+                teacher.setSubjects(List.of());
+                teacherRepository.save(teacher);
+            }
+        }
+
+        return ResponseEntity.ok("Role updated");
     }
 
     @PostMapping("/register")

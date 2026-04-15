@@ -43,6 +43,22 @@ const I18N = {
         directory: 'Directory',
         users: 'Users',
         refresh: 'Refresh',
+        learningFocus: 'Learning Focus',
+        todayPlan: 'Today Plan',
+        messagesTitle: 'Messages',
+        subjectsDesc: 'Open a subject to access your textbook and notebook.',
+        scheduleDesc: 'Check your weekly timetable with periods and rooms.',
+        homeworkDesc: 'Track assignments and due dates in one place.',
+        practiceDesc: '3 quick questions to warm up before studying.',
+        attendanceDesc: 'Check your attendance history.',
+        messagesDesc: 'Contact your teacher and classmates.',
+        testsDesc: 'See assigned tests and submit your answers.',
+        noUsersFound: 'No users found.',
+        noTestsAssigned: 'No tests assigned yet.',
+        noUpcomingTests: 'No upcoming tests',
+        balancedReview: 'Balanced review',
+        lightDay: 'Light day',
+        recordsSummary: '{total} records, {absent} absent',
         logout: 'Logout',
         loading: 'Loading...',
         noDataSchedule: 'No schedule data yet.',
@@ -85,6 +101,22 @@ const I18N = {
         directory: 'Директория',
         users: 'Потребители',
         refresh: 'Обнови',
+        learningFocus: 'Фокус на учене',
+        todayPlan: 'План за днес',
+        messagesTitle: 'Съобщения',
+        subjectsDesc: 'Отвори предмет, за да достъпиш учебник и тетрадка.',
+        scheduleDesc: 'Провери седмичната програма с часове и кабинети.',
+        homeworkDesc: 'Следи домашните и крайните срокове на едно място.',
+        practiceDesc: '3 кратки въпроса за загрявка преди учене.',
+        attendanceDesc: 'Провери историята на присъствията си.',
+        messagesDesc: 'Свържи се с учителя и съучениците си.',
+        testsDesc: 'Виж възложените тестове и изпрати отговорите си.',
+        noUsersFound: 'Няма намерени потребители.',
+        noTestsAssigned: 'Все още няма възложени тестове.',
+        noUpcomingTests: 'Няма предстоящи тестове',
+        balancedReview: 'Балансиран преговор',
+        lightDay: 'Лек ден',
+        recordsSummary: '{total} записа, {absent} отсъствия',
         logout: 'Изход',
         loading: 'Зареждане...',
         noDataSchedule: 'Все още няма програма.',
@@ -114,6 +146,42 @@ const I18N = {
     el: { hello: 'Γεια σου', studentWorkspace: 'Χώρος Μαθητή', classLabel: 'Τάξη:', heroDesc: 'Παρακολούθησε τα μαθήματά σου, γράψε σημειώσεις ζωντανά και μείνε συνδεδεμένος με τον καθηγητή.', liveStudyTools: 'Εργαλεία μελέτης', attendance: 'Παρουσίες', home: 'Αρχική', subjects: 'Μαθήματα', schedule: 'Πρόγραμμα', homework: 'Εργασίες', practice: 'Εξάσκηση', grades: 'Βαθμοί', tests: 'Τεστ', notifications: 'Ειδοποιήσεις', logout: 'Έξοδος', loading: 'Φόρτωση...', noDataSchedule: 'Δεν υπάρχουν στοιχεία προγράμματος.', noDataHomework: 'Δεν υπάρχουν εργασίες.', noNotifications: 'Δεν υπάρχουν ειδοποιήσεις.', openSubjects: 'Άνοιγμα μαθημάτων', openSchedule: 'Άνοιγμα προγράμματος', openHomework: 'Άνοιγμα εργασιών', startPractice: 'Έναρξη εξάσκησης', viewAttendance: 'Προβολή παρουσιών', openMessages: 'Άνοιγμα μηνυμάτων', openTests: 'Άνοιγμα τεστ', rewards: 'Ανταμοιβές', motivation: 'Κίνητρο', next: 'Επόμενο', newRound: 'Νέος γύρος', testsSoon: 'Τεστ σύντομα', homeworkTomorrow: 'Εργασίες για αύριο', studyLoad: 'Φορτίο μελέτης', priority: 'Προτεραιότητα', noRecordsYet: 'Δεν υπάρχουν εγγραφές.', classroomFocusMode: 'Λειτουργία Συγκέντρωσης', teacherPresenting: 'Ο καθηγητής παρουσιάζει. Μείνε σε αυτή την οθόνη.' },
     ro: { hello: 'Salut', studentWorkspace: 'Spațiu Elev', classLabel: 'Clasa:', heroDesc: 'Urmărește lecțiile, scrie notițe live și rămâi conectat cu profesorul.', liveStudyTools: 'Instrumente de studiu live', attendance: 'Prezență', home: 'Acasă', subjects: 'Materii', schedule: 'Orar', homework: 'Teme', practice: 'Exercițiu', grades: 'Note', tests: 'Teste', notifications: 'Notificări', logout: 'Ieșire', loading: 'Se încarcă...', noDataSchedule: 'Nu există date de orar.', noDataHomework: 'Nu există teme.', noNotifications: 'Nu există notificări.', openSubjects: 'Deschide Materii', openSchedule: 'Deschide Orar', openHomework: 'Deschide Teme', startPractice: 'Începe Exercițiul', viewAttendance: 'Vezi Prezența', openMessages: 'Deschide Mesaje', openTests: 'Deschide Teste', rewards: 'Recompense', motivation: 'Motivație', next: 'Următorul', newRound: 'Rundă nouă', testsSoon: 'Teste curând', homeworkTomorrow: 'Teme pentru mâine', studyLoad: 'Volum de studiu', priority: 'Prioritate', noRecordsYet: 'Nu există înregistrări.', classroomFocusMode: 'Mod Focus Clasă', teacherPresenting: 'Profesorul prezintă. Rămâi pe acest ecran.' },
     sr: { hello: 'Здраво', studentWorkspace: 'Учeнички профил', classLabel: 'Разред:', heroDesc: 'Прати часове, пиши белешке уживо и остани повезан са наставником.', liveStudyTools: 'Алати за учење', attendance: 'Присуство', home: 'Почетна', subjects: 'Предмети', schedule: 'Распоред', homework: 'Домаћи', practice: 'Вежба', grades: 'Оцене', tests: 'Тестови', notifications: 'Обавештења', logout: 'Одјава', loading: 'Учитавање...', noDataSchedule: 'Још нема распореда.', noDataHomework: 'Још нема домаћих.', noNotifications: 'Нема обавештења.', openSubjects: 'Отвори предмете', openSchedule: 'Отвори распоред', openHomework: 'Отвори домаће', startPractice: 'Покрени вежбу', viewAttendance: 'Погледај присуство', openMessages: 'Отвори поруке', openTests: 'Отвори тестове', rewards: 'Награде', motivation: 'Мотивација', next: 'Даље', newRound: 'Нова рунда', testsSoon: 'Тестови ускоро', homeworkTomorrow: 'Домаћи за сутра', studyLoad: 'Оптерећење', priority: 'Приоритет', noRecordsYet: 'Још нема записа.', classroomFocusMode: 'Режим фокуса', teacherPresenting: 'Наставник презентује. Остани на овом екрану.' }
+};
+const BOT_I18N = {
+    en: {
+        intro: 'Hi, I am ThroneBuddy. Ask only basic study planning questions.',
+        inputPlaceholder: 'Ask a basic study question...',
+        askBtn: 'Ask',
+        qTests: 'Tests soon?',
+        qHomework: 'Homework tomorrow?',
+        qFocus: 'What to focus on?',
+        emptyPrompt: 'Ask about tests soon, homework tomorrow, study load, or what to focus on.',
+        noCheat: 'No. I cannot help with cheating. I can only help with planning: tests, homework, and study focus.',
+        noTestsSoon: 'No tests in the next 7 days. Keep light revision.',
+        testsSoon: 'You have {count} test(s) soon: {list}.',
+        noHomeworkTomorrow: 'No homework due tomorrow based on current data.',
+        homeworkTomorrow: 'Homework for tomorrow: {list}.',
+        focusAnswer: 'Focus first on: {priority}. Then do one short review session for your next due test.',
+        loadAnswer: 'Current study load: {load}.',
+        unsupported: 'No. I answer only basic study planning: tests soon, homework tomorrow, study load, and focus priority.'
+    },
+    bg: {
+        intro: 'Здрасти, аз съм ThroneBuddy. Питай само базови въпроси за планиране на учене.',
+        inputPlaceholder: 'Задай базов учебен въпрос...',
+        askBtn: 'Питай',
+        qTests: 'Тестове скоро?',
+        qHomework: 'Домашно за утре?',
+        qFocus: 'На какво да наблегна?',
+        emptyPrompt: 'Питай за тестове скоро, домашно за утре, натоварване или приоритет.',
+        noCheat: 'Не. Не мога да помагам за преписване. Мога само за планиране: тестове, домашни и фокус.',
+        noTestsSoon: 'Няма тестове в следващите 7 дни. Поддържай лек преговор.',
+        testsSoon: 'Имаш {count} тест(а) скоро: {list}.',
+        noHomeworkTomorrow: 'Няма домашни за утре според текущите данни.',
+        homeworkTomorrow: 'Домашно за утре: {list}.',
+        focusAnswer: 'Първо наблегни на: {priority}. После направи кратък преговор за следващия тест.',
+        loadAnswer: 'Текущо учебно натоварване: {load}.',
+        unsupported: 'Не. Отговарям само на базово планиране: тестове, домашни, натоварване и приоритет.'
+    }
 };
 
 function deriveNameFromEmail(email) {
@@ -163,6 +231,24 @@ function saveRewardsState() {
 function t(key) {
     const lang = supportedStudentLangs.includes(studentLang) ? studentLang : 'en';
     return I18N[lang]?.[key] || I18N.en[key] || key;
+}
+
+function tf(key, vars = {}) {
+    let text = t(key);
+    Object.entries(vars).forEach(([k, v]) => {
+        text = text.replaceAll(`{${k}}`, String(v));
+    });
+    return text;
+}
+
+function bt(key, vars = {}) {
+    const lang = supportedStudentLangs.includes(studentLang) ? studentLang : 'en';
+    const dict = BOT_I18N[lang] || BOT_I18N.en;
+    let text = dict[key] || BOT_I18N.en[key] || key;
+    Object.entries(vars).forEach(([k, v]) => {
+        text = text.replaceAll(`{${k}}`, String(v));
+    });
+    return text;
 }
 
 function addReward(xp, badge, reason) {
@@ -219,17 +305,25 @@ function updateLanguageTexts() {
     });
     const cards = document.querySelectorAll('.dashboard-grid .card');
     if (cards[0]) cards[0].querySelector('h3').textContent = t('subjects');
+    if (cards[0]) cards[0].querySelector('p').textContent = t('subjectsDesc');
     if (cards[0]) cards[0].querySelector('button').textContent = t('openSubjects');
     if (cards[1]) cards[1].querySelector('h3').textContent = t('schedule');
+    if (cards[1]) cards[1].querySelector('p').textContent = t('scheduleDesc');
     if (cards[1]) cards[1].querySelector('button').textContent = t('openSchedule');
     if (cards[2]) cards[2].querySelector('h3').textContent = t('homework');
+    if (cards[2]) cards[2].querySelector('p').textContent = t('homeworkDesc');
     if (cards[2]) cards[2].querySelector('button').textContent = t('openHomework');
     if (cards[3]) cards[3].querySelector('h3').textContent = t('practice');
+    if (cards[3]) cards[3].querySelector('p').textContent = t('practiceDesc');
     if (cards[3]) cards[3].querySelector('button').textContent = t('startPractice');
     if (cards[4]) cards[4].querySelector('h3').textContent = t('attendance');
+    if (cards[4]) cards[4].querySelector('p').textContent = t('attendanceDesc');
     if (cards[4]) cards[4].querySelector('button').textContent = t('viewAttendance');
+    if (cards[5]) cards[5].querySelector('h3').textContent = t('messagesTitle');
+    if (cards[5]) cards[5].querySelector('p').textContent = t('messagesDesc');
     if (cards[5]) cards[5].querySelector('button').textContent = t('openMessages');
     if (cards[6]) cards[6].querySelector('h3').textContent = t('tests');
+    if (cards[6]) cards[6].querySelector('p').textContent = t('testsDesc');
     if (cards[6]) cards[6].querySelector('button').textContent = t('openTests');
     const lockTitle = document.querySelector('#classroomLockOverlay h3');
     if (lockTitle) lockTitle.textContent = t('classroomFocusMode');
@@ -247,6 +341,10 @@ function updateLanguageTexts() {
     if (studyLoad) studyLoad.textContent = t('studyLoad');
     const priority = document.querySelector('#focusBoard .focus-item:nth-child(4) .focus-label');
     if (priority) priority.textContent = t('priority');
+    const focusEye = document.querySelector('#focusBoard .section-eyebrow');
+    if (focusEye) focusEye.textContent = t('learningFocus');
+    const focusTitle = document.querySelector('#focusBoard .section-title');
+    if (focusTitle) focusTitle.textContent = t('todayPlan');
     const sectionTitles = {
         '#subjectsSection .section-title': 'subjects',
         '#scheduleSection .section-title': 'schedule',
@@ -266,11 +364,15 @@ function updateLanguageTexts() {
     const notificationsTitle = document.querySelector('[data-panel="notifications"] h4');
     if (notificationsTitle) notificationsTitle.textContent = t('notifications');
     const botGreeting = document.querySelector('#studyBotBody .study-bot-msg');
-    if (botGreeting) botGreeting.textContent = `Hi, I am ThroneBuddy.`;
+    if (botGreeting) botGreeting.textContent = bt('intro');
     const botInput = document.getElementById('studyBotInput');
-    if (botInput) botInput.placeholder = '...';
+    if (botInput) botInput.placeholder = bt('inputPlaceholder');
     const botAskBtn = document.querySelector('.study-bot-input-row button');
-    if (botAskBtn) botAskBtn.textContent = studentLang === 'bg' ? 'Питай' : 'Ask';
+    if (botAskBtn) botAskBtn.textContent = bt('askBtn');
+    const quickBtns = document.querySelectorAll('.study-bot-quick button');
+    if (quickBtns[0]) quickBtns[0].textContent = bt('qTests');
+    if (quickBtns[1]) quickBtns[1].textContent = bt('qHomework');
+    if (quickBtns[2]) quickBtns[2].textContent = bt('qFocus');
     const testKicker = document.querySelector('.test-kicker');
     if (testKicker) testKicker.textContent = studentLang === 'bg' ? 'Режим Тест' : 'Exam Mode';
     const penBtn = document.getElementById('testPenBtn');
@@ -287,6 +389,10 @@ function updateLanguageTexts() {
         if (e) e.textContent = t('directory');
         if (st) st.textContent = t('users');
         if (b) b.textContent = t('refresh');
+    }
+    const currentTestsList = document.getElementById('testsList');
+    if (currentTestsList && currentTestsList.children.length === 1 && /No upcoming tests/i.test(currentTestsList.textContent || '')) {
+        currentTestsList.innerHTML = `<li>${t('noUpcomingTests')}</li>`;
     }
 }
 
@@ -407,7 +513,7 @@ function renderHomeworkFromCache() {
     const container = document.getElementById('homeworkList');
     if (!container) return;
     if (!studentHomeworkCache.length) {
-        container.innerHTML = '<p class="empty-state">No homework data yet.</p>';
+        container.innerHTML = `<p class="empty-state">${t('noDataHomework')}</p>`;
         return;
     }
     container.innerHTML = studentHomeworkCache.map(hw => `
@@ -423,7 +529,7 @@ function renderScheduleFallback() {
     const container = document.getElementById('scheduleList');
     if (!container) return;
     if (!studentSubjectsCache.length) {
-        container.innerHTML = '<p class="empty-state">No schedule data yet.</p>';
+        container.innerHTML = `<p class="empty-state">${t('noDataSchedule')}</p>`;
         return;
     }
     container.innerHTML = `
@@ -497,7 +603,7 @@ async function loadAttendanceSummary() {
             const latest = records.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
             const summary = document.getElementById('attendanceSummary');
-            if (summary) summary.textContent = total ? `${total} records, ${absent} absent` : 'No records yet';
+            if (summary) summary.textContent = total ? tf('recordsSummary', { total, absent }) : t('noRecordsYet');
 
             document.getElementById('attendanceTotal').textContent = total || '-';
             document.getElementById('attendancePresent').textContent = total ? present : '-';
@@ -515,7 +621,7 @@ async function loadAttendanceSummary() {
         const latest = records.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
 
         const summary = document.getElementById('attendanceSummary');
-        if (summary) summary.textContent = total ? `${total} records, ${absent} absent` : 'No records yet';
+        if (summary) summary.textContent = total ? tf('recordsSummary', { total, absent }) : t('noRecordsYet');
 
         document.getElementById('attendanceTotal').textContent = total || '-';
         document.getElementById('attendancePresent').textContent = total ? present : '-';
@@ -1000,7 +1106,7 @@ function updateLearningFocus() {
         if (!h.subject) return;
         subjectLoad.set(h.subject, (subjectLoad.get(h.subject) || 0) + 1);
     });
-    let priority = 'Balanced review';
+    let priority = t('balancedReview');
     let max = 0;
     subjectLoad.forEach((count, subject) => {
         if (count > max) {
@@ -1015,7 +1121,7 @@ function updateLearningFocus() {
     const elPriority = document.getElementById('focusPriority');
     if (elTests) elTests.textContent = String(testsSoon);
     if (elHomework) elHomework.textContent = String(homeworkTomorrow);
-    if (elLoad) elLoad.textContent = studyLoad > 0 ? `${studyLoad} tasks` : 'Light day';
+    if (elLoad) elLoad.textContent = studyLoad > 0 ? `${studyLoad} tasks` : t('lightDay');
     if (elPriority) elPriority.textContent = priority;
 }
 
@@ -1031,38 +1137,38 @@ function botMessage(text, fromUser = false) {
 
 function resolveStudyBot(questionRaw) {
     const q = String(questionRaw || '').toLowerCase().trim();
-    if (!q) return 'Ask about tests soon, homework tomorrow, study load, or what to focus on.';
+    if (!q) return bt('emptyPrompt');
 
     const cheatingPattern = /(препис|шпор|измам|cheat|copy answers|hack|bypass|solve my exam)/i;
     if (cheatingPattern.test(q)) {
-        return 'No. I cannot help with cheating. I can only help with planning: tests, homework, and study focus.';
+        return bt('noCheat');
     }
 
     const testsSoon = studentTestsCache.filter(t => t.dueDate && t.dueDate <= addDaysIso(7) && t.status !== 'GRADED');
     const homeworkTomorrow = studentHomeworkCache.filter(h => h.dueDate === addDaysIso(1));
 
     if (/(test|изпит|тест)/i.test(q) && /(soon|скоро|предстои|next|кога)/i.test(q) || q === 'tests') {
-        if (!testsSoon.length) return 'No tests in the next 7 days. Keep light revision.';
-        return `You have ${testsSoon.length} test(s) soon: ${testsSoon.slice(0, 3).map(t => `${t.title} (${t.dueDate || 'no date'})`).join(', ')}.`;
+        if (!testsSoon.length) return bt('noTestsSoon');
+        return bt('testsSoon', { count: testsSoon.length, list: testsSoon.slice(0, 3).map(t => `${t.title} (${t.dueDate || '-'})`).join(', ') });
     }
 
     if (/(homework|домаш)/i.test(q) || q === 'homework') {
-        if (!homeworkTomorrow.length) return 'No homework due tomorrow based on current data.';
-        return `Homework for tomorrow: ${homeworkTomorrow.map(h => `${h.subject}: ${h.title}`).join('; ')}.`;
+        if (!homeworkTomorrow.length) return bt('noHomeworkTomorrow');
+        return bt('homeworkTomorrow', { list: homeworkTomorrow.map(h => `${h.subject}: ${h.title}`).join('; ') });
     }
 
     if (/(focus|наблег|приоритет|what should i study|на какво)/i.test(q) || q === 'focus') {
         updateLearningFocus();
-        const priority = document.getElementById('focusPriority')?.textContent || 'Balanced review';
-        return `Focus first on: ${priority}. Then do one short review session for your next due test.`;
+        const priority = document.getElementById('focusPriority')?.textContent || t('balancedReview');
+        return bt('focusAnswer', { priority });
     }
 
     if (/(how much|колко|study load|уча)/i.test(q)) {
-        const load = document.getElementById('focusStudyLoad')?.textContent || 'Light day';
-        return `Current study load: ${load}.`;
+        const load = document.getElementById('focusStudyLoad')?.textContent || t('lightDay');
+        return bt('loadAnswer', { load });
     }
 
-    return 'No. I answer only basic study planning: tests soon, homework tomorrow, study load, and focus priority.';
+    return bt('unsupported');
 }
 
 function toggleStudyBot() {
@@ -1099,7 +1205,7 @@ async function loadStudentDirectoryUsers() {
         if (isDemo && demoData) {
             const users = demoData.users || [];
             if (!users.length) {
-                list.innerHTML = '<p class="empty-state">No users found.</p>';
+                list.innerHTML = `<p class="empty-state">${t('noUsersFound')}</p>`;
                 return;
             }
             list.innerHTML = users.map(u => `
@@ -1113,7 +1219,7 @@ async function loadStudentDirectoryUsers() {
         const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
         const users = res.ok ? await res.json() : [];
         if (!users.length) {
-            list.innerHTML = '<p class="empty-state">No users found.</p>';
+            list.innerHTML = `<p class="empty-state">${t('noUsersFound')}</p>`;
             return;
         }
         list.innerHTML = users.map(u => `
@@ -1124,7 +1230,7 @@ async function loadStudentDirectoryUsers() {
         `).join('');
     } catch (error) {
         console.error('Could not load student directory users:', error);
-        list.innerHTML = '<p class="empty-state">No users found.</p>';
+        list.innerHTML = `<p class="empty-state">${t('noUsersFound')}</p>`;
     }
 }
 
@@ -1217,7 +1323,7 @@ function renderStudentTests(tests) {
     const list = document.getElementById('studentTestsList');
     if (!list) return;
     if (!tests.length) {
-        list.innerHTML = '<p class="empty-state">No tests assigned yet.</p>';
+        list.innerHTML = `<p class="empty-state">${t('noTestsAssigned')}</p>`;
         return;
     }
 
@@ -1257,7 +1363,7 @@ function renderUpcomingTests(tests) {
     const list = document.getElementById('testsList');
     if (!list) return;
     if (!tests.length) {
-        list.innerHTML = '<li>No upcoming tests</li>';
+        list.innerHTML = `<li>${t('noUpcomingTests')}</li>`;
         return;
     }
     list.innerHTML = tests.map(test => `<li>${test.title} • ${test.dueDate || 'No deadline'}</li>`).join('');
@@ -1427,7 +1533,7 @@ async function loadStudentNotifications() {
         });
         const notifications = res.ok ? await res.json() : [];
         if (!notifications.length) {
-            container.innerHTML = '<p class="empty-state">No notifications yet.</p>';
+            container.innerHTML = `<p class="empty-state">${t('noNotifications')}</p>`;
             return;
         }
         container.innerHTML = notifications.slice(0, 6).map(n => `
