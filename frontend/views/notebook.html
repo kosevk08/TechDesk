@@ -280,6 +280,13 @@
         let currentPage = 1;
         let maxPage = 1;
         let currentStyle = 'lined';
+        let notebookDirty = false;
+        let saveInFlight = null;
+        const token = localStorage.getItem('token');
+
+        function authHeaders(extra = {}) {
+            return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+        }
 
         function resizeCanvas() {
             const area = document.getElementById('notebookArea');
@@ -504,6 +511,7 @@
             }
 
             socket.emit('draw-stroke', strokeData);
+            notebookDirty = true;
             scheduleAutoSave();
         }
 
@@ -552,6 +560,7 @@
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
             });
+            notebookDirty = true;
             scheduleAutoSave();
         }
 
@@ -563,12 +572,17 @@
         }
 
         async function saveNotebook(silent = false) {
-            if (isDemo) return;
+            if (isDemo || !currentSubjectName) return;
+            if (!notebookDirty && silent) return;
+            if (autosaveTimer) {
+                clearTimeout(autosaveTimer);
+                autosaveTimer = null;
+            }
             const imageData = canvas.toDataURL();
             try {
-                await fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
+                const request = fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
                         studentEgn: user.egn,
                         subject: currentSubjectName,
@@ -580,6 +594,10 @@
                         pageNumber: currentPage
                     })
                 });
+                saveInFlight = request;
+                await request;
+                saveInFlight = null;
+                notebookDirty = false;
                 maxPage = Math.max(maxPage, currentPage);
                 updatePageControls();
                 if (!silent) {
@@ -590,6 +608,26 @@
             } catch (err) {
                 console.error('Could not save:', err);
             }
+        }
+
+        function saveNotebookKeepalive() {
+            if (isDemo || !notebookDirty || !currentSubjectName) return;
+            const imageData = canvas.toDataURL();
+            fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
+                method: 'POST',
+                keepalive: true,
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    studentEgn: user.egn,
+                    subject: currentSubjectName,
+                    schoolYear: '2025-2026',
+                    format: 'A4',
+                    style: currentStyle,
+                    color: currentColor,
+                    content: imageData,
+                    pageNumber: currentPage
+                })
+            }).catch(() => {});
         }
 
         window.addEventListener('resize', () => {
@@ -603,6 +641,16 @@
         });
 
         loadSubject();
+
+        window.addEventListener('beforeunload', () => {
+            saveNotebookKeepalive();
+        });
+        window.addEventListener('pagehide', () => {
+            saveNotebookKeepalive();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) saveNotebookKeepalive();
+        });
 
         socket.on('draw-stroke', (data) => {
             if (!data) return;

@@ -1,3 +1,25 @@
+const loginSuccessOverlay = document.getElementById('loginSuccessOverlay');
+
+function routeForRole(user) {
+    if (user.role === 'TEACHER') return '/teacher';
+    if (user.role === 'STUDENT') return '/student';
+    if (user.role === 'PARENT') return '/parent';
+    if (user.role === 'ADMIN') return '/admin';
+    return '/';
+}
+
+function playLoginSuccessAndRedirect(route) {
+    if (!loginSuccessOverlay) {
+        window.location.href = route;
+        return;
+    }
+    loginSuccessOverlay.classList.add('active');
+    loginSuccessOverlay.setAttribute('aria-hidden', 'false');
+    setTimeout(() => {
+        window.location.href = route;
+    }, 1200);
+}
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -17,16 +39,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         if (response.ok) {
             const user = await response.json();
             localStorage.setItem('user', JSON.stringify(user));
-
-            if (user.role === 'TEACHER') {
-                window.location.href = '/teacher';
-            } else if (user.role === 'STUDENT') {
-                window.location.href = '/student';
-            } else if (user.role === 'PARENT') {
-                window.location.href = '/parent';
-            } else if (user.role === 'ADMIN') {
-                window.location.href = '/admin';
-            }
+            playLoginSuccessAndRedirect(routeForRole(user));
         } else {
             errorMsg.textContent = 'Invalid email or password!';
         }
@@ -65,7 +78,7 @@ function seedDemoProfile(profile) {
     };
     localStorage.setItem('user', JSON.stringify(demoUser));
     localStorage.setItem('token', 'demo-token');
-    window.location.href = profile.route;
+    playLoginSuccessAndRedirect(profile.route);
 }
 
 function buildDemoProfiles() {
