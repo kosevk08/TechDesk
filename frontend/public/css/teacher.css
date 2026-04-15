@@ -119,6 +119,31 @@ body.notebook-focus {
     background: rgba(255, 255, 255, 0.08);
 }
 
+.navbar .language-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    min-width: 84px;
+    border: 1px solid rgba(190, 226, 255, 0.35);
+    background:
+        linear-gradient(135deg, rgba(47, 122, 151, 0.28), rgba(28, 61, 114, 0.28)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
+    color: #ffffff;
+    padding-right: 32px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.navbar .language-select:focus {
+    outline: none;
+    border-color: rgba(125, 211, 252, 0.85);
+    box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.24);
+}
+
+.navbar .language-select option {
+    color: #0f172a;
+}
+
 .container {
     max-width: 1180px;
     margin: 26px auto;

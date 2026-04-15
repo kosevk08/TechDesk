@@ -262,7 +262,23 @@ async function loadTeachers() {
         const res = await fetch(`${BACKEND_BASE_URL}/api/teacher/all`, {
             headers: authHeaders()
         });
-        const teachers = res.ok ? await res.json() : [];
+        let teachers = res.ok ? await res.json() : [];
+        if (!teachers.length) {
+            const dirRes = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
+            const dirUsers = dirRes.ok ? await dirRes.json() : [];
+            teachers = dirUsers
+                .filter(u => String(u.role || '').toUpperCase() === 'TEACHER')
+                .map((u) => {
+                    const parts = String(u.displayName || 'Teacher User').trim().split(/\s+/);
+                    return {
+                        egn: u.egn || '',
+                        firstName: parts[0] || 'Teacher',
+                        lastName: parts.slice(1).join(' ') || 'User',
+                        email: u.email || '',
+                        subjects: []
+                    };
+                });
+        }
         populateTeacherSelect(teachers);
         renderTeachers(teachers);
         return teachers;

@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -116,14 +117,52 @@ public class UserController {
 
     @GetMapping("/directory")
     public ResponseEntity<List<Map<String, String>>> getDirectoryUsers() {
-        List<Map<String, String>> directory = userService.getAllUsers().stream()
-            .map(u -> Map.of(
-                "displayName", (u.getDisplayName() == null || u.getDisplayName().isBlank()) ? "User" : u.getDisplayName(),
-                "email", (u.getEmail() == null ? "-" : u.getEmail()),
-                "role", (u.getRole() == null ? "USER" : u.getRole().name())
-            ))
-            .toList();
-        return ResponseEntity.ok(directory);
+        Map<String, Map<String, String>> directory = new LinkedHashMap<>();
+
+        for (User u : userService.getAllUsers()) {
+            String key = (u.getEgn() != null && !u.getEgn().isBlank()) ? u.getEgn() : (u.getEmail() != null ? u.getEmail() : ("u-" + directory.size()));
+            String name = (u.getDisplayName() == null || u.getDisplayName().isBlank()) ? "User" : u.getDisplayName();
+            String email = (u.getEmail() == null || u.getEmail().isBlank()) ? "-" : u.getEmail();
+            String role = (u.getRole() == null) ? "USER" : u.getRole().name();
+            directory.put(key, Map.of(
+                "egn", key,
+                "displayName", name,
+                "email", email,
+                "role", role
+            ));
+        }
+
+        for (Student s : studentRepository.findAll()) {
+            String key = (s.getEgn() == null || s.getEgn().isBlank()) ? ("s-" + directory.size()) : s.getEgn();
+            directory.putIfAbsent(key, Map.of(
+                "egn", key,
+                "displayName", (s.getFirstName() + " " + s.getLastName()).trim(),
+                "email", (s.getEmail() == null || s.getEmail().isBlank()) ? "-" : s.getEmail(),
+                "role", "STUDENT"
+            ));
+        }
+
+        for (Teacher t : teacherRepository.findAll()) {
+            String key = (t.getEgn() == null || t.getEgn().isBlank()) ? ("t-" + directory.size()) : t.getEgn();
+            directory.putIfAbsent(key, Map.of(
+                "egn", key,
+                "displayName", (t.getFirstName() + " " + t.getLastName()).trim(),
+                "email", (t.getEmail() == null || t.getEmail().isBlank()) ? "-" : t.getEmail(),
+                "role", "TEACHER"
+            ));
+        }
+
+        for (Parent p : parentRepository.findAll()) {
+            String key = (p.getEgn() == null || p.getEgn().isBlank()) ? ("p-" + directory.size()) : p.getEgn();
+            directory.putIfAbsent(key, Map.of(
+                "egn", key,
+                "displayName", (p.getFirstName() + " " + p.getLastName()).trim(),
+                "email", (p.getEmail() == null || p.getEmail().isBlank()) ? "-" : p.getEmail(),
+                "role", "PARENT"
+            ));
+        }
+
+        return ResponseEntity.ok(directory.values().stream().toList());
     }
 
     @GetMapping("/setup")
