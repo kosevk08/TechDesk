@@ -21,9 +21,12 @@ let practiceAnswered = false;
 let currentPracticeGame = 'flash';
 let studentLang = localStorage.getItem('studentLang') || 'en';
 let currentClassroomLock = false;
+let currentStudentDisplayName = 'Student';
+let currentStudentClassName = '-';
 const supportedStudentLangs = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'];
 const I18N = {
     en: {
+        hello: 'Hello',
         studentWorkspace: 'Student Workspace',
         classLabel: 'Class:',
         heroDesc: 'Track your lessons, write live notes, and stay connected with your teacher.',
@@ -65,6 +68,7 @@ const I18N = {
         teacherPresenting: 'Teacher is presenting. Stay on this screen.'
     },
     bg: {
+        hello: 'Здравей',
         studentWorkspace: 'Ученически профил',
         classLabel: 'Клас:',
         heroDesc: 'Следи уроците си, пиши бележки на живо и бъди свързан с учителя.',
@@ -105,12 +109,23 @@ const I18N = {
         classroomFocusMode: 'Режим фокус',
         teacherPresenting: 'Учителят представя. Остани на този екран.'
     },
-    it: { studentWorkspace: 'Area Studente', classLabel: 'Classe:', heroDesc: 'Segui le lezioni, scrivi appunti in tempo reale e resta connesso con il docente.', liveStudyTools: 'Strumenti studio live', attendance: 'Presenze', home: 'Home', subjects: 'Materie', schedule: 'Orario', homework: 'Compiti', practice: 'Esercizi', grades: 'Voti', tests: 'Test', notifications: 'Notifiche', logout: 'Esci', loading: 'Caricamento...', noDataSchedule: 'Nessun orario disponibile.', noDataHomework: 'Nessun compito disponibile.', noNotifications: 'Nessuna notifica.', openSubjects: 'Apri Materie', openSchedule: 'Apri Orario', openHomework: 'Apri Compiti', startPractice: 'Inizia Esercizi', viewAttendance: 'Vedi Presenze', openMessages: 'Apri Messaggi', openTests: 'Apri Test', rewards: 'Ricompense', motivation: 'Motivazione', next: 'Avanti', newRound: 'Nuovo turno', testsSoon: 'Test in arrivo', homeworkTomorrow: 'Compiti per domani', studyLoad: 'Carico studio', priority: 'Priorità', noRecordsYet: 'Nessun record.', classroomFocusMode: 'Modalità Focus Classe', teacherPresenting: 'Il docente sta presentando. Resta su questa schermata.' },
-    de: { studentWorkspace: 'Schülerbereich', classLabel: 'Klasse:', heroDesc: 'Verfolge den Unterricht, schreibe Live-Notizen und bleibe mit der Lehrkraft verbunden.', liveStudyTools: 'Live-Lernwerkzeuge', attendance: 'Anwesenheit', home: 'Start', subjects: 'Fächer', schedule: 'Stundenplan', homework: 'Hausaufgaben', practice: 'Übung', grades: 'Noten', tests: 'Tests', notifications: 'Benachrichtigungen', logout: 'Abmelden', loading: 'Lädt...', noDataSchedule: 'Noch keine Stundenplandaten.', noDataHomework: 'Noch keine Hausaufgaben.', noNotifications: 'Noch keine Benachrichtigungen.', openSubjects: 'Fächer öffnen', openSchedule: 'Stundenplan öffnen', openHomework: 'Hausaufgaben öffnen', startPractice: 'Übung starten', viewAttendance: 'Anwesenheit ansehen', openMessages: 'Nachrichten öffnen', openTests: 'Tests öffnen', rewards: 'Belohnungen', motivation: 'Motivation', next: 'Weiter', newRound: 'Neue Runde', testsSoon: 'Tests bald', homeworkTomorrow: 'Hausaufgaben morgen', studyLoad: 'Lernaufwand', priority: 'Priorität', noRecordsYet: 'Noch keine Einträge.', classroomFocusMode: 'Klassen-Fokusmodus', teacherPresenting: 'Die Lehrkraft präsentiert. Bitte auf diesem Bildschirm bleiben.' },
-    el: { studentWorkspace: 'Χώρος Μαθητή', classLabel: 'Τάξη:', heroDesc: 'Παρακολούθησε τα μαθήματά σου, γράψε σημειώσεις ζωντανά και μείνε συνδεδεμένος με τον καθηγητή.', liveStudyTools: 'Εργαλεία μελέτης', attendance: 'Παρουσίες', home: 'Αρχική', subjects: 'Μαθήματα', schedule: 'Πρόγραμμα', homework: 'Εργασίες', practice: 'Εξάσκηση', grades: 'Βαθμοί', tests: 'Τεστ', notifications: 'Ειδοποιήσεις', logout: 'Έξοδος', loading: 'Φόρτωση...', noDataSchedule: 'Δεν υπάρχουν στοιχεία προγράμματος.', noDataHomework: 'Δεν υπάρχουν εργασίες.', noNotifications: 'Δεν υπάρχουν ειδοποιήσεις.', openSubjects: 'Άνοιγμα μαθημάτων', openSchedule: 'Άνοιγμα προγράμματος', openHomework: 'Άνοιγμα εργασιών', startPractice: 'Έναρξη εξάσκησης', viewAttendance: 'Προβολή παρουσιών', openMessages: 'Άνοιγμα μηνυμάτων', openTests: 'Άνοιγμα τεστ', rewards: 'Ανταμοιβές', motivation: 'Κίνητρο', next: 'Επόμενο', newRound: 'Νέος γύρος', testsSoon: 'Τεστ σύντομα', homeworkTomorrow: 'Εργασίες για αύριο', studyLoad: 'Φορτίο μελέτης', priority: 'Προτεραιότητα', noRecordsYet: 'Δεν υπάρχουν εγγραφές.', classroomFocusMode: 'Λειτουργία Συγκέντρωσης', teacherPresenting: 'Ο καθηγητής παρουσιάζει. Μείνε σε αυτή την οθόνη.' },
-    ro: { studentWorkspace: 'Spațiu Elev', classLabel: 'Clasa:', heroDesc: 'Urmărește lecțiile, scrie notițe live și rămâi conectat cu profesorul.', liveStudyTools: 'Instrumente de studiu live', attendance: 'Prezență', home: 'Acasă', subjects: 'Materii', schedule: 'Orar', homework: 'Teme', practice: 'Exercițiu', grades: 'Note', tests: 'Teste', notifications: 'Notificări', logout: 'Ieșire', loading: 'Se încarcă...', noDataSchedule: 'Nu există date de orar.', noDataHomework: 'Nu există teme.', noNotifications: 'Nu există notificări.', openSubjects: 'Deschide Materii', openSchedule: 'Deschide Orar', openHomework: 'Deschide Teme', startPractice: 'Începe Exercițiul', viewAttendance: 'Vezi Prezența', openMessages: 'Deschide Mesaje', openTests: 'Deschide Teste', rewards: 'Recompense', motivation: 'Motivație', next: 'Următorul', newRound: 'Rundă nouă', testsSoon: 'Teste curând', homeworkTomorrow: 'Teme pentru mâine', studyLoad: 'Volum de studiu', priority: 'Prioritate', noRecordsYet: 'Nu există înregistrări.', classroomFocusMode: 'Mod Focus Clasă', teacherPresenting: 'Profesorul prezintă. Rămâi pe acest ecran.' },
-    sr: { studentWorkspace: 'Учeнички профил', classLabel: 'Разред:', heroDesc: 'Прати часове, пиши белешке уживо и остани повезан са наставником.', liveStudyTools: 'Алати за учење', attendance: 'Присуство', home: 'Почетна', subjects: 'Предмети', schedule: 'Распоред', homework: 'Домаћи', practice: 'Вежба', grades: 'Оцене', tests: 'Тестови', notifications: 'Обавештења', logout: 'Одјава', loading: 'Учитавање...', noDataSchedule: 'Још нема распореда.', noDataHomework: 'Још нема домаћих.', noNotifications: 'Нема обавештења.', openSubjects: 'Отвори предмете', openSchedule: 'Отвори распоред', openHomework: 'Отвори домаће', startPractice: 'Покрени вежбу', viewAttendance: 'Погледај присуство', openMessages: 'Отвори поруке', openTests: 'Отвори тестове', rewards: 'Награде', motivation: 'Мотивација', next: 'Даље', newRound: 'Нова рунда', testsSoon: 'Тестови ускоро', homeworkTomorrow: 'Домаћи за сутра', studyLoad: 'Оптерећење', priority: 'Приоритет', noRecordsYet: 'Још нема записа.', classroomFocusMode: 'Режим фокуса', teacherPresenting: 'Наставник презентује. Остани на овом екрану.' }
+    it: { hello: 'Ciao', studentWorkspace: 'Area Studente', classLabel: 'Classe:', heroDesc: 'Segui le lezioni, scrivi appunti in tempo reale e resta connesso con il docente.', liveStudyTools: 'Strumenti studio live', attendance: 'Presenze', home: 'Home', subjects: 'Materie', schedule: 'Orario', homework: 'Compiti', practice: 'Esercizi', grades: 'Voti', tests: 'Test', notifications: 'Notifiche', logout: 'Esci', loading: 'Caricamento...', noDataSchedule: 'Nessun orario disponibile.', noDataHomework: 'Nessun compito disponibile.', noNotifications: 'Nessuna notifica.', openSubjects: 'Apri Materie', openSchedule: 'Apri Orario', openHomework: 'Apri Compiti', startPractice: 'Inizia Esercizi', viewAttendance: 'Vedi Presenze', openMessages: 'Apri Messaggi', openTests: 'Apri Test', rewards: 'Ricompense', motivation: 'Motivazione', next: 'Avanti', newRound: 'Nuovo turno', testsSoon: 'Test in arrivo', homeworkTomorrow: 'Compiti per domani', studyLoad: 'Carico studio', priority: 'Priorità', noRecordsYet: 'Nessun record.', classroomFocusMode: 'Modalità Focus Classe', teacherPresenting: 'Il docente sta presentando. Resta su questa schermata.' },
+    de: { hello: 'Hallo', studentWorkspace: 'Schülerbereich', classLabel: 'Klasse:', heroDesc: 'Verfolge den Unterricht, schreibe Live-Notizen und bleibe mit der Lehrkraft verbunden.', liveStudyTools: 'Live-Lernwerkzeuge', attendance: 'Anwesenheit', home: 'Start', subjects: 'Fächer', schedule: 'Stundenplan', homework: 'Hausaufgaben', practice: 'Übung', grades: 'Noten', tests: 'Tests', notifications: 'Benachrichtigungen', logout: 'Abmelden', loading: 'Lädt...', noDataSchedule: 'Noch keine Stundenplandaten.', noDataHomework: 'Noch keine Hausaufgaben.', noNotifications: 'Noch keine Benachrichtigungen.', openSubjects: 'Fächer öffnen', openSchedule: 'Stundenplan öffnen', openHomework: 'Hausaufgaben öffnen', startPractice: 'Übung starten', viewAttendance: 'Anwesenheit ansehen', openMessages: 'Nachrichten öffnen', openTests: 'Tests öffnen', rewards: 'Belohnungen', motivation: 'Motivation', next: 'Weiter', newRound: 'Neue Runde', testsSoon: 'Tests bald', homeworkTomorrow: 'Hausaufgaben morgen', studyLoad: 'Lernaufwand', priority: 'Priorität', noRecordsYet: 'Noch keine Einträge.', classroomFocusMode: 'Klassen-Fokusmodus', teacherPresenting: 'Die Lehrkraft präsentiert. Bitte auf diesem Bildschirm bleiben.' },
+    el: { hello: 'Γεια σου', studentWorkspace: 'Χώρος Μαθητή', classLabel: 'Τάξη:', heroDesc: 'Παρακολούθησε τα μαθήματά σου, γράψε σημειώσεις ζωντανά και μείνε συνδεδεμένος με τον καθηγητή.', liveStudyTools: 'Εργαλεία μελέτης', attendance: 'Παρουσίες', home: 'Αρχική', subjects: 'Μαθήματα', schedule: 'Πρόγραμμα', homework: 'Εργασίες', practice: 'Εξάσκηση', grades: 'Βαθμοί', tests: 'Τεστ', notifications: 'Ειδοποιήσεις', logout: 'Έξοδος', loading: 'Φόρτωση...', noDataSchedule: 'Δεν υπάρχουν στοιχεία προγράμματος.', noDataHomework: 'Δεν υπάρχουν εργασίες.', noNotifications: 'Δεν υπάρχουν ειδοποιήσεις.', openSubjects: 'Άνοιγμα μαθημάτων', openSchedule: 'Άνοιγμα προγράμματος', openHomework: 'Άνοιγμα εργασιών', startPractice: 'Έναρξη εξάσκησης', viewAttendance: 'Προβολή παρουσιών', openMessages: 'Άνοιγμα μηνυμάτων', openTests: 'Άνοιγμα τεστ', rewards: 'Ανταμοιβές', motivation: 'Κίνητρο', next: 'Επόμενο', newRound: 'Νέος γύρος', testsSoon: 'Τεστ σύντομα', homeworkTomorrow: 'Εργασίες για αύριο', studyLoad: 'Φορτίο μελέτης', priority: 'Προτεραιότητα', noRecordsYet: 'Δεν υπάρχουν εγγραφές.', classroomFocusMode: 'Λειτουργία Συγκέντρωσης', teacherPresenting: 'Ο καθηγητής παρουσιάζει. Μείνε σε αυτή την οθόνη.' },
+    ro: { hello: 'Salut', studentWorkspace: 'Spațiu Elev', classLabel: 'Clasa:', heroDesc: 'Urmărește lecțiile, scrie notițe live și rămâi conectat cu profesorul.', liveStudyTools: 'Instrumente de studiu live', attendance: 'Prezență', home: 'Acasă', subjects: 'Materii', schedule: 'Orar', homework: 'Teme', practice: 'Exercițiu', grades: 'Note', tests: 'Teste', notifications: 'Notificări', logout: 'Ieșire', loading: 'Se încarcă...', noDataSchedule: 'Nu există date de orar.', noDataHomework: 'Nu există teme.', noNotifications: 'Nu există notificări.', openSubjects: 'Deschide Materii', openSchedule: 'Deschide Orar', openHomework: 'Deschide Teme', startPractice: 'Începe Exercițiul', viewAttendance: 'Vezi Prezența', openMessages: 'Deschide Mesaje', openTests: 'Deschide Teste', rewards: 'Recompense', motivation: 'Motivație', next: 'Următorul', newRound: 'Rundă nouă', testsSoon: 'Teste curând', homeworkTomorrow: 'Teme pentru mâine', studyLoad: 'Volum de studiu', priority: 'Prioritate', noRecordsYet: 'Nu există înregistrări.', classroomFocusMode: 'Mod Focus Clasă', teacherPresenting: 'Profesorul prezintă. Rămâi pe acest ecran.' },
+    sr: { hello: 'Здраво', studentWorkspace: 'Учeнички профил', classLabel: 'Разред:', heroDesc: 'Прати часове, пиши белешке уживо и остани повезан са наставником.', liveStudyTools: 'Алати за учење', attendance: 'Присуство', home: 'Почетна', subjects: 'Предмети', schedule: 'Распоред', homework: 'Домаћи', practice: 'Вежба', grades: 'Оцене', tests: 'Тестови', notifications: 'Обавештења', logout: 'Одјава', loading: 'Учитавање...', noDataSchedule: 'Још нема распореда.', noDataHomework: 'Још нема домаћих.', noNotifications: 'Нема обавештења.', openSubjects: 'Отвори предмете', openSchedule: 'Отвори распоред', openHomework: 'Отвори домаће', startPractice: 'Покрени вежбу', viewAttendance: 'Погледај присуство', openMessages: 'Отвори поруке', openTests: 'Отвори тестове', rewards: 'Награде', motivation: 'Мотивација', next: 'Даље', newRound: 'Нова рунда', testsSoon: 'Тестови ускоро', homeworkTomorrow: 'Домаћи за сутра', studyLoad: 'Оптерећење', priority: 'Приоритет', noRecordsYet: 'Још нема записа.', classroomFocusMode: 'Режим фокуса', teacherPresenting: 'Наставник презентује. Остани на овом екрану.' }
 };
+
+function deriveNameFromEmail(email) {
+    if (!email) return 'Student';
+    const local = String(email).split('@')[0] || '';
+    const first = local.split(/[-._]/)[0] || 'Student';
+    return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+function getCurrentStudentName() {
+    return currentStudentDisplayName || user?.displayName || deriveNameFromEmail(user?.email) || 'Student';
+}
 const rewardsStorageKey = `techdesk_rewards_${user?.email || user?.egn || 'student'}`;
 let rewardsState = {
     xp: 0,
@@ -186,6 +201,8 @@ function updateLanguageTexts() {
     if (eyebrow) eyebrow.textContent = t('studentWorkspace');
     const classP = document.querySelector('.greeting p');
     if (classP) classP.firstChild.textContent = `${t('classLabel')} `;
+    const h2 = document.querySelector('.greeting h2');
+    if (h2 && h2.firstChild) h2.firstChild.nodeValue = `${t('hello')}, `;
     const greetDesc = document.querySelector('.greeting p:last-child');
     if (greetDesc) greetDesc.textContent = t('heroDesc');
     const heroPill = document.querySelector('.hero-pill');
@@ -291,9 +308,9 @@ function setClassroomLock(enabled, message = '') {
 function emitStudentPresence(state = 'active') {
     if (isDemo) return;
     socket.emit('student-presence', {
-        studentName: user?.displayName || 'Student',
+        studentName: getCurrentStudentName(),
         studentEgn: user?.egn || null,
-        className: user?.className || null,
+        className: currentStudentClassName || user?.className || null,
         state,
         updatedAt: Date.now()
     });
@@ -304,11 +321,38 @@ if (!user || user.role !== 'STUDENT') {
 }
 
 if (isDemo && demoData) {
-    document.getElementById('studentName').textContent = demoData.student.name;
-    document.getElementById('studentClass').textContent = demoData.student.className;
+    currentStudentDisplayName = demoData.student.name || 'Student';
+    currentStudentClassName = demoData.student.className || '-';
+    document.getElementById('studentName').textContent = currentStudentDisplayName;
+    document.getElementById('studentClass').textContent = currentStudentClassName;
 } else {
-    document.getElementById('studentName').textContent = user.displayName || 'Student';
-    document.getElementById('studentClass').textContent = user.className || '-';
+    currentStudentDisplayName = user.displayName || deriveNameFromEmail(user.email) || 'Student';
+    currentStudentClassName = user.className || '-';
+    document.getElementById('studentName').textContent = currentStudentDisplayName;
+    document.getElementById('studentClass').textContent = currentStudentClassName;
+}
+
+async function loadStudentIdentity() {
+    if (isDemo) return;
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/student/me?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        if (!res.ok) return;
+        const profile = await res.json();
+        if (!profile) return;
+        const firstName = String(profile.firstName || '').trim();
+        const fallbackName = String((profile.firstName || '') + ' ' + (profile.lastName || '')).trim();
+        currentStudentDisplayName = firstName || fallbackName || currentStudentDisplayName;
+        currentStudentClassName = profile.className || currentStudentClassName;
+        const nameEl = document.getElementById('studentName');
+        const classEl = document.getElementById('studentClass');
+        if (nameEl) nameEl.textContent = currentStudentDisplayName;
+        if (classEl) classEl.textContent = currentStudentClassName;
+        updateLanguageTexts();
+    } catch (error) {
+        console.error('Could not load student identity:', error);
+    }
 }
 
 function insertDemoBanner() {
@@ -513,7 +557,7 @@ function sendAiTaskData(taskData) {
 
 function trackTaskCompletion(taskData) {
     const payload = {
-        studentId: user.displayName || 'Student',
+        studentId: getCurrentStudentName(),
         completed: true,
         skipped: false,
         className: user.className || localStorage.getItem('currentClassName') || null,
@@ -1112,12 +1156,13 @@ switchStudentPanel('home');
 loadRewardsState();
 renderRewards();
 updateLanguageTexts();
+loadStudentIdentity();
 emitStudentPresence('active');
 loadStudentDirectoryUsers();
 
 if (!isDemo) {
     socket.on('attendance-updated', (data) => {
-        if (data?.studentName && data.studentName === user.displayName) {
+        if (data?.studentName && data.studentName === getCurrentStudentName()) {
             loadAttendanceSummary();
         }
     });
@@ -1127,13 +1172,13 @@ if (!isDemo) {
     });
 
     socket.on('test-graded', (data) => {
-        if (data?.studentName && data.studentName === user.displayName) {
+        if (data?.studentName && data.studentName === getCurrentStudentName()) {
             loadStudentTests();
         }
     });
 
     socket.on('grade-updated', (data) => {
-        if (data?.studentName && data.studentName === user.displayName) {
+        if (data?.studentName && data.studentName === getCurrentStudentName()) {
             loadStudentGrades();
             loadStudentNotifications();
         }
@@ -1141,21 +1186,24 @@ if (!isDemo) {
 
     socket.on('classroom-lock', (data) => {
         const targetClass = data?.className;
-        if (!targetClass || !user?.className || targetClass === user.className) {
-            setClassroomLock(true, data?.message || 'Teacher is presenting. Stay on this screen.');
+        const myClass = currentStudentClassName || user?.className || null;
+        if (!targetClass || !myClass || targetClass === myClass) {
+            setClassroomLock(true, data?.message || t('teacherPresenting'));
         }
     });
 
     socket.on('classroom-unlock', (data) => {
         const targetClass = data?.className;
-        if (!targetClass || !user?.className || targetClass === user.className) {
+        const myClass = currentStudentClassName || user?.className || null;
+        if (!targetClass || !myClass || targetClass === myClass) {
             setClassroomLock(false);
         }
     });
 
     socket.on('classroom-sync-page', (data) => {
         const targetClass = data?.className;
-        if (targetClass && user?.className && targetClass !== user.className) return;
+        const myClass = currentStudentClassName || user?.className || null;
+        if (targetClass && myClass && targetClass !== myClass) return;
         const panel = String(data?.panel || 'subjects');
         switchStudentPanel(panel);
         if (panel === 'subjects') {
@@ -1271,7 +1319,7 @@ async function submitTest(testId, preparedAnswersJson = null, closeWorkspace = f
         });
         if (!res.ok) throw new Error(`Submit failed ${res.status}`);
         await res.json();
-        socket.emit('test-submitted', { testId, studentName: user.displayName });
+        socket.emit('test-submitted', { testId, studentName: getCurrentStudentName() });
         rewardsState.testsSubmitted += 1;
         addReward(24, rewardsState.testsSubmitted >= 1 ? 'First Submission' : null, 'Test submitted');
         if (closeWorkspace) await closeFullscreenTest();
