@@ -87,6 +87,40 @@
     background-size: 25px 25px;
 }
 
+.notebook-canvas-wrapper.dotted {
+    background-color: white;
+    background-image: radial-gradient(circle, #b0c4de 1px, transparent 1px);
+    background-size: 18px 18px;
+}
+
+.page-controls {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.page-controls button {
+    padding: 7px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #fff;
+    color: #0d1b3e;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.page-controls button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.page-indicator {
+    font-weight: 700;
+    color: #0d1b3e;
+}
+
 .attendance-card {
     background: rgba(255, 255, 255, 0.92);
     border-radius: 14px;

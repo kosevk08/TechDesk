@@ -90,10 +90,9 @@ public class NotebookController {
     @GetMapping("/teacher")
     public ResponseEntity<List<NotebookResponse>> getTeacherNotebooks() {
         String egn = currentUserService.getEgn();
-        if (egn == null) return ResponseEntity.ok(List.of());
         List<String> subjects = teacherService.getTeacherSubjects(egn);
         List<NotebookResponse> responses;
-        if (subjects == null || subjects.isEmpty()) {
+        if (egn == null || subjects == null || subjects.isEmpty()) {
             responses = notebookService.getAllNotebooks()
                 .stream()
                 .map(n -> toResponse(n, true))
@@ -113,6 +112,30 @@ public class NotebookController {
         return notebook.map(n -> ResponseEntity.ok(toResponse(n, true))).orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/pages/{egn}/{subject}")
+    public ResponseEntity<List<Integer>> getPages(@PathVariable String egn, @PathVariable String subject) {
+        List<Integer> pages = notebookRepository.findByStudentEgnAndSubjectOrderByPageNumberAsc(egn, subject)
+            .stream()
+            .map(Notebook::getPageNumber)
+            .filter(page -> page > 0)
+            .distinct()
+            .toList();
+        return ResponseEntity.ok(pages);
+    }
+
+    @GetMapping("/student/name/pages/{name}/{subject}")
+    public ResponseEntity<List<Integer>> getPagesByStudentName(@PathVariable String name, @PathVariable String subject) {
+        String egn = nameLookupService.studentEgnByName(name);
+        if (egn == null) return ResponseEntity.ok(List.of());
+        List<Integer> pages = notebookRepository.findByStudentEgnAndSubjectOrderByPageNumberAsc(egn, subject)
+            .stream()
+            .map(Notebook::getPageNumber)
+            .filter(page -> page > 0)
+            .distinct()
+            .toList();
+        return ResponseEntity.ok(pages);
+    }
+
     @GetMapping("/me/{subject}/{page}")
     public ResponseEntity<NotebookResponse> getMyPage(@PathVariable String subject, @PathVariable int page) {
         String egn = currentUserService.getEgn();
@@ -127,6 +150,46 @@ public class NotebookController {
         if (egn == null) return ResponseEntity.notFound().build();
         Optional<Notebook> notebook = notebookService.getByStudentEgnAndSubjectAndPage(egn, subject, page);
         return notebook.map(n -> ResponseEntity.ok(toResponse(n, true))).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/settings/{egn}/{subject}")
+    public ResponseEntity<Map<String, String>> getNotebookSettings(@PathVariable String egn, @PathVariable String subject) {
+        Optional<Notebook> settings = notebookService.getByStudentEgnAndSubjectAndPage(egn, subject, 0);
+        String style = settings.map(Notebook::getStyle).filter(Objects::nonNull).orElse("lined");
+        return ResponseEntity.ok(Map.of("style", style));
+    }
+
+    @GetMapping("/settings/name/{name}/{subject}")
+    public ResponseEntity<Map<String, String>> getNotebookSettingsByName(@PathVariable String name, @PathVariable String subject) {
+        String egn = nameLookupService.studentEgnByName(name);
+        if (egn == null) return ResponseEntity.ok(Map.of("style", "lined"));
+        return getNotebookSettings(egn, subject);
+    }
+
+    @PostMapping("/settings")
+    public ResponseEntity<Map<String, String>> saveNotebookSettings(@RequestBody Map<String, String> body) {
+        String studentEgn = body.get("studentEgn");
+        String subject = body.get("subject");
+        String style = body.getOrDefault("style", "lined");
+        if (studentEgn == null || subject == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (!List.of("lined", "squared", "dotted").contains(style)) {
+            style = "lined";
+        }
+
+        Notebook settings = notebookService.getByStudentEgnAndSubjectAndPage(studentEgn, subject, 0).orElseGet(Notebook::new);
+        settings.setStudentEgn(studentEgn);
+        settings.setSubject(subject);
+        settings.setSchoolYear("2025-2026");
+        settings.setFormat("A4");
+        settings.setStyle(style);
+        settings.setColor("#e53e3e");
+        settings.setContent("");
+        settings.setPageNumber(0);
+        settings.setLastUpdated(LocalDateTime.now());
+        processSave(settings);
+        return ResponseEntity.ok(Map.of("status", "ok", "style", style));
     }
 
     /**

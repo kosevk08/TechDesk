@@ -1,6 +1,6 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const socket = io();
+const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
@@ -124,68 +124,152 @@ function renderDemoHomework() {
 }
 
 let currentViewStudent = null;
+let currentViewStudentEgn = null;
 let currentViewSubject = null;
 let currentViewPage = 1;
+let currentViewMaxPage = 1;
+let currentNotebookStyle = 'lined';
 const teacherCanvas = document.getElementById('teacherCanvas');
 const tCtx = teacherCanvas.getContext('2d');
 const aiStatusText = document.getElementById('aiStatusText');
 const aiStatusBanner = document.getElementById('aiStatusBanner');
 let teacherTool = 'pen';
-let teacherColor = '#e53e3e';
 let teacherDrawing = false;
 let teacherLastX = 0;
 let teacherLastY = 0;
+let teacherAutosaveTimer = null;
 
 function setTeacherTool(tool) {
-    teacherTool = tool;
-    document.getElementById('teacherPenBtn')?.classList.toggle('active', tool === 'pen');
-    document.getElementById('teacherEraserBtn')?.classList.toggle('active', tool === 'eraser');
+    teacherTool = 'pen';
+    document.getElementById('teacherPenBtn')?.classList.add('active');
 }
 
-function setTeacherColor(color, btnId) {
-    teacherColor = color;
-    document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
-    const button = document.getElementById(btnId);
-    if (button) button.classList.add('active');
+function setNotebookVisualStyle(style) {
+    currentNotebookStyle = ['lined', 'squared', 'dotted'].includes(style) ? style : 'lined';
+    const wrapper = document.getElementById('notebookCanvasWrapper');
+    if (wrapper) wrapper.className = `notebook-canvas-wrapper ${currentNotebookStyle}`;
 }
 
-function clearTeacherCanvas() {
-    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
-    if (currentViewStudent && currentViewSubject) {
-        socket.emit('clear-canvas', {
-            studentName: currentViewStudent,
-            subject: currentViewSubject,
-            page: currentViewPage,
-            authorRole: 'TEACHER'
+function updateTeacherPageControls() {
+    document.getElementById('teacherPageIndicator').textContent = `Page ${currentViewPage} / ${currentViewMaxPage}`;
+    document.getElementById('teacherPrevBtn').disabled = currentViewPage <= 1;
+    document.getElementById('teacherNextBtn').disabled = currentViewPage >= currentViewMaxPage;
+}
+
+async function loadTeacherPagesMeta() {
+    if (isDemo || !currentViewStudent || !currentViewSubject) {
+        currentViewMaxPage = 1;
+        updateTeacherPageControls();
+        return;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/pages/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}`, {
+            headers: authHeaders()
         });
+        const pages = res.ok ? await res.json() : [];
+        currentViewMaxPage = Math.max(1, ...(pages || [1]));
+    } catch {
+        currentViewMaxPage = 1;
+    }
+    updateTeacherPageControls();
+}
+
+async function changeTeacherPage(direction) {
+    const target = currentViewPage + direction;
+    if (target < 1 || target > currentViewMaxPage) return;
+    currentViewPage = target;
+    updateTeacherPageControls();
+    document.getElementById('notebookTitle').textContent =
+        `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
+    tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+    await loadTeacherPage();
+}
+
+async function assignNotebookStyle() {
+    if (!currentViewStudentEgn || !currentViewSubject || isDemo) return;
+    const style = document.getElementById('notebookStyleSelect')?.value || 'lined';
+    try {
+        await fetch(`${BACKEND_BASE_URL}/api/notebook/settings`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                studentEgn: currentViewStudentEgn,
+                subject: currentViewSubject,
+                style
+            })
+        });
+        setNotebookVisualStyle(style);
+    } catch (error) {
+        console.error('Could not assign style:', error);
     }
 }
 
 function drawTeacher(x0, y0, x1, y1) {
     if (!currentViewStudent || !currentViewSubject) return;
     const size = document.getElementById('teacherSize')?.value || 3;
-    if (teacherTool === 'eraser') {
-        tCtx.clearRect(x1 - 10, y1 - 10, 20, 20);
-    } else {
-        tCtx.beginPath();
-        tCtx.moveTo(x0, y0);
-        tCtx.lineTo(x1, y1);
-        tCtx.strokeStyle = teacherColor;
-        tCtx.lineWidth = size;
-        tCtx.lineCap = 'round';
-        tCtx.lineJoin = 'round';
-        tCtx.stroke();
-    }
+    tCtx.beginPath();
+    tCtx.moveTo(x0, y0);
+    tCtx.lineTo(x1, y1);
+    tCtx.strokeStyle = '#e53e3e';
+    tCtx.lineWidth = size;
+    tCtx.lineCap = 'round';
+    tCtx.lineJoin = 'round';
+    tCtx.stroke();
     socket.emit('draw-stroke', {
         x0, y0, x1, y1,
-        color: teacherTool === 'eraser' ? null : teacherColor,
+        color: '#e53e3e',
         size,
-        tool: teacherTool,
+        tool: 'pen',
         studentName: currentViewStudent,
         subject: currentViewSubject,
         page: currentViewPage,
         authorRole: 'TEACHER'
     });
+    scheduleTeacherSave();
+}
+
+function scheduleTeacherSave() {
+    if (teacherAutosaveTimer) clearTimeout(teacherAutosaveTimer);
+    teacherAutosaveTimer = setTimeout(() => saveTeacherOverlay(), 600);
+}
+
+async function saveTeacherOverlay() {
+    if (!currentViewStudentEgn || !currentViewSubject || isDemo) return;
+    const baseImg = document.getElementById('notebookImage');
+    const merged = document.createElement('canvas');
+    merged.width = teacherCanvas.width;
+    merged.height = teacherCanvas.height;
+    const mtx = merged.getContext('2d');
+    if (baseImg && baseImg.src) {
+        await new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+                mtx.drawImage(img, 0, 0, merged.width, merged.height);
+                resolve();
+            };
+            img.onerror = resolve;
+            img.src = baseImg.src;
+        });
+    }
+    mtx.drawImage(teacherCanvas, 0, 0, merged.width, merged.height);
+    try {
+        await fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+                studentEgn: currentViewStudentEgn,
+                subject: currentViewSubject,
+                schoolYear: '2025-2026',
+                format: 'A4',
+                style: currentNotebookStyle,
+                color: '#e53e3e',
+                content: merged.toDataURL(),
+                pageNumber: currentViewPage
+            })
+        });
+    } catch (error) {
+        console.error('Could not save teacher notes:', error);
+    }
 }
 
 function showSection(sectionId) {
@@ -206,31 +290,21 @@ socket.on('draw-stroke', (data) => {
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         document.getElementById('liveBadge').style.display = 'inline';
-        if (data.tool === 'eraser') {
-            tCtx.clearRect(data.x1 - 10, data.y1 - 10, 20, 20);
-        } else {
-            tCtx.beginPath();
-            tCtx.moveTo(data.x0, data.y0);
-            tCtx.lineTo(data.x1, data.y1);
-            tCtx.strokeStyle = data.color;
-            tCtx.lineWidth = data.size;
-            tCtx.lineCap = 'round';
-            tCtx.stroke();
-        }
-    }
-});
-
-socket.on('clear-canvas', (data) => {
-    if (data.studentName === currentViewStudent &&
-        subjectMatch(data.subject, currentViewSubject) &&
-        parseInt(data.page) === parseInt(currentViewPage)) {
-        tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+        tCtx.beginPath();
+        tCtx.moveTo(data.x0, data.y0);
+        tCtx.lineTo(data.x1, data.y1);
+        tCtx.strokeStyle = data.color || '#1a56db';
+        tCtx.lineWidth = data.size || 2;
+        tCtx.lineCap = 'round';
+        tCtx.stroke();
     }
 });
 
 socket.on('page-change', (data) => {
     if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
         currentViewPage = data.page;
+        currentViewMaxPage = Math.max(currentViewMaxPage, currentViewPage);
+        updateTeacherPageControls();
         document.getElementById('notebookTitle').textContent =
             `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
         tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
@@ -494,12 +568,25 @@ async function loadTeacherPage() {
             renderDemoNotebookPage(notebook);
             return;
         }
+        const styleRes = await fetch(`${BACKEND_BASE_URL}/api/notebook/settings/name/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}`, {
+            headers: authHeaders()
+        });
+        const stylePayload = styleRes.ok ? await styleRes.json() : { style: 'lined' };
+        setNotebookVisualStyle(stylePayload.style || 'lined');
+        const styleSelect = document.getElementById('notebookStyleSelect');
+        if (styleSelect) styleSelect.value = currentNotebookStyle;
+
         const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
             headers: authHeaders()
         });
         const img = document.getElementById('notebookImage');
+        tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
         if (res.ok) {
             const notebook = await res.json();
+            if (notebook?.style) {
+                setNotebookVisualStyle(notebook.style);
+                if (styleSelect) styleSelect.value = notebook.style;
+            }
             if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
                 img.src = notebook.content;
                 img.style.display = 'block';
@@ -559,7 +646,7 @@ async function loadNotebooks() {
 
             document.querySelectorAll('.view-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    viewNotebook(null, btn.dataset.student, btn.dataset.subject);
+                    viewNotebook(null, null, btn.dataset.student, btn.dataset.subject);
                 });
             });
             return;
@@ -601,6 +688,7 @@ async function loadNotebooks() {
                 </div>
                 <button class="view-btn"
                     data-id="${notebook.id}"
+                    data-egn="${notebook.studentEgn || ''}"
                     data-student="${studentName}"
                     data-subject="${notebook.subject}">
                     View
@@ -611,7 +699,7 @@ async function loadNotebooks() {
 
         document.querySelectorAll('.view-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                viewNotebook(btn.dataset.id, btn.dataset.student, btn.dataset.subject);
+                viewNotebook(btn.dataset.id, btn.dataset.egn, btn.dataset.student, btn.dataset.subject);
             });
         });
 
@@ -620,8 +708,10 @@ async function loadNotebooks() {
     }
 }
 
-function viewNotebook(id, studentName, subject) {
+function viewNotebook(id, studentEgn, studentName, subject) {
+    document.body.classList.add('notebook-focus');
     currentViewStudent = studentName;
+    currentViewStudentEgn = studentEgn || null;
     currentViewSubject = subject;
     currentViewPage = 1;
 
@@ -631,20 +721,22 @@ function viewNotebook(id, studentName, subject) {
     document.getElementById('liveBadge').style.display = 'none';
 
     const wrapper = document.getElementById('notebookCanvasWrapper');
-    const isMaths = subject.toLowerCase() === 'maths';
-    wrapper.className = 'notebook-canvas-wrapper ' + (isMaths ? 'squared' : 'lined');
+    wrapper.className = 'notebook-canvas-wrapper lined';
 
     teacherCanvas.width = wrapper.clientWidth;
     teacherCanvas.height = wrapper.clientHeight;
     tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
 
-    loadTeacherPage();
+    loadTeacherPagesMeta().then(loadTeacherPage);
 }
 
 function backToList() {
+    document.body.classList.remove('notebook-focus');
     currentViewStudent = null;
+    currentViewStudentEgn = null;
     currentViewSubject = null;
     currentViewPage = 1;
+    currentViewMaxPage = 1;
     document.getElementById('liveBadge').style.display = 'none';
     document.getElementById('notebookViewer').style.display = 'none';
     document.getElementById('notebooksSection').style.display = 'block';
