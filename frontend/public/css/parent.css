@@ -2,6 +2,30 @@
     margin-top: 24px;
 }
 
+.card.section-card {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(245, 251, 255, 0.95));
+    border: 1px solid rgba(36, 92, 115, 0.14);
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+#parentTestsList,
+#parentGradesList,
+#parentNotifications {
+    display: grid;
+    gap: 12px;
+}
+
+#parentTestsList > div,
+#parentGradesList > div,
+#parentNotifications > div,
+#parentNotifications > p {
+    border-radius: 14px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    padding: 12px 14px;
+}
+
 .attendance-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -9,15 +33,22 @@
 }
 
 .notebook-card {
-    background: rgba(255, 255, 255, 0.92);
-    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(236, 245, 255, 0.9));
+    border-radius: 16px;
     padding: 20px;
-    border: 1px solid rgba(15, 23, 42, 0.1);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(36, 92, 115, 0.18);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.1);
     margin-bottom: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 14px;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.notebook-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
 }
 
 .notebook-card h4 {

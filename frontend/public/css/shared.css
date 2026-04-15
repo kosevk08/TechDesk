@@ -1,26 +1,73 @@
 .feedback-launch {
     position: fixed;
-    right: 24px;
-    bottom: 24px;
+    left: 22px;
+    bottom: 22px;
     z-index: 50;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    justify-items: center;
     gap: 6px;
 }
 
 .feedback-btn {
-    padding: 12px 16px;
-    border-radius: 999px;
-    border: none;
-    background: #0d1b3e;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    background: radial-gradient(circle at 35% 30%, #60a5fa 0%, #1d4ed8 78%);
     color: #ffffff;
-    font-weight: 700;
-    box-shadow: 0 14px 28px rgba(13, 27, 62, 0.25);
+    box-shadow: 0 10px 24px rgba(29, 78, 216, 0.35);
     cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .feedback-btn:hover {
-    background: #1f4f67;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 14px 30px rgba(29, 78, 216, 0.42);
+    filter: saturate(1.06);
+}
+
+.feedback-btn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    animation: feedbackPulse 2.2s infinite;
+}
+
+.feedback-btn-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.feedback-hint {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(30, 58, 138, 0.18);
+    border-radius: 999px;
+    padding: 3px 8px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    pointer-events: none;
+}
+
+.feedback-launch:hover .feedback-hint {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@keyframes feedbackPulse {
+    0% { transform: scale(0.9); opacity: 0.7; }
+    70% { transform: scale(1.16); opacity: 0; }
+    100% { transform: scale(1.16); opacity: 0; }
 }
 
 .feedback-modal {
@@ -111,4 +158,16 @@
 .feedback-status {
     font-size: 0.85rem;
     color: #2f7a97;
+}
+
+@media (max-width: 768px) {
+    .feedback-launch {
+        left: 14px;
+        bottom: 14px;
+    }
+
+    .feedback-btn {
+        width: 46px;
+        height: 46px;
+    }
 }

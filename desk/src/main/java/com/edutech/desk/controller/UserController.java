@@ -2,6 +2,12 @@ package com.edutech.desk.controller;
 
 import com.edutech.desk.entities.User;
 import com.edutech.desk.entities.Role;
+import com.edutech.desk.entities.Student;
+import com.edutech.desk.entities.Teacher;
+import com.edutech.desk.entities.Parent;
+import com.edutech.desk.repository.StudentRepository;
+import com.edutech.desk.repository.TeacherRepository;
+import com.edutech.desk.repository.ParentRepository;
 import com.edutech.desk.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +29,15 @@ public class UserController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private TeacherRepository teacherRepository;
+
+    @Autowired
+    private ParentRepository parentRepository;
 
     private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
@@ -130,6 +145,8 @@ public class UserController {
             {"9000000004", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true"}
         };
 
+        int created = 0;
+        int skipped = 0;
         for (String[] u : users) {
             User user = new User();
             user.setEgn(u[0]);
@@ -137,8 +154,59 @@ public class UserController {
             user.setPassword(passwordEncoder.encode(u[2]));
             user.setRole(Role.valueOf(u[3]));
             user.setDemo(Boolean.parseBoolean(u[4]));
+            String validation = validateProfileLink(user);
+            if (validation != null) {
+                skipped++;
+                continue;
+            }
             userService.register(user);
+            created++;
         }
-        return ResponseEntity.ok("All users created successfully!");
+        return ResponseEntity.ok("Users setup complete. Created: " + created + ", skipped: " + skipped);
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@RequestBody User user) {
+        if (user == null || user.getEmail() == null || user.getPassword() == null || user.getRole() == null || user.getEgn() == null) {
+            return ResponseEntity.badRequest().body("Missing required fields");
+        }
+        String validation = validateProfileLink(user);
+        if (validation != null) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(validation);
+        }
+        if (!user.getPassword().startsWith("$2a$") && !user.getPassword().startsWith("$2b$")) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        return ResponseEntity.ok(userService.register(user));
+    }
+
+    private String validateProfileLink(User user) {
+        if (user.isDemo()) return null;
+
+        if (user.getRole() == Role.STUDENT) {
+            Student s = studentRepository.findById(user.getEgn()).orElse(null);
+            if (s == null) s = studentRepository.findByEmail(user.getEmail());
+            if (s == null) return "Student profile must exist in students table";
+            return null;
+        }
+
+        if (user.getRole() == Role.TEACHER) {
+            Teacher t = teacherRepository.findById(user.getEgn()).orElse(null);
+            if (t == null) t = teacherRepository.findByEmail(user.getEmail());
+            if (t == null) return "Teacher profile must exist in teachers table";
+            return null;
+        }
+
+        if (user.getRole() == Role.PARENT) {
+            Parent p = parentRepository.findById(user.getEgn()).orElse(null);
+            if (p == null) p = parentRepository.findByEmail(user.getEmail());
+            if (p == null) return "Parent profile must exist in parents table";
+            if (p.getChildEgn() == null || studentRepository.findById(p.getChildEgn()).isEmpty()) {
+                return "Parent must be linked to an existing student";
+            }
+            return null;
+        }
+
+        return null;
     }
 }

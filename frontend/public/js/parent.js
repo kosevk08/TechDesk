@@ -136,11 +136,19 @@ function showSection(sectionId) {
 
 async function loadNotebooks() {
     try {
+        // Always show notebook list first.
+        document.body.classList.remove('notebook-focus');
+        currentSubject = '';
+        currentStudentEgn = '';
+        currentPage = 1;
+        document.getElementById('notebookViewer').style.display = 'none';
+
         showSection('notebooksSection');
         if (isDemo && demoData) {
             const section = document.getElementById('notebooksSection');
             const list = document.getElementById('notebooksList');
             section.style.display = 'block';
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             list.innerHTML = '';
 
             demoData.notebooks.forEach(notebook => {
@@ -185,6 +193,7 @@ async function loadNotebooks() {
         const section = document.getElementById('notebooksSection');
         const list = document.getElementById('notebooksList');
         section.style.display = 'block';
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         list.innerHTML = '';
 
         if (uniqueNotebooks.length === 0) {

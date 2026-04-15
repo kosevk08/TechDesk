@@ -138,6 +138,7 @@ let teacherDrawing = false;
 let teacherLastX = 0;
 let teacherLastY = 0;
 let teacherAutosaveTimer = null;
+const liveActivityMap = new Map();
 
 function setTeacherTool(tool) {
     teacherTool = 'pen';
@@ -286,7 +287,50 @@ function subjectMatch(a, b) {
     return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
 }
 
+function markLiveActivity(studentName, subject, page, role = 'STUDENT') {
+    if (!studentName || !subject) return;
+    const key = `${studentName}__${subject}`;
+    liveActivityMap.set(key, {
+        studentName,
+        subject,
+        page: Number(page || 1),
+        role,
+        updatedAt: Date.now()
+    });
+    renderLiveActivity();
+}
+
+function renderLiveActivity() {
+    const container = document.getElementById('liveActivityList');
+    if (!container) return;
+    const now = Date.now();
+    const items = Array.from(liveActivityMap.values())
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, 12);
+
+    if (!items.length) {
+        container.innerHTML = '<p class="empty-state">No live writing activity yet.</p>';
+        return;
+    }
+
+    container.innerHTML = items.map(item => {
+        const seconds = Math.floor((now - item.updatedAt) / 1000);
+        const isLive = seconds <= 15;
+        return `
+            <div class="live-activity-item">
+                <div>
+                    <strong>${item.studentName}</strong>
+                    <div class="live-activity-meta">${item.subject} • Page ${item.page} • ${item.role}</div>
+                    <div class="live-activity-meta">Last update: ${seconds}s ago</div>
+                </div>
+                <span class="live-pill ${isLive ? 'live' : 'idle'}">${isLive ? 'Writing now' : 'Idle'}</span>
+            </div>
+        `;
+    }).join('');
+}
+
 socket.on('draw-stroke', (data) => {
+    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
     if (data.studentName === currentViewStudent &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
@@ -302,6 +346,7 @@ socket.on('draw-stroke', (data) => {
 });
 
 socket.on('page-change', (data) => {
+    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
     if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
         currentViewPage = data.page;
         currentViewMaxPage = Math.max(currentViewMaxPage, currentViewPage);
@@ -560,6 +605,7 @@ if (!isDemo) {
 
 loadNotifications();
 attachTeacherCanvasEvents();
+setInterval(renderLiveActivity, 3000);
 
 async function loadTeacherPage() {
     try {
@@ -620,27 +666,73 @@ function renderDemoNotebookPage(notebook) {
     }
 }
 
+function formatNotebookUpdated(value) {
+    if (!value) return 'No activity yet';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Updated recently';
+    return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function avatarInitials(name) {
+    const parts = String(name || 'Student').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'ST';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
 async function loadNotebooks() {
     try {
+        // Always open notebooks list first, never auto-open a specific notebook.
+        document.body.classList.remove('notebook-focus');
+        currentViewStudent = null;
+        currentViewStudentEgn = null;
+        currentViewSubject = null;
+        currentViewPage = 1;
+        currentViewMaxPage = 1;
+        document.getElementById('notebookViewer').style.display = 'none';
+
         if (isDemo && demoData) {
             const section = document.getElementById('notebooksSection');
             const list = document.getElementById('notebooksList');
             showSection('notebooksSection');
             section.style.display = 'block';
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
             list.innerHTML = '';
 
+            const notebookByStudentSubject = new Map();
             demoData.notebooks.forEach(notebook => {
+                const key = `${notebook.studentName}__${notebook.subject}`;
+                if (!notebookByStudentSubject.has(key) || (notebook.page || 1) > (notebookByStudentSubject.get(key).page || 1)) {
+                    notebookByStudentSubject.set(key, notebook);
+                }
+            });
+            const demoCards = Array.from(notebookByStudentSubject.values());
+            list.className = 'notebook-grid';
+
+            demoCards.forEach(notebook => {
                 const card = document.createElement('div');
                 card.className = 'notebook-card';
                 card.innerHTML = `
-                    <div>
-                        <h4>${notebook.studentName}</h4>
-                        <p>Subject: ${notebook.subject} | Page: ${notebook.page}</p>
+                    <div class="notebook-card-head">
+                        <span class="notebook-avatar">${avatarInitials(notebook.studentName)}</span>
+                        <div>
+                            <h4>${notebook.studentName}</h4>
+                            <p class="notebook-subject">${notebook.subject}</p>
+                        </div>
+                    </div>
+                    <div class="notebook-meta">
+                        <span class="notebook-chip">Demo</span>
+                        <span class="notebook-chip">Page ${notebook.page || 1}</span>
                     </div>
                     <button class="view-btn"
                         data-student="${notebook.studentName}"
                         data-subject="${notebook.subject}">
-                        Preview
+                        Open Notebook
                     </button>
                 `;
                 list.appendChild(card);
@@ -672,6 +764,8 @@ async function loadNotebooks() {
         const list = document.getElementById('notebooksList');
         showSection('notebooksSection');
         section.style.display = 'block';
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        list.className = 'notebook-grid';
         list.innerHTML = '';
 
         if (uniqueNotebooks.length === 0) {
@@ -684,16 +778,23 @@ async function loadNotebooks() {
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.innerHTML = `
-                <div>
-                    <h4>${studentName}</h4>
-                    <p>Subject: ${notebook.subject} | Year: ${notebook.schoolYear}</p>
+                <div class="notebook-card-head">
+                    <span class="notebook-avatar">${avatarInitials(studentName)}</span>
+                    <div>
+                        <h4>${studentName}</h4>
+                        <p class="notebook-subject">${notebook.subject}</p>
+                    </div>
+                </div>
+                <div class="notebook-meta">
+                    <span class="notebook-chip">${notebook.schoolYear || 'N/A'}</span>
+                    <span class="notebook-chip">${formatNotebookUpdated(notebook.lastUpdated)}</span>
                 </div>
                 <button class="view-btn"
                     data-id="${notebook.id}"
                     data-egn="${notebook.studentEgn || ''}"
                     data-student="${studentName}"
                     data-subject="${notebook.subject}">
-                    View
+                    Open Notebook
                 </button>
             `;
             list.appendChild(card);
@@ -1151,6 +1252,35 @@ function renderTests(tests) {
     }).join('');
 }
 
+function escapeHtml(value) {
+    return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function formatSubmissionAnswers(answersJson) {
+    if (!answersJson) return '<pre class="test-meta"></pre>';
+    try {
+        const parsed = JSON.parse(answersJson);
+        if (parsed?.mode === 'canvas_test') {
+            const note = escapeHtml(parsed.note || 'No note.');
+            return `
+                <div class="test-meta">Canvas exam submission received.</div>
+                <details>
+                    <summary>Show student note</summary>
+                    <pre class="test-meta">${note}</pre>
+                </details>
+            `;
+        }
+    } catch {
+        // Keep default rendering below.
+    }
+    return `<pre class="test-meta">${escapeHtml(answersJson)}</pre>`;
+}
+
 async function loadSubmissions(testId) {
     const panel = document.getElementById('submissionsPanel');
     const list = document.getElementById('submissionsList');
@@ -1170,7 +1300,7 @@ async function loadSubmissions(testId) {
                     <strong>Student: ${demoData.student.name}</strong>
                     <div class="test-meta">Status: ${sub.status || 'SUBMITTED'}</div>
                     <div class="test-meta">Answers:</div>
-                    <pre class="test-meta">${sub.answersJson || ''}</pre>
+                    ${formatSubmissionAnswers(sub.answersJson)}
                     <div class="test-row">
                         <input type="number" min="0" placeholder="Score" id="score-${sub.id}" value="${sub.score ?? ''}">
                         <input type="text" placeholder="Feedback" id="feedback-${sub.id}" value="${sub.feedback ?? ''}">
@@ -1194,7 +1324,7 @@ async function loadSubmissions(testId) {
                 <strong>Student: ${sub.studentName || 'Student'}</strong>
                 <div class="test-meta">Status: ${sub.status || 'SUBMITTED'}</div>
                 <div class="test-meta">Answers:</div>
-                <pre class="test-meta">${sub.answersJson || ''}</pre>
+                ${formatSubmissionAnswers(sub.answersJson)}
                 <div class="test-row">
                     <input type="number" min="0" placeholder="Score" id="score-${sub.id}" value="${sub.score ?? ''}">
                     <input type="text" placeholder="Feedback" id="feedback-${sub.id}" value="${sub.feedback ?? ''}">

@@ -93,6 +93,42 @@ function renderTeachers(teachers) {
     `).join('');
 }
 
+function renderSubjectCoverage(subjects, teachers) {
+    const container = document.getElementById('subjectCoverageList');
+    if (!container) return;
+    if (!subjects.length) {
+        container.innerHTML = '<p class="empty-state">No subjects found.</p>';
+        return;
+    }
+
+    const covered = new Set();
+    (teachers || []).forEach(t => (t.subjects || []).forEach(s => covered.add(String(s).trim().toLowerCase())));
+    const missing = subjects.filter(s => !covered.has(String(s.name || '').trim().toLowerCase()));
+
+    if (!missing.length) {
+        container.innerHTML = '<p class="metric-label">All subjects have at least one assigned teacher.</p>';
+        return;
+    }
+
+    container.innerHTML = missing.map(s => `
+        <div class="feedback-card-item">
+            <h4>${s.name}</h4>
+            <div class="feedback-meta">No teacher assigned yet.</div>
+            <span class="feedback-badge high">Missing Coverage</span>
+        </div>
+    `).join('');
+}
+
+async function loadSubjects() {
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/subject/all`, { headers: authHeaders() });
+        return res.ok ? await res.json() : [];
+    } catch (error) {
+        console.error('Could not load subjects:', error);
+        return [];
+    }
+}
+
 function populateTeacherSelect(teachers) {
     const select = document.getElementById('teacherSelect');
     if (!select) return;
@@ -232,7 +268,8 @@ async function init() {
     await loadStatus();
     const [users, feedback] = await Promise.all([loadUsers(), loadFeedback()]);
     renderMetrics(users, feedback.length);
-    loadTeachers();
+    const [teachers, subjects] = await Promise.all([loadTeachers(), loadSubjects()]);
+    renderSubjectCoverage(subjects, teachers);
 }
 
 window.loadUsers = loadUsers;

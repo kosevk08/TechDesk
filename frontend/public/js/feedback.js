@@ -8,7 +8,12 @@
 
     const launch = document.createElement('div');
     launch.className = 'feedback-launch';
-    launch.innerHTML = `<button class="feedback-btn" type="button">Report A Problem</button>`;
+    launch.innerHTML = `
+        <button class="feedback-btn" type="button" aria-label="Report a Problem">
+            <span class="feedback-btn-icon">🛠️</span>
+        </button>
+        <span class="feedback-hint">Report</span>
+    `;
 
     const modal = document.createElement('div');
     modal.className = 'feedback-modal';

@@ -42,36 +42,110 @@
             </div>
         </section>
 
-        <div class="dashboard-grid">
-            <div class="card">
-                <h3>Subjects</h3>
-                <p>Open a subject to access your textbook and notebook.</p>
-                <button class="action-btn" onclick="document.getElementById('subjectsSection').scrollIntoView({ behavior: 'smooth' })">Browse Subjects</button>
+        <div class="student-tabs" role="tablist" aria-label="Student Sections">
+            <button class="student-tab active" type="button" data-panel-btn="home" onclick="switchStudentPanel('home')">Home</button>
+            <button class="student-tab" type="button" data-panel-btn="subjects" onclick="switchStudentPanel('subjects')">Subjects</button>
+            <button class="student-tab" type="button" data-panel-btn="schedule" onclick="switchStudentPanel('schedule')">Schedule</button>
+            <button class="student-tab" type="button" data-panel-btn="homework" onclick="switchStudentPanel('homework')">Homework</button>
+            <button class="student-tab" type="button" data-panel-btn="attendance" onclick="switchStudentPanel('attendance')">Attendance</button>
+            <button class="student-tab" type="button" data-panel-btn="grades" onclick="switchStudentPanel('grades')">Grades</button>
+            <button class="student-tab" type="button" data-panel-btn="tests" onclick="switchStudentPanel('tests')">Tests</button>
+            <button class="student-tab" type="button" data-panel-btn="notifications" onclick="switchStudentPanel('notifications')">Notifications</button>
+        </div>
+
+        <div class="student-panel active" data-panel="home" id="homePanel">
+            <div class="card section-card focus-board" id="focusBoard">
+                <div class="section-header">
+                    <div>
+                        <span class="section-eyebrow">Learning Focus</span>
+                        <h3 class="section-title">Today Plan</h3>
+                    </div>
+                </div>
+                <div class="focus-grid">
+                    <div class="focus-item">
+                        <span class="focus-label">Tests Soon</span>
+                        <strong class="focus-value" id="focusTestsSoon">-</strong>
+                    </div>
+                    <div class="focus-item">
+                        <span class="focus-label">Homework Tomorrow</span>
+                        <strong class="focus-value" id="focusHomeworkTomorrow">-</strong>
+                    </div>
+                    <div class="focus-item">
+                        <span class="focus-label">Study Load</span>
+                        <strong class="focus-value" id="focusStudyLoad">-</strong>
+                    </div>
+                    <div class="focus-item">
+                        <span class="focus-label">Priority</span>
+                        <strong class="focus-value" id="focusPriority">-</strong>
+                    </div>
+                </div>
             </div>
-            <div class="card">
-                <h3>Attendance</h3>
-                <p>Check your attendance history.</p>
-                <button class="action-btn" onclick="window.location.href='/attendance'">View Attendance</button>
-            </div>
-            <div class="card">
-                <h3>Messages</h3>
-                <p>Contact your teacher and classmates.</p>
-                <button class="action-btn" onclick="window.location.href='/messages'">Open Messages</button>
-            </div>
-            <div class="card">
-                <h3>Tests</h3>
-                <p>See assigned tests and submit your answers.</p>
-                <button class="action-btn" onclick="document.getElementById('testsSection').scrollIntoView({ behavior: 'smooth' })">Open Tests</button>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h3>Subjects</h3>
+                    <p>Open a subject to access your textbook and notebook.</p>
+                    <button class="action-btn" onclick="switchStudentPanel('subjects')">Open Subjects</button>
+                </div>
+                <div class="card">
+                    <h3>Schedule</h3>
+                    <p>Check your weekly timetable with periods and rooms.</p>
+                    <button class="action-btn" onclick="switchStudentPanel('schedule')">Open Schedule</button>
+                </div>
+                <div class="card">
+                    <h3>Homework</h3>
+                    <p>Track assignments and due dates in one place.</p>
+                    <button class="action-btn" onclick="switchStudentPanel('homework')">Open Homework</button>
+                </div>
+                <div class="card">
+                    <h3>Attendance</h3>
+                    <p>Check your attendance history.</p>
+                    <button class="action-btn" onclick="switchStudentPanel('attendance')">View Attendance</button>
+                </div>
+                <div class="card">
+                    <h3>Messages</h3>
+                    <p>Contact your teacher and classmates.</p>
+                    <button class="action-btn" onclick="window.location.href='/messages'">Open Messages</button>
+                </div>
+                <div class="card">
+                    <h3>Tests</h3>
+                    <p>See assigned tests and submit your answers.</p>
+                    <button class="action-btn" onclick="switchStudentPanel('tests')">Open Tests</button>
+                </div>
             </div>
         </div>
 
-        <div class="card section-card" id="attendanceSection">
+        <div class="card section-card student-panel" data-panel="schedule" id="scheduleSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Weekly Timetable</span>
+                    <h3 class="section-title">Schedule</h3>
+                </div>
+            </div>
+            <div id="scheduleList">
+                <p class="empty-state">No schedule data yet.</p>
+            </div>
+        </div>
+
+        <div class="card section-card student-panel" data-panel="homework" id="homeworkSection">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Assignments</span>
+                    <h3 class="section-title">Homework</h3>
+                </div>
+            </div>
+            <div id="homeworkList">
+                <p class="empty-state">No homework data yet.</p>
+            </div>
+        </div>
+
+        <div class="card section-card student-panel" data-panel="attendance" id="attendanceSection">
             <div class="section-header">
                 <div>
                     <span class="section-eyebrow">Attendance Snapshot</span>
                     <h3 class="section-title">Your Attendance</h3>
                 </div>
-                <button class="action-btn secondary-btn" onclick="window.location.href='/attendance'">Open Details</button>
+                <button class="action-btn secondary-btn" onclick="window.location.href='/attendance'">Open Full Attendance Page</button>
             </div>
             <div class="attendance-grid">
                 <div class="metric-card">
@@ -93,14 +167,14 @@
             </div>
         </div>
 
-        <div class="ai-panel section-card">
+        <div class="ai-panel section-card student-panel" data-panel="notifications">
             <h4>Notifications</h4>
             <div id="studentNotifications">
                 <p class="empty-state">No notifications yet.</p>
             </div>
         </div>
 
-        <div class="card section-card" id="subjectsSection">
+        <div class="card section-card student-panel active" data-panel="subjects" id="subjectsSection">
             <div class="section-header">
                 <div>
                     <span class="section-eyebrow">Lesson Library</span>
@@ -110,7 +184,7 @@
             <div class="subjects-grid" id="subjectsGrid"></div>
         </div>
 
-        <div class="card section-card" id="gradesSection">
+        <div class="card section-card student-panel" data-panel="grades" id="gradesSection">
             <div class="section-header">
                 <div>
                     <span class="section-eyebrow">Digital Gradebook</span>
@@ -122,7 +196,7 @@
             <div class="attendance-grid" id="studentAverages"></div>
         </div>
 
-        <div class="card section-card" id="testsSection">
+        <div class="card section-card student-panel" data-panel="tests" id="testsSection">
             <div class="section-header">
                 <div>
                     <span class="section-eyebrow">Assessment Center</span>
@@ -131,13 +205,62 @@
                 <button class="action-btn secondary-btn" onclick="loadStudentTests()">Refresh</button>
             </div>
             <div id="studentTestsList"></div>
+            <div class="upcoming-tests">
+                <h3>Upcoming Tests</h3>
+                <ul id="testsList">
+                    <li>No upcoming tests</li>
+                </ul>
+            </div>
         </div>
+    </div>
 
-        <div class="card section-card upcoming-tests">
-            <h3>Upcoming Tests</h3>
-            <ul id="testsList">
-                <li>No upcoming tests</li>
-            </ul>
+    <button class="study-bot-launch" onclick="toggleStudyBot()" id="studyBotLaunch" aria-label="Open ThroneBuddy">
+        <span class="bot-face">🤖</span>
+    </button>
+    <div class="study-bot-panel" id="studyBotPanel" style="display:none;">
+        <div class="study-bot-header">
+            <strong>ThroneBuddy</strong>
+            <button onclick="toggleStudyBot()">✕</button>
+        </div>
+        <div class="study-bot-body" id="studyBotBody">
+            <div class="study-bot-msg">Hi, I am ThroneBuddy. Ask only: tests soon, homework tomorrow, what to focus on, or how much to study.</div>
+        </div>
+        <div class="study-bot-quick">
+            <button onclick="askStudyBotQuick('tests')">Tests soon?</button>
+            <button onclick="askStudyBotQuick('homework')">Homework tomorrow?</button>
+            <button onclick="askStudyBotQuick('focus')">What to focus on?</button>
+        </div>
+        <div class="study-bot-input-row">
+            <input id="studyBotInput" type="text" placeholder="Ask a basic study question...">
+            <button onclick="askStudyBot()">Ask</button>
+        </div>
+    </div>
+
+    <div class="test-workspace-overlay" id="testWorkspaceOverlay" aria-hidden="true">
+        <div class="test-workspace-shell" id="testWorkspaceShell">
+            <header class="test-workspace-header">
+                <div>
+                    <span class="test-kicker">Exam Mode</span>
+                    <h3 id="testWorkspaceTitle">Test Workspace</h3>
+                    <p id="testWorkspaceMeta">Stay focused. Write directly on the test canvas.</p>
+                </div>
+                <div class="test-guard-status" id="testGuardStatus">Fullscreen lock: on</div>
+            </header>
+            <div class="test-workspace-body">
+                <aside class="test-questions" id="testQuestionsPanel"></aside>
+                <section class="test-canvas-panel">
+                    <div class="test-tools">
+                        <button class="tool-btn active" type="button" onclick="setTestTool('pen')" id="testPenBtn">Pen</button>
+                        <button class="tool-btn" type="button" onclick="clearTestCanvas()">Clear</button>
+                        <input type="range" id="testBrushSize" min="1" max="10" value="3" aria-label="Brush size">
+                        <button class="action-btn secondary-btn" type="button" onclick="submitFullscreenTest()">Submit Test</button>
+                    </div>
+                    <div class="test-canvas-wrap">
+                        <canvas id="testAnswerCanvas"></canvas>
+                    </div>
+                    <textarea id="testExtraNote" class="student-answer" placeholder="Optional short note for the teacher..."></textarea>
+                </section>
+            </div>
         </div>
     </div>
 

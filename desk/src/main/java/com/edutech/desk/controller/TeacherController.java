@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 
 @RestController
@@ -51,7 +52,14 @@ public class TeacherController {
         if (request == null || request.getTeacherEgn() == null) {
             return ResponseEntity.badRequest().build();
         }
-        Teacher updated = teacherService.updateTeacherSubjects(request.getTeacherEgn(), request.getSubjects());
+        List<String> subjects = request.getSubjects() == null ? List.of() : request.getSubjects()
+            .stream()
+            .filter(s -> s != null && !s.trim().isEmpty())
+            .map(String::trim)
+            .collect(Collectors.toCollection(LinkedHashSet::new))
+            .stream()
+            .toList();
+        Teacher updated = teacherService.updateTeacherSubjects(request.getTeacherEgn(), subjects);
         if (updated == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(updated);
     }
