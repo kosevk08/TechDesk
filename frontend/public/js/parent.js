@@ -130,7 +130,7 @@ function renderDemoHomework() {
 let currentSubject = '';
 let currentStudentEgn = '';
 let currentPage = 1;
-const MAX_PAGES = 20;
+let maxPages = 1;
 
 function showSection(sectionId) {
     ['aiProgressSection', 'notebooksSection', 'notebookViewer', 'attendanceSection'].forEach((id) => {
@@ -228,6 +228,7 @@ async function loadNotebooks() {
 }
 
 function viewNotebook(studentName, subject) {
+    document.body.classList.add('notebook-focus');
     currentStudentEgn = studentName;
     currentSubject = subject;
     currentPage = 1;
@@ -237,11 +238,12 @@ function viewNotebook(studentName, subject) {
     document.getElementById('notebookTitle').textContent = `${studentName || 'Student'} - ${subject}`;
 
     const wrapper = document.getElementById('notebookCanvasWrapper');
-    const isMaths = subject.toLowerCase() === 'maths';
-    wrapper.className = 'notebook-canvas-wrapper ' + (isMaths ? 'squared' : 'lined');
+    wrapper.className = 'notebook-canvas-wrapper lined';
 
-    updatePageControls();
-    loadPage();
+    loadPagesMeta().then(() => {
+        updatePageControls();
+        loadPage();
+    });
 }
 
 async function loadPage() {
@@ -263,6 +265,10 @@ async function loadPage() {
         const img = document.getElementById('notebookImage');
         if (res.ok) {
             const notebook = await res.json();
+            const wrapper = document.getElementById('notebookCanvasWrapper');
+            if (notebook?.style) {
+                wrapper.className = `notebook-canvas-wrapper ${notebook.style}`;
+            }
             if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
                 img.src = notebook.content;
                 img.style.display = 'block';
@@ -280,18 +286,37 @@ async function loadPage() {
 }
 
 function changePage(direction) {
-    currentPage += direction;
+    const target = currentPage + direction;
+    if (target < 1 || target > maxPages) return;
+    currentPage = target;
     updatePageControls();
     loadPage();
 }
 
 function updatePageControls() {
-    document.getElementById('pageIndicator').textContent = `Page ${currentPage} / ${MAX_PAGES}`;
+    document.getElementById('pageIndicator').textContent = `Page ${currentPage} / ${maxPages}`;
     document.getElementById('prevBtn').disabled = currentPage === 1;
-    document.getElementById('nextBtn').disabled = currentPage === MAX_PAGES;
+    document.getElementById('nextBtn').disabled = currentPage >= maxPages;
+}
+
+async function loadPagesMeta() {
+    if (isDemo && demoData) {
+        maxPages = 5;
+        return;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/pages/${encodeURIComponent(currentStudentEgn)}/${encodeURIComponent(currentSubject)}?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        const pages = res.ok ? await res.json() : [];
+        maxPages = Math.max(1, ...(pages || [1]));
+    } catch {
+        maxPages = 1;
+    }
 }
 
 function backToList() {
+    document.body.classList.remove('notebook-focus');
     document.getElementById('notebookViewer').style.display = 'none';
     document.getElementById('notebooksSection').style.display = 'block';
     currentPage = 1;

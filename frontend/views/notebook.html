@@ -8,95 +8,108 @@
     <link rel="stylesheet" href="/css/shared.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body { font-family: Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; touch-action: none; }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #ffffff;
+            color: #1d2433;
+        }
 
         .navbar {
-            background: #1a1a2e;
-            color: white;
-            padding: 6px 12px;
+            background: #ffffff;
+            color: #1f2937;
+            padding: 8px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 44px;
-            flex-shrink: 0;
+            height: 48px;
+            border-bottom: 1px solid #e5e7eb;
         }
 
-        .navbar h1 { font-size: 1rem; white-space: nowrap; }
-        .navbar .subject-name { font-size: 0.75rem; color: #a0aec0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
-        .navbar a { color: #a0aec0; text-decoration: none; font-size: 0.75rem; white-space: nowrap; }
-        .navbar a:hover { color: white; }
+        .navbar h1 { font-size: 1rem; }
+        .navbar .subject-name {
+            font-size: 0.78rem;
+            color: #4b5563;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .navbar a {
+            color: #1f2937;
+            text-decoration: none;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+        }
 
         .split-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
+            display: grid;
+            grid-template-columns: minmax(260px, 38%) 1fr;
+            gap: 12px;
+            padding: 12px;
+            height: calc(100vh - 48px);
+            background: #ffffff;
         }
 
-        .textbook-panel {
-            width: 50%;
-            background: #f8f9fa;
-            border-right: 2px solid #1a1a2e;
+        .panel {
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            box-shadow: none;
+            background: #fff;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            min-height: 0;
         }
 
         .panel-header {
-            background: #1a1a2e;
-            color: white;
-            padding: 5px 10px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            flex-shrink: 0;
+            background: #ffffff;
+            color: #1f2937;
+            padding: 8px 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .textbook-content {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
             overflow-y: auto;
-            font-size: 0.75rem;
-            line-height: 1.5;
-            color: #2d3748;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .textbook-content h2 { margin-bottom: 8px; color: #1a1a2e; font-size: 0.9rem; }
-        .textbook-content h3 { margin: 8px 0 5px; color: #2d3748; font-size: 0.8rem; }
-        .textbook-content p { margin-bottom: 8px; }
-
-        .notebook-panel {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            font-size: 0.82rem;
+            line-height: 1.55;
+            background: #ffffff;
         }
 
         .notebook-toolbar {
-            background: #2d3748;
-            padding: 4px 8px;
+            background: #ffffff;
+            padding: 6px 8px;
             display: flex;
-            gap: 5px;
             align-items: center;
-            flex-shrink: 0;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            gap: 6px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .notebook-toolbar button {
-            background: #4a5568;
-            color: white;
             border: none;
-            padding: 3px 7px;
-            border-radius: 4px;
+            border-radius: 8px;
+            padding: 5px 8px;
+            color: #1f2937;
+            background: #f3f4f6;
+            font-size: 0.75rem;
             cursor: pointer;
-            font-size: 0.7rem;
-            white-space: nowrap;
-            flex-shrink: 0;
         }
 
-        .notebook-toolbar button:hover { background: #718096; }
-        .notebook-toolbar button.active { background: #3182ce; }
+        .notebook-toolbar button.active {
+            background: #e5e7eb;
+            outline: 1px solid #d1d5db;
+        }
 
         .color-btn {
             width: 18px;
@@ -104,108 +117,95 @@
             border-radius: 50% !important;
             border: 2px solid transparent !important;
             padding: 0 !important;
-            cursor: pointer;
-            flex-shrink: 0;
         }
 
         .color-btn.active {
-            border: 2px solid white !important;
-            outline: 1px solid #a0aec0;
+            border-color: #fff !important;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55);
         }
 
         .color-blue { background: #1a56db !important; }
         .color-black { background: #111111 !important; }
 
+        #sizeSlider { width: 60px; }
+
+        .save-btn { margin-left: auto; background: #2f9a62 !important; }
+        .add-page-btn { background: #7256d8 !important; }
+
+        .saved-msg {
+            color: #ccffdc;
+            font-size: 0.73rem;
+            display: none;
+        }
+
         .notebook-area {
             flex: 1;
             position: relative;
             overflow: hidden;
+            background: #ffffff;
         }
 
-        .squared {
-            background-color: white;
+        .paper {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .paper.lined {
+            background-image: linear-gradient(#c7d9f4 1px, transparent 1px);
+            background-size: 100% 28px;
+            background-position: 0 27px;
+        }
+
+        .paper.squared {
             background-image:
-                linear-gradient(#b0c4de 1px, transparent 1px),
-                linear-gradient(90deg, #b0c4de 1px, transparent 1px);
+                linear-gradient(#c7d9f4 1px, transparent 1px),
+                linear-gradient(90deg, #c7d9f4 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+
+        .paper.dotted {
+            background-image: radial-gradient(circle, #bfd0ec 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        .lined {
-            background-color: white;
-            background-image: linear-gradient(#b0c4de 1px, transparent 1px);
-            background-size: 100% 24px;
-            background-position: 0 23px;
-        }
-
         canvas {
+            position: absolute;
+            inset: 0;
             display: block;
-            cursor: crosshair;
+            z-index: 2;
             touch-action: none;
         }
 
-        .save-btn {
-            background: #38a169 !important;
-            color: white;
-            border: none;
-            padding: 3px 8px !important;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            margin-left: auto;
-            flex-shrink: 0;
-        }
-
-        .save-btn:hover { background: #2f855a !important; }
-
-        .saved-msg {
-            color: #68d391;
-            font-size: 0.7rem;
-            display: none;
-            flex-shrink: 0;
-        }
-
-        .demo-badge {
-            background: #e9a100;
-            color: white;
-            font-size: 0.6rem;
-            padding: 1px 5px;
-            border-radius: 8px;
-            font-weight: 700;
-        }
-
-        #sizeSlider {
-            width: 50px;
-            flex-shrink: 0;
-        }
-
         .page-controls {
-            background: #1a1a2e;
-            padding: 5px 8px;
+            background: #ffffff;
+            color: #1f2937;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             gap: 10px;
-            flex-shrink: 0;
+            padding: 7px;
+            font-size: 0.78rem;
+            border-top: 1px solid #e5e7eb;
         }
 
         .page-controls button {
-            background: #4a5568;
-            color: white;
             border: none;
-            padding: 3px 10px;
-            border-radius: 4px;
+            border-radius: 8px;
+            padding: 5px 10px;
+            color: #1f2937;
+            background: #f3f4f6;
             cursor: pointer;
-            font-size: 0.75rem;
         }
 
-        .page-controls button:hover { background: #718096; }
-        .page-controls button:disabled { background: #2d3748; color: #718096; cursor: not-allowed; }
+        .page-controls button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
 
-        .page-indicator {
-            color: white;
-            font-size: 0.75rem;
-            min-width: 60px;
-            text-align: center;
+        @media (max-width: 900px) {
+            .split-container { grid-template-columns: 1fr; }
+            .textbook-panel { display: none; }
         }
     </style>
 </head>
@@ -214,38 +214,42 @@
         <h1>TechDesk</h1>
         <span class="subject-name" id="subjectName">Subject</span>
         <div style="display:flex; align-items:center; gap:8px;">
-            <span id="demoBadge" class="demo-badge" style="display:none;">🧪 DEMO</span>
+            <span id="demoBadge" style="display:none; font-size:0.67rem; background:#deaf21; color:#fff; padding:2px 6px; border-radius:8px;">DEMO</span>
             <a href="/student">← Back</a>
         </div>
     </nav>
 
     <div class="split-container">
-        <div class="textbook-panel">
-            <div class="panel-header">📚 Textbook</div>
+        <div class="panel textbook-panel">
+            <div class="panel-header">Textbook</div>
             <div class="textbook-content" id="textbookContent">
                 <h2 id="textbookTitle">Loading...</h2>
                 <p>Textbook content will appear here.</p>
             </div>
         </div>
 
-        <div class="notebook-panel">
-            <div class="panel-header">📓 Notebook</div>
+        <div class="panel notebook-panel">
+            <div class="panel-header">Notebook</div>
             <div class="notebook-toolbar">
-                <button class="active" id="penBtn" onclick="setTool('pen')">✏️ Pen</button>
-                <button onclick="setTool('eraser')">⬜ Eraser</button>
-                <button onclick="clearCanvas()">🗑️</button>
+                <button class="active" id="penBtn" onclick="setTool('pen')">Pen</button>
+                <button onclick="setTool('eraser')">Eraser</button>
+                <button onclick="clearCanvas()">Clear</button>
                 <button class="color-btn color-blue active" id="btnBlue" onclick="setColor('#1a56db', 'btnBlue')" title="Blue"></button>
                 <button class="color-btn color-black" id="btnBlack" onclick="setColor('#111111', 'btnBlack')" title="Black"></button>
                 <input type="range" id="sizeSlider" min="1" max="20" value="3" title="Size">
-                <button class="save-btn" onclick="saveNotebook()">💾 Save</button>
-                <span class="saved-msg" id="savedMsg">Saved!</span>
+                <button class="add-page-btn" onclick="addPage()">+ Page</button>
+                <button class="save-btn" onclick="saveNotebook()">Save</button>
+                <span class="saved-msg" id="savedMsg">Saved</span>
             </div>
-            <div class="notebook-area lined" id="notebookArea">
+
+            <div class="notebook-area" id="notebookArea">
+                <div class="paper lined" id="paperLayer"></div>
                 <canvas id="notebookCanvas"></canvas>
             </div>
+
             <div class="page-controls">
-                <button id="prevBtn" onclick="changePage(-1)" disabled>◀</button>
-                <span class="page-indicator" id="pageIndicator">Page 1 / 20</span>
+                <button id="prevBtn" onclick="changePage(-1)">◀</button>
+                <span id="pageIndicator">Page 1 / 1</span>
                 <button id="nextBtn" onclick="changePage(1)">▶</button>
             </div>
         </div>
@@ -261,8 +265,8 @@
         const demoData = window.DemoData;
         const DEMO_EGNS = ['9000000001', '9000000002', '9000000003'];
         const isDemo = Boolean(user && user.demo) || DEMO_EGNS.includes(user && user.egn);
-        if (!user) window.location.href = '/';
 
+        if (!user) window.location.href = '/';
         if (isDemo) document.getElementById('demoBadge').style.display = 'inline';
 
         const subjectId = localStorage.getItem('currentSubject');
@@ -274,12 +278,19 @@
         let lastX = 0, lastY = 0;
         let currentSubjectName = '';
         let currentPage = 1;
-        const MAX_PAGES = 20;
+        let maxPage = 1;
+        let currentStyle = 'lined';
 
         function resizeCanvas() {
             const area = document.getElementById('notebookArea');
             canvas.width = area.clientWidth;
             canvas.height = area.clientHeight;
+        }
+
+        function setPaperStyle(style) {
+            currentStyle = ['lined', 'squared', 'dotted'].includes(style) ? style : 'lined';
+            const paper = document.getElementById('paperLayer');
+            paper.className = `paper ${currentStyle}`;
         }
 
         function setColor(color, btnId) {
@@ -294,22 +305,52 @@
         }
 
         function updatePageControls() {
-            document.getElementById('pageIndicator').textContent = `Page ${currentPage} / ${MAX_PAGES}`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === MAX_PAGES;
+            document.getElementById('pageIndicator').textContent = `Page ${currentPage} / ${maxPage}`;
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= maxPage;
         }
 
         function subjectMatch(a, b) {
             return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
         }
 
+        async function fetchPages() {
+            if (isDemo) {
+                maxPage = 5;
+                return;
+            }
+            try {
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/pages/${user.egn}/${encodeURIComponent(currentSubjectName)}`);
+                const pages = res.ok ? await res.json() : [];
+                maxPage = Math.max(1, ...(pages || [1]));
+            } catch {
+                maxPage = Math.max(maxPage, 1);
+            }
+        }
+
         async function changePage(direction) {
+            const target = currentPage + direction;
+            if (target < 1 || target > maxPage) return;
             await saveNotebook(true);
-            currentPage += direction;
+            currentPage = target;
             updatePageControls();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             await loadPage(currentSubjectName, currentPage);
             localStorage.setItem('currentNotebookPage', String(currentPage));
+            socket.emit('page-change', {
+                studentName: user.displayName || 'Student',
+                subject: currentSubjectName,
+                page: currentPage,
+                authorRole: user.role || 'STUDENT'
+            });
+        }
+
+        async function addPage() {
+            await saveNotebook(true);
+            maxPage += 1;
+            currentPage = maxPage;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updatePageControls();
             socket.emit('page-change', {
                 studentName: user.displayName || 'Student',
                 subject: currentSubjectName,
@@ -359,6 +400,20 @@
                 .catch(() => renderTextbookFallback(subjectName));
         }
 
+        async function loadSettings() {
+            if (isDemo) {
+                setPaperStyle('lined');
+                return;
+            }
+            try {
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/settings/${user.egn}/${encodeURIComponent(currentSubjectName)}`);
+                const data = res.ok ? await res.json() : { style: 'lined' };
+                setPaperStyle(data.style || 'lined');
+            } catch {
+                setPaperStyle('lined');
+            }
+        }
+
         async function loadSubject() {
             try {
                 let subject = null;
@@ -368,23 +423,20 @@
                     const res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
                     subject = await res.json();
                 }
+
                 currentSubjectName = subject.name;
                 document.getElementById('subjectName').textContent = subject.name;
                 document.title = `TechDesk - ${subject.name}`;
                 localStorage.setItem('currentNotebookSubject', subject.name);
-                if (user?.className) {
-                    localStorage.setItem('currentClassName', user.className);
-                }
-
-                const area = document.getElementById('notebookArea');
-                const isMaths = subject.name.toLowerCase() === 'maths';
-                area.className = 'notebook-area ' + (isMaths ? 'squared' : 'lined');
 
                 loadTextbookVisual(subject.name);
+                await loadSettings();
+                await fetchPages();
+                const rememberedPage = parseInt(localStorage.getItem('currentNotebookPage') || '1', 10);
+                currentPage = Math.min(Math.max(1, rememberedPage), maxPage);
 
                 resizeCanvas();
                 updatePageControls();
-                localStorage.setItem('currentNotebookPage', String(currentPage));
                 await loadPage(subject.name, currentPage);
             } catch (err) {
                 console.error('Could not load subject:', err);
@@ -393,18 +445,16 @@
 
         async function loadPage(subjectName, page) {
             try {
-                if (isDemo) {
-                    demoLoad(subjectName, page);
-                    return;
-                }
+                if (isDemo) return;
                 const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`);
-                if (res.ok) {
-                    const notebook = await res.json();
-                    if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
-                        const img = new Image();
-                        img.onload = () => ctx.drawImage(img, 0, 0);
-                        img.src = notebook.content;
-                    }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (!res.ok) return;
+                const notebook = await res.json();
+                if (notebook?.style) setPaperStyle(notebook.style);
+                if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
+                    const img = new Image();
+                    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    img.src = notebook.content;
                 }
             } catch (err) {
                 console.error('Could not load page:', err);
@@ -492,14 +542,11 @@
 
         function scheduleAutoSave() {
             if (autosaveTimer) clearTimeout(autosaveTimer);
-            autosaveTimer = setTimeout(() => saveNotebook(true), 800);
+            autosaveTimer = setTimeout(() => saveNotebook(true), 700);
         }
 
         async function saveNotebook(silent = false) {
-            if (isDemo) {
-                demoSave(silent);
-                return;
-            }
+            if (isDemo) return;
             const imageData = canvas.toDataURL();
             try {
                 await fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
@@ -510,30 +557,41 @@
                         subject: currentSubjectName,
                         schoolYear: '2025-2026',
                         format: 'A4',
-                        style: 'lined',
+                        style: currentStyle,
                         color: currentColor,
                         content: imageData,
                         pageNumber: currentPage
                     })
                 });
+                maxPage = Math.max(maxPage, currentPage);
+                updatePageControls();
                 if (!silent) {
                     const msg = document.getElementById('savedMsg');
                     msg.style.display = 'inline';
-                    setTimeout(() => msg.style.display = 'none', 2000);
+                    setTimeout(() => msg.style.display = 'none', 1600);
                 }
             } catch (err) {
                 console.error('Could not save:', err);
             }
         }
 
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', () => {
+            const snapshot = canvas.toDataURL();
+            resizeCanvas();
+            if (snapshot && snapshot.startsWith('data:image')) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                img.src = snapshot;
+            }
+        });
+
         loadSubject();
 
         socket.on('draw-stroke', (data) => {
             if (!data) return;
             if (data.studentName !== (user.displayName || 'Student')) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
-            if (parseInt(data.page) !== parseInt(currentPage)) return;
+            if (parseInt(data.page, 10) !== parseInt(currentPage, 10)) return;
             if (data.tool === 'eraser') {
                 ctx.clearRect(data.x1 - 10, data.y1 - 10, 20, 20);
             } else {
@@ -552,7 +610,7 @@
             if (!data) return;
             if (data.studentName !== (user.displayName || 'Student')) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
-            if (parseInt(data.page) !== parseInt(currentPage)) return;
+            if (parseInt(data.page, 10) !== parseInt(currentPage, 10)) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
@@ -560,9 +618,9 @@
             if (!data) return;
             if (data.studentName !== (user.displayName || 'Student')) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
-            currentPage = parseInt(data.page);
+            currentPage = parseInt(data.page, 10);
+            maxPage = Math.max(maxPage, currentPage);
             updatePageControls();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             loadPage(currentSubjectName, currentPage);
         });
     </script>
