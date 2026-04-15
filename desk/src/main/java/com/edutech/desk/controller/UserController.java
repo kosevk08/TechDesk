@@ -1,66 +1,144 @@
 package com.edutech.desk.controller;
 
 import com.edutech.desk.entities.User;
-import com.edutech.desk.entities.Student;
-import com.edutech.desk.controller.response.LoginResponse;
-import com.edutech.desk.repository.StudentRepository;
-import com.edutech.desk.service.JwtService;
-import com.edutech.desk.service.NameLookupService;
+import com.edutech.desk.entities.Role;
 import com.edutech.desk.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500", "https://techdesk-frontend.onrender.com"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "https://techdesk-frontend.onrender.com", "https://techdesk.onrender.com"})
 public class UserController {
 
     @Autowired
     private UserService userService;
 
     @Autowired
-    private JwtService jwtService;
+    private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private NameLookupService nameLookupService;
+    private final Map<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
+    private final Map<String, Long> blockedIps = new ConcurrentHashMap<>();
+    private static final int MAX_ATTEMPTS = 5;
+    private static final long BLOCK_DURATION = 15 * 60 * 1000L;
 
-    @Autowired
-    private StudentRepository studentRepository;
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody User loginUser) {
-        User user = userService.login(loginUser.getEmail(), loginUser.getPassword());
-        if (user != null) {
-            LoginResponse response = new LoginResponse();
-            response.setToken(jwtService.generateToken(user.getEmail(), user.getRole().name(), user.isDemo()));
-            response.setRole(user.getRole().name());
-            response.setDemo(user.isDemo());
-            response.setDisplayName(nameLookupService.userDisplayName(user.getEgn()));
-            response.setEgn(user.getEgn());
-            response.setEmail(user.getEmail());
-            response.setStudentEgn(user.getStudentEgn());
+    public ResponseEntity<User> login(@RequestBody User loginUser,
+            @RequestHeader(value = "X-Forwarded-For", required = false) String forwarded,
+            jakarta.servlet.http.HttpServletRequest request) {
 
-            Student me = studentRepository.findById(user.getEgn()).orElse(null);
-            if (me != null) {
-                response.setClassName(me.getClassName());
+        String ip = forwarded != null ? forwarded.split(",")[0].trim() : request.getRemoteAddr();
+
+        if (blockedIps.containsKey(ip)) {
+            long blockedAt = blockedIps.get(ip);
+            if (System.currentTimeMillis() - blockedAt < BLOCK_DURATION) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+            } else {
+                blockedIps.remove(ip);
+                failedAttempts.remove(ip);
             }
-            if (user.getStudentEgn() != null) {
-                response.setChildName(nameLookupService.studentName(user.getStudentEgn()));
-                Student child = studentRepository.findById(user.getStudentEgn()).orElse(null);
-                if (child != null) {
-                    response.setChildClassName(child.getClassName());
-                }
-            }
-            return ResponseEntity.ok(response);
         }
+
+        String email = loginUser.getEmail();
+        String password = loginUser.getPassword();
+
+        if (email == null || password == null ||
+            email.contains("<") || email.contains(">") ||
+            email.contains("'") || email.contains("--") ||
+            email.length() > 100 || password.length() > 100) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+
+        User user = userService.login(email, password);
+        if (user != null) {
+            failedAttempts.remove(ip);
+            return ResponseEntity.ok(user);
+        }
+
+        failedAttempts.computeIfAbsent(ip, k -> new AtomicInteger(0)).incrementAndGet();
+        if (failedAttempts.get(ip).get() >= MAX_ATTEMPTS) {
+            blockedIps.put(ip, System.currentTimeMillis());
+        }
+
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        User user = userService.getUserById(id);
-        return user != null ? ResponseEntity.ok(user) : ResponseEntity.notFound().build();
+    @GetMapping("/all")
+    public ResponseEntity<List<User>> getAllUsers(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null) adminSecret = "techdesk-secret-2026";
+        if (!adminSecret.equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/setup")
+    public ResponseEntity<String> setupUsers(
+            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+        String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
+        if (adminSecret == null) adminSecret = "techdesk-secret-2026";
+        if (!adminSecret.equals(key)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        String[][] users = {
+            {"1000000001", "v.kolev-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000002", "k.kosev-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000003", "i.ivanov-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000004", "j.doe-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000005", "d.kovacs-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000006", "s.martinez-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000007", "m.bennett-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000008", "e.petrova-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000009", "l.oconnor-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000010", "v.ivanov-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000011", "n.fischer-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"1000000012", "c.mendes-student@edu-school.bg", "password123", "STUDENT", "false"},
+            {"2000000001", "h.schmidt-teacher@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000002", "a.popescu-teacher@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000003", "m.ivanova-maths@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000004", "p.georgiev-physics@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000005", "l.stoyanova-chem@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000006", "d.petrov-biology@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000007", "s.martin-english@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000008", "t.vasileva-bulgarian@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000009", "g.stefanov-geography@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000010", "r.dimitrova-philosophy@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000011", "n.koleva-englishlit@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000012", "v.georgieva-german@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000013", "i.karaslavova-spanish@edu-school.bg", "password123", "TEACHER", "false"},
+            {"2000000014", "e.nikolova-anthro@edu-school.bg", "password123", "TEACHER", "false"},
+            {"3000000001", "l.navarro-parent@edu-school.bg", "password123", "PARENT", "false"},
+            {"4000000001", "admin@edu-school.bg", "password123", "ADMIN", "false"},
+            {"9000000001", "r.paskalev-student@edu-school.bg", "pass@2026", "STUDENT", "true"},
+            {"9000000002", "e.vasileva-teacher@edu-school.bg", "pass@2026", "TEACHER", "true"},
+            {"9000000003", "p.stoyanov-parent@edu-school.bg", "pass@2026", "PARENT", "true"},
+            {"9000000004", "s.markova-admin@edu-school.bg", "pass@2026", "ADMIN", "true"}
+        };
+
+        for (String[] u : users) {
+            User user = new User();
+            user.setEgn(u[0]);
+            user.setEmail(u[1]);
+            user.setPassword(passwordEncoder.encode(u[2]));
+            user.setRole(Role.valueOf(u[3]));
+            user.setDemo(Boolean.parseBoolean(u[4]));
+            userService.register(user);
+        }
+        return ResponseEntity.ok("All users created successfully!");
     }
 }

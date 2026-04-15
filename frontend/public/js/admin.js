@@ -1,251 +1,253 @@
-const user = JSON.parse(localStorage.getItem('user') || 'null');
-const token = localStorage.getItem('token') || '';
-const demoData = window.DemoData || {};
-const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const adminKey = 'techdesk-secret-2026';
-
-function secondNameOf(fullName, fallback = 'Admin') {
-    const clean = String(fullName || '').trim();
-    if (!clean) return fallback;
-    const parts = clean.split(/\s+/);
-    return parts[1] || parts[0] || fallback;
-}
-
-let teacherAssignments = (demoData.teachers || []).map((t) => ({
-    egn: t.egn,
-    firstName: t.firstName,
-    lastName: t.lastName,
-    email: t.email,
-    subjects: Array.isArray(t.subjects) ? [...t.subjects] : []
-}));
+const user = JSON.parse(localStorage.getItem('user'));
+const token = localStorage.getItem('token');
+const demoData = window.DemoData;
+const isDemo = Boolean(user && user.demo);
 
 function authHeaders(extra = {}) {
-    const headers = { ...extra, 'X-Admin-Key': adminKey };
-    if (token) headers.Authorization = `Bearer ${token}`;
-    return headers;
+    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
 }
 
-function setSystemStatus(text, ok = true) {
+if (!user || user.role !== 'ADMIN') {
+    window.location.href = '/';
+}
+
+document.getElementById('adminName').textContent = user.displayName || 'Admin';
+
+async function loadStatus() {
     const statusEl = document.getElementById('adminStatus');
-    if (!statusEl) return;
-    statusEl.textContent = text;
-    statusEl.style.color = ok ? '#0f766e' : '#b91c1c';
+    if (isDemo) {
+        statusEl.textContent = 'Demo (offline safe)';
+        return;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/health`);
+        statusEl.textContent = res.ok ? 'All systems operational' : 'Degraded';
+    } catch (error) {
+        statusEl.textContent = 'Offline';
+    }
 }
 
-function safeText(v, fallback = '-') {
-    if (v === null || v === undefined || v === '') return fallback;
-    return String(v);
-}
-
-function escapeHtml(text) {
-    return safeText(text)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-}
-
-function renderMetrics(users, feedback) {
+function renderMetrics(users, feedbackCount) {
     const metrics = document.getElementById('adminMetrics');
     if (!metrics) return;
+    const counts = {
+        total: users.length,
+        student: users.filter(u => u.role === 'STUDENT').length,
+        teacher: users.filter(u => u.role === 'TEACHER').length,
+        parent: users.filter(u => u.role === 'PARENT').length,
+        admin: users.filter(u => u.role === 'ADMIN').length
+    };
+    metrics.innerHTML = [
+        { label: 'Total Users', value: counts.total },
+        { label: 'Students', value: counts.student },
+        { label: 'Teachers', value: counts.teacher },
+        { label: 'Parents', value: counts.parent },
+        { label: 'Admins', value: counts.admin },
+        { label: 'Feedback Reports', value: feedbackCount }
+    ].map(metric => `
+        <div class="metric-card">
+            <span class="metric-label">${metric.label}</span>
+            <strong class="metric-value">${metric.value}</strong>
+        </div>
+    `).join('');
+}
 
-    const byRole = { ADMIN: 0, TEACHER: 0, STUDENT: 0, PARENT: 0 };
-    users.forEach((u) => {
-        const role = (u.role || '').toUpperCase();
-        if (byRole[role] !== undefined) byRole[role] += 1;
-    });
-
-    metrics.innerHTML = `
-        <div class="metric-card"><span class="metric-label">Total Users</span><strong class="metric-value">${users.length}</strong></div>
-        <div class="metric-card"><span class="metric-label">Teachers</span><strong class="metric-value">${byRole.TEACHER}</strong></div>
-        <div class="metric-card"><span class="metric-label">Students</span><strong class="metric-value">${byRole.STUDENT}</strong></div>
-        <div class="metric-card"><span class="metric-label">Feedback Reports</span><strong class="metric-value">${feedback.length}</strong></div>
-    `;
+function normalizeUser(u) {
+    return {
+        displayName: u.displayName || u.fullName || u.name || 'User',
+        role: u.role || 'USER',
+        email: u.email || '-'
+    };
 }
 
 function renderUsers(users) {
     const list = document.getElementById('userList');
     if (!list) return;
-
     if (!users.length) {
         list.innerHTML = '<p class="empty-state">No users found.</p>';
         return;
     }
-
-    list.innerHTML = users.map((u, idx) => `
+    list.innerHTML = users.map(u => `
         <div class="user-card-item">
-            <h4>${escapeHtml(u.displayName || u.email || `User ${idx + 1}`)}</h4>
-            <p class="user-meta">${escapeHtml(u.email || '-')}</p>
-            <p class="user-meta">Role: <strong>${escapeHtml(u.role || 'UNKNOWN')}</strong></p>
-            <p class="user-meta">Demo: ${u.demo ? 'Yes' : 'No'}</p>
+            <h4>${u.displayName}</h4>
+            <div class="user-meta">${u.role} • ${u.email}</div>
         </div>
     `).join('');
 }
 
-function feedbackClass(severity) {
-    const s = (severity || '').toLowerCase();
-    if (s.includes('high')) return 'high';
-    if (s.includes('medium')) return 'medium';
-    return 'low';
+function renderTeachers(teachers) {
+    const list = document.getElementById('teacherList');
+    if (!list) return;
+    if (!teachers.length) {
+        list.innerHTML = '<p class="empty-state">No teachers found.</p>';
+        return;
+    }
+    list.innerHTML = teachers.map(t => `
+        <div class="user-card-item">
+            <h4>${t.firstName || ''} ${t.lastName || ''}</h4>
+            <div class="user-meta">${t.email || 'No email'} • ${t.egn}</div>
+            <div class="user-meta">Subjects: ${(t.subjects || []).join(', ') || 'Not assigned'}</div>
+        </div>
+    `).join('');
+}
+
+function populateTeacherSelect(teachers) {
+    const select = document.getElementById('teacherSelect');
+    if (!select) return;
+    select.innerHTML = '';
+    teachers.forEach(t => {
+        const option = document.createElement('option');
+        option.value = t.egn;
+        option.textContent = `${t.firstName || ''} ${t.lastName || ''}`.trim() || t.email || t.egn;
+        option.dataset.subjects = (t.subjects || []).join(', ');
+        select.appendChild(option);
+    });
+    if (teachers[0]) {
+        document.getElementById('teacherSubjectsInput').value = (teachers[0].subjects || []).join(', ');
+    }
+}
+
+function badgeClass(severity) {
+    const key = String(severity || 'low').toLowerCase();
+    if (key.includes('high')) return 'feedback-badge high';
+    if (key.includes('medium')) return 'feedback-badge medium';
+    return 'feedback-badge low';
 }
 
 function renderFeedback(items) {
     const list = document.getElementById('feedbackList');
     if (!list) return;
-
     if (!items.length) {
-        list.innerHTML = '<p class="empty-state">No feedback reports.</p>';
+        list.innerHTML = '<p class="empty-state">No feedback yet.</p>';
         return;
     }
-
-    list.innerHTML = items.map((f) => `
-        <article class="feedback-card-item">
-            <h4>${escapeHtml(f.page || 'General Feedback')}</h4>
-            <p class="feedback-meta">From: ${escapeHtml(f.sender || f.userDisplayName || 'Unknown')}</p>
-            <p class="feedback-meta">${escapeHtml(f.createdAt || f.created_at || '-')}</p>
-            <p>${escapeHtml(f.message || '')}</p>
-            <span class="feedback-badge ${feedbackClass(f.severity)}">${escapeHtml(f.severity || 'Low')}</span>
-        </article>
+    list.innerHTML = items.map(item => `
+        <div class="feedback-card-item">
+            <div class="feedback-meta">${item.page || 'Unknown'} • ${new Date(item.createdAt).toLocaleString()}</div>
+            <h4>${item.sender || item.userDisplayName || 'User'}</h4>
+            <div class="feedback-meta">${item.message}</div>
+            <span class="${badgeClass(item.severity)}">${item.severity || 'Low'}</span>
+        </div>
     `).join('');
 }
 
-function renderTeachers(teachers) {
-    const teacherSelect = document.getElementById('teacherSelect');
-    const teacherList = document.getElementById('teacherList');
-    const subjectInput = document.getElementById('teacherSubjectsInput');
-    const status = document.getElementById('teacherSubjectStatus');
-
-    if (!teacherSelect || !teacherList) return;
-
-    teacherSelect.innerHTML = teachers.map((t) => {
-        const name = `${safeText(t.firstName)} ${safeText(t.lastName)}`.trim();
-        return `<option value="${escapeHtml(t.egn || t.email || name)}">${escapeHtml(name || t.email || 'Teacher')}</option>`;
-    }).join('');
-
-    const refreshSelectedSubjects = () => {
-        const selected = teachers.find((t) => (t.egn || t.email) === teacherSelect.value) || teachers[0];
-        if (!selected) return;
-        if (subjectInput) subjectInput.value = (selected.subjects || []).join(', ');
-        if (status) status.textContent = 'Ready';
-    };
-
-    teacherSelect.onchange = refreshSelectedSubjects;
-    refreshSelectedSubjects();
-
-    teacherList.innerHTML = teachers.map((t) => {
-        const name = `${safeText(t.firstName)} ${safeText(t.lastName)}`.trim();
-        const subjects = (t.subjects || []).join(', ') || 'No subjects assigned';
-        return `
-            <div class="user-card-item">
-                <h4>${escapeHtml(name || t.email || 'Teacher')}</h4>
-                <p class="user-meta">${escapeHtml(t.email || '-')}</p>
-                <p class="user-meta">Subjects: <strong>${escapeHtml(subjects)}</strong></p>
-            </div>
-        `;
-    }).join('');
-}
-
-async function fetchUsersRemote() {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/user/all`, {
-        headers: authHeaders()
-    });
-    if (!response.ok) throw new Error(`users_http_${response.status}`);
-    return response.json();
-}
-
-async function fetchFeedbackRemote() {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/feedback/all`, {
-        headers: authHeaders()
-    });
-    if (!response.ok) throw new Error(`feedback_http_${response.status}`);
-    return response.json();
-}
-
-async function fetchTeachersRemote() {
-    const response = await fetch(`${BACKEND_BASE_URL}/api/teacher/all`, {
-        headers: authHeaders()
-    });
-    if (!response.ok) throw new Error(`teachers_http_${response.status}`);
-    return response.json();
-}
-
 async function loadUsers() {
-    const users = await fetchUsersRemote().catch(() => demoData.users || []);
-    renderUsers(users);
-    return users;
+    if (isDemo && demoData) {
+        const users = (demoData.users || []).map(normalizeUser);
+        renderUsers(users);
+        return users;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/all`, {
+            headers: authHeaders()
+        });
+        const rawUsers = res.ok ? await res.json() : [];
+        const users = rawUsers.map(normalizeUser);
+        renderUsers(users);
+        return users;
+    } catch (error) {
+        console.error('Could not load users:', error);
+        renderUsers([]);
+        return [];
+    }
 }
 
 async function loadFeedback() {
-    const feedback = await fetchFeedbackRemote().catch(() => demoData.feedback || []);
-    renderFeedback(feedback);
-    return feedback;
+    if (isDemo) {
+        const local = JSON.parse(localStorage.getItem('demo-feedback') || '[]');
+        const items = local.length ? local : (demoData?.feedback || []);
+        renderFeedback(items);
+        return items;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/feedback/all`, {
+            headers: authHeaders()
+        });
+        const items = res.ok ? await res.json() : [];
+        renderFeedback(items);
+        return items;
+    } catch (error) {
+        console.error('Could not load feedback:', error);
+        renderFeedback([]);
+        return [];
+    }
 }
 
 async function loadTeachers() {
-    const teachers = await fetchTeachersRemote().catch(() => teacherAssignments);
-    teacherAssignments = Array.isArray(teachers) ? teachers : [];
-    renderTeachers(teacherAssignments);
-    return teacherAssignments;
+    if (isDemo && demoData) {
+        const teachers = (demoData.teachers || [
+            { egn: '2000000003', firstName: 'Maya', lastName: 'Ivanova', email: demoData?.teacher?.email, subjects: ['Maths'] }
+        ]);
+        populateTeacherSelect(teachers);
+        renderTeachers(teachers);
+        return teachers;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/teacher/all`, {
+            headers: authHeaders()
+        });
+        const teachers = res.ok ? await res.json() : [];
+        populateTeacherSelect(teachers);
+        renderTeachers(teachers);
+        return teachers;
+    } catch (error) {
+        console.error('Could not load teachers:', error);
+        renderTeachers([]);
+        return [];
+    }
 }
 
 async function saveTeacherSubjects() {
-    const teacherSelect = document.getElementById('teacherSelect');
-    const subjectInput = document.getElementById('teacherSubjectsInput');
     const status = document.getElementById('teacherSubjectStatus');
-    if (!teacherSelect || !subjectInput || !status) return;
+    const select = document.getElementById('teacherSelect');
+    const input = document.getElementById('teacherSubjectsInput');
+    if (!select || !input) return;
+    const teacherEgn = select.value;
+    const subjects = input.value.split(',').map(s => s.trim()).filter(Boolean);
 
-    const teacherId = teacherSelect.value;
-    const subjects = subjectInput.value
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+    if (isDemo) {
+        status.textContent = 'Saved (demo).';
+        return;
+    }
 
     try {
+        status.textContent = 'Saving...';
         const res = await fetch(`${BACKEND_BASE_URL}/api/teacher/subjects`, {
             method: 'POST',
             headers: authHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ teacherEgn: teacherId, subjects })
+            body: JSON.stringify({ teacherEgn, subjects })
         });
-
-        if (!res.ok) throw new Error(`save_http_${res.status}`);
-
-        status.textContent = 'Saved to backend';
-        setSystemStatus('Connected', true);
-    } catch (_err) {
-        const idx = teacherAssignments.findIndex((t) => (t.egn || t.email) === teacherId);
-        if (idx >= 0) teacherAssignments[idx].subjects = subjects;
-        renderTeachers(teacherAssignments);
-        status.textContent = 'Saved in demo mode';
-        setSystemStatus('Demo mode fallback', false);
+        if (!res.ok) throw new Error('Save failed');
+        status.textContent = 'Saved.';
+        loadTeachers();
+    } catch (error) {
+        console.error('Could not save subjects:', error);
+        status.textContent = 'Failed.';
     }
 }
 
-async function bootstrapAdmin() {
-    const adminName = document.getElementById('adminName');
-    if (adminName) {
-        adminName.textContent = secondNameOf(user?.displayName || demoData.admin?.name, 'Admin');
-    }
-
-    setSystemStatus('Loading...');
-
-    const [users, feedback] = await Promise.all([
-        loadUsers(),
-        loadFeedback(),
-        loadTeachers()
-    ]).then((results) => [results[0], results[1]])
-      .catch(() => [demoData.users || [], demoData.feedback || []]);
-
-    renderMetrics(users || [], feedback || []);
-
-    const hasToken = Boolean(token);
-    setSystemStatus(hasToken ? 'Connected' : 'Demo mode fallback', hasToken);
+async function init() {
+    await loadStatus();
+    const [users, feedback] = await Promise.all([loadUsers(), loadFeedback()]);
+    renderMetrics(users, feedback.length);
+    loadTeachers();
 }
-
-document.addEventListener('DOMContentLoaded', bootstrapAdmin);
 
 window.loadUsers = loadUsers;
 window.loadFeedback = loadFeedback;
 window.loadTeachers = loadTeachers;
 window.saveTeacherSubjects = saveTeacherSubjects;
+
+init();
+
+const teacherSelect = document.getElementById('teacherSelect');
+if (teacherSelect) {
+    teacherSelect.addEventListener('change', (event) => {
+        const option = event.target.selectedOptions[0];
+        const subjects = option?.dataset?.subjects || '';
+        const input = document.getElementById('teacherSubjectsInput');
+        if (input) input.value = subjects;
+    });
+}

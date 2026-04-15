@@ -18,6 +18,7 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 app.get('/student', (req, res) => res.sendFile(path.join(__dirname, 'views', 'student.html')));
 app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'teacher.html')));
 app.get('/parent', (req, res) => res.sendFile(path.join(__dirname, 'views', 'parent.html')));
