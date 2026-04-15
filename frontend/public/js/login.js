@@ -15,11 +15,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            const payload = await response.json();
-            const user = payload.user;
-            const token = payload.token;
+            const user = await response.json();
             localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('token', token);
 
             if (user.role === 'TEACHER') {
                 window.location.href = '/teacher';
