@@ -4,6 +4,7 @@ const user = JSON.parse(localStorage.getItem('user'));
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
+let adminLang = localStorage.getItem('adminLang') || 'en';
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -183,7 +184,7 @@ async function loadUsers() {
         return users;
     }
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/user/all`, {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, {
             headers: authHeaders()
         });
         const rawUsers = res.ok ? await res.json() : [];
@@ -194,6 +195,36 @@ async function loadUsers() {
         console.error('Could not load users:', error);
         renderUsers([]);
         return [];
+    }
+}
+
+function setAdminLanguage(lang) {
+    adminLang = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'].includes(lang) ? lang : 'en';
+    const words = {
+        en: { logout: 'Logout', workspace: 'Administrator Workspace', directory: 'Directory', users: 'Users', refresh: 'Refresh' },
+        bg: { logout: 'Изход', workspace: 'Администраторски профил', directory: 'Директория', users: 'Потребители', refresh: 'Обнови' },
+        it: { logout: 'Esci', workspace: 'Area Amministratore', directory: 'Directory', users: 'Utenti', refresh: 'Aggiorna' },
+        de: { logout: 'Abmelden', workspace: 'Adminbereich', directory: 'Verzeichnis', users: 'Benutzer', refresh: 'Aktualisieren' },
+        el: { logout: 'Έξοδος', workspace: 'Χώρος Διαχειριστή', directory: 'Κατάλογος', users: 'Χρήστες', refresh: 'Ανανέωση' },
+        ro: { logout: 'Ieșire', workspace: 'Spațiu Administrator', directory: 'Director', users: 'Utilizatori', refresh: 'Reîmprospătează' },
+        sr: { logout: 'Одјава', workspace: 'Админ профил', directory: 'Директоријум', users: 'Корисници', refresh: 'Освежи' }
+    };
+    const w = words[adminLang] || words.en;
+    localStorage.setItem('adminLang', adminLang);
+    const select = document.getElementById('adminLanguageSelect');
+    if (select) select.value = adminLang;
+    const logout = document.querySelector('.navbar .logout[href="/"]');
+    if (logout) logout.textContent = w.logout;
+    const eye = document.querySelector('.greeting .section-eyebrow');
+    if (eye) eye.textContent = w.workspace;
+    const userSection = document.getElementById('userList')?.closest('.section-card');
+    if (userSection) {
+        const e = userSection.querySelector('.section-eyebrow');
+        const t = userSection.querySelector('.section-title');
+        const b = userSection.querySelector('button');
+        if (e) e.textContent = w.directory;
+        if (t) t.textContent = w.users;
+        if (b) b.textContent = w.refresh;
     }
 }
 
@@ -283,8 +314,10 @@ window.loadUsers = loadUsers;
 window.loadFeedback = loadFeedback;
 window.loadTeachers = loadTeachers;
 window.saveTeacherSubjects = saveTeacherSubjects;
+window.setAdminLanguage = setAdminLanguage;
 
 init();
+setAdminLanguage(adminLang);
 
 const teacherSelect = document.getElementById('teacherSelect');
 if (teacherSelect) {

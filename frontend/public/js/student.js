@@ -21,6 +21,96 @@ let practiceAnswered = false;
 let currentPracticeGame = 'flash';
 let studentLang = localStorage.getItem('studentLang') || 'en';
 let currentClassroomLock = false;
+const supportedStudentLangs = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'];
+const I18N = {
+    en: {
+        studentWorkspace: 'Student Workspace',
+        classLabel: 'Class:',
+        heroDesc: 'Track your lessons, write live notes, and stay connected with your teacher.',
+        liveStudyTools: 'Live study tools',
+        attendance: 'Attendance',
+        home: 'Home',
+        subjects: 'Subjects',
+        schedule: 'Schedule',
+        homework: 'Homework',
+        practice: 'Practice',
+        grades: 'Grades',
+        tests: 'Tests',
+        notifications: 'Notifications',
+        directory: 'Directory',
+        users: 'Users',
+        refresh: 'Refresh',
+        logout: 'Logout',
+        loading: 'Loading...',
+        noDataSchedule: 'No schedule data yet.',
+        noDataHomework: 'No homework data yet.',
+        noNotifications: 'No notifications yet.',
+        openSubjects: 'Open Subjects',
+        openSchedule: 'Open Schedule',
+        openHomework: 'Open Homework',
+        startPractice: 'Start Practice',
+        viewAttendance: 'View Attendance',
+        openMessages: 'Open Messages',
+        openTests: 'Open Tests',
+        rewards: 'Rewards',
+        motivation: 'Motivation',
+        next: 'Next',
+        newRound: 'New Round',
+        testsSoon: 'Tests Soon',
+        homeworkTomorrow: 'Homework Tomorrow',
+        studyLoad: 'Study Load',
+        priority: 'Priority',
+        noRecordsYet: 'No records yet.',
+        classroomFocusMode: 'Classroom Focus Mode',
+        teacherPresenting: 'Teacher is presenting. Stay on this screen.'
+    },
+    bg: {
+        studentWorkspace: 'Ученически профил',
+        classLabel: 'Клас:',
+        heroDesc: 'Следи уроците си, пиши бележки на живо и бъди свързан с учителя.',
+        liveStudyTools: 'Инструменти за учене',
+        attendance: 'Присъствие',
+        home: 'Начало',
+        subjects: 'Предмети',
+        schedule: 'Програма',
+        homework: 'Домашни',
+        practice: 'Практика',
+        grades: 'Оценки',
+        tests: 'Тестове',
+        notifications: 'Известия',
+        directory: 'Директория',
+        users: 'Потребители',
+        refresh: 'Обнови',
+        logout: 'Изход',
+        loading: 'Зареждане...',
+        noDataSchedule: 'Все още няма програма.',
+        noDataHomework: 'Все още няма домашни.',
+        noNotifications: 'Все още няма известия.',
+        openSubjects: 'Отвори предмети',
+        openSchedule: 'Отвори програма',
+        openHomework: 'Отвори домашни',
+        startPractice: 'Старт практика',
+        viewAttendance: 'Виж присъствие',
+        openMessages: 'Отвори съобщения',
+        openTests: 'Отвори тестове',
+        rewards: 'Награди',
+        motivation: 'Мотивация',
+        next: 'Напред',
+        newRound: 'Нов рунд',
+        testsSoon: 'Скорошни тестове',
+        homeworkTomorrow: 'Домашно за утре',
+        studyLoad: 'Натоварване',
+        priority: 'Приоритет',
+        noRecordsYet: 'Все още няма записи.',
+        classroomFocusMode: 'Режим фокус',
+        teacherPresenting: 'Учителят представя. Остани на този екран.'
+    },
+    it: { studentWorkspace: 'Area Studente', classLabel: 'Classe:', heroDesc: 'Segui le lezioni, scrivi appunti in tempo reale e resta connesso con il docente.', liveStudyTools: 'Strumenti studio live', attendance: 'Presenze', home: 'Home', subjects: 'Materie', schedule: 'Orario', homework: 'Compiti', practice: 'Esercizi', grades: 'Voti', tests: 'Test', notifications: 'Notifiche', logout: 'Esci', loading: 'Caricamento...', noDataSchedule: 'Nessun orario disponibile.', noDataHomework: 'Nessun compito disponibile.', noNotifications: 'Nessuna notifica.', openSubjects: 'Apri Materie', openSchedule: 'Apri Orario', openHomework: 'Apri Compiti', startPractice: 'Inizia Esercizi', viewAttendance: 'Vedi Presenze', openMessages: 'Apri Messaggi', openTests: 'Apri Test', rewards: 'Ricompense', motivation: 'Motivazione', next: 'Avanti', newRound: 'Nuovo turno', testsSoon: 'Test in arrivo', homeworkTomorrow: 'Compiti per domani', studyLoad: 'Carico studio', priority: 'Priorità', noRecordsYet: 'Nessun record.', classroomFocusMode: 'Modalità Focus Classe', teacherPresenting: 'Il docente sta presentando. Resta su questa schermata.' },
+    de: { studentWorkspace: 'Schülerbereich', classLabel: 'Klasse:', heroDesc: 'Verfolge den Unterricht, schreibe Live-Notizen und bleibe mit der Lehrkraft verbunden.', liveStudyTools: 'Live-Lernwerkzeuge', attendance: 'Anwesenheit', home: 'Start', subjects: 'Fächer', schedule: 'Stundenplan', homework: 'Hausaufgaben', practice: 'Übung', grades: 'Noten', tests: 'Tests', notifications: 'Benachrichtigungen', logout: 'Abmelden', loading: 'Lädt...', noDataSchedule: 'Noch keine Stundenplandaten.', noDataHomework: 'Noch keine Hausaufgaben.', noNotifications: 'Noch keine Benachrichtigungen.', openSubjects: 'Fächer öffnen', openSchedule: 'Stundenplan öffnen', openHomework: 'Hausaufgaben öffnen', startPractice: 'Übung starten', viewAttendance: 'Anwesenheit ansehen', openMessages: 'Nachrichten öffnen', openTests: 'Tests öffnen', rewards: 'Belohnungen', motivation: 'Motivation', next: 'Weiter', newRound: 'Neue Runde', testsSoon: 'Tests bald', homeworkTomorrow: 'Hausaufgaben morgen', studyLoad: 'Lernaufwand', priority: 'Priorität', noRecordsYet: 'Noch keine Einträge.', classroomFocusMode: 'Klassen-Fokusmodus', teacherPresenting: 'Die Lehrkraft präsentiert. Bitte auf diesem Bildschirm bleiben.' },
+    el: { studentWorkspace: 'Χώρος Μαθητή', classLabel: 'Τάξη:', heroDesc: 'Παρακολούθησε τα μαθήματά σου, γράψε σημειώσεις ζωντανά και μείνε συνδεδεμένος με τον καθηγητή.', liveStudyTools: 'Εργαλεία μελέτης', attendance: 'Παρουσίες', home: 'Αρχική', subjects: 'Μαθήματα', schedule: 'Πρόγραμμα', homework: 'Εργασίες', practice: 'Εξάσκηση', grades: 'Βαθμοί', tests: 'Τεστ', notifications: 'Ειδοποιήσεις', logout: 'Έξοδος', loading: 'Φόρτωση...', noDataSchedule: 'Δεν υπάρχουν στοιχεία προγράμματος.', noDataHomework: 'Δεν υπάρχουν εργασίες.', noNotifications: 'Δεν υπάρχουν ειδοποιήσεις.', openSubjects: 'Άνοιγμα μαθημάτων', openSchedule: 'Άνοιγμα προγράμματος', openHomework: 'Άνοιγμα εργασιών', startPractice: 'Έναρξη εξάσκησης', viewAttendance: 'Προβολή παρουσιών', openMessages: 'Άνοιγμα μηνυμάτων', openTests: 'Άνοιγμα τεστ', rewards: 'Ανταμοιβές', motivation: 'Κίνητρο', next: 'Επόμενο', newRound: 'Νέος γύρος', testsSoon: 'Τεστ σύντομα', homeworkTomorrow: 'Εργασίες για αύριο', studyLoad: 'Φορτίο μελέτης', priority: 'Προτεραιότητα', noRecordsYet: 'Δεν υπάρχουν εγγραφές.', classroomFocusMode: 'Λειτουργία Συγκέντρωσης', teacherPresenting: 'Ο καθηγητής παρουσιάζει. Μείνε σε αυτή την οθόνη.' },
+    ro: { studentWorkspace: 'Spațiu Elev', classLabel: 'Clasa:', heroDesc: 'Urmărește lecțiile, scrie notițe live și rămâi conectat cu profesorul.', liveStudyTools: 'Instrumente de studiu live', attendance: 'Prezență', home: 'Acasă', subjects: 'Materii', schedule: 'Orar', homework: 'Teme', practice: 'Exercițiu', grades: 'Note', tests: 'Teste', notifications: 'Notificări', logout: 'Ieșire', loading: 'Se încarcă...', noDataSchedule: 'Nu există date de orar.', noDataHomework: 'Nu există teme.', noNotifications: 'Nu există notificări.', openSubjects: 'Deschide Materii', openSchedule: 'Deschide Orar', openHomework: 'Deschide Teme', startPractice: 'Începe Exercițiul', viewAttendance: 'Vezi Prezența', openMessages: 'Deschide Mesaje', openTests: 'Deschide Teste', rewards: 'Recompense', motivation: 'Motivație', next: 'Următorul', newRound: 'Rundă nouă', testsSoon: 'Teste curând', homeworkTomorrow: 'Teme pentru mâine', studyLoad: 'Volum de studiu', priority: 'Prioritate', noRecordsYet: 'Nu există înregistrări.', classroomFocusMode: 'Mod Focus Clasă', teacherPresenting: 'Profesorul prezintă. Rămâi pe acest ecran.' },
+    sr: { studentWorkspace: 'Учeнички профил', classLabel: 'Разред:', heroDesc: 'Прати часове, пиши белешке уживо и остани повезан са наставником.', liveStudyTools: 'Алати за учење', attendance: 'Присуство', home: 'Почетна', subjects: 'Предмети', schedule: 'Распоред', homework: 'Домаћи', practice: 'Вежба', grades: 'Оцене', tests: 'Тестови', notifications: 'Обавештења', logout: 'Одјава', loading: 'Учитавање...', noDataSchedule: 'Још нема распореда.', noDataHomework: 'Још нема домаћих.', noNotifications: 'Нема обавештења.', openSubjects: 'Отвори предмете', openSchedule: 'Отвори распоред', openHomework: 'Отвори домаће', startPractice: 'Покрени вежбу', viewAttendance: 'Погледај присуство', openMessages: 'Отвори поруке', openTests: 'Отвори тестове', rewards: 'Награде', motivation: 'Мотивација', next: 'Даље', newRound: 'Нова рунда', testsSoon: 'Тестови ускоро', homeworkTomorrow: 'Домаћи за сутра', studyLoad: 'Оптерећење', priority: 'Приоритет', noRecordsYet: 'Још нема записа.', classroomFocusMode: 'Режим фокуса', teacherPresenting: 'Наставник презентује. Остани на овом екрану.' }
+};
 const rewardsStorageKey = `techdesk_rewards_${user?.email || user?.egn || 'student'}`;
 let rewardsState = {
     xp: 0,
@@ -55,6 +145,11 @@ function saveRewardsState() {
     localStorage.setItem(rewardsStorageKey, JSON.stringify(rewardsState));
 }
 
+function t(key) {
+    const lang = supportedStudentLangs.includes(studentLang) ? studentLang : 'en';
+    return I18N[lang]?.[key] || I18N.en[key] || key;
+}
+
 function addReward(xp, badge, reason) {
     rewardsState.xp += Math.max(0, Number(xp || 0));
     if (badge && !rewardsState.badges.includes(badge)) rewardsState.badges.push(badge);
@@ -69,44 +164,127 @@ function renderRewards() {
     if (grid) {
         grid.innerHTML = `
             <div class="reward-tile"><span>XP</span><strong>${rewardsState.xp}</strong></div>
-            <div class="reward-tile"><span>Streak</span><strong>${rewardsState.streak} days</strong></div>
-            <div class="reward-tile"><span>Practice Rounds</span><strong>${rewardsState.practiceRounds}</strong></div>
-            <div class="reward-tile"><span>Tests Submitted</span><strong>${rewardsState.testsSubmitted}</strong></div>
+            <div class="reward-tile"><span>${t('studyLoad')}</span><strong>${rewardsState.streak}</strong></div>
+            <div class="reward-tile"><span>${t('practice')}</span><strong>${rewardsState.practiceRounds}</strong></div>
+            <div class="reward-tile"><span>${t('tests')}</span><strong>${rewardsState.testsSubmitted}</strong></div>
         `;
     }
     if (badges) {
         badges.innerHTML = rewardsState.badges.length
             ? rewardsState.badges.map((badge) => `<span class="practice-badge">${badge}</span>`).join('')
-            : '<span class="practice-badge muted">No badges yet. Complete a round to unlock one.</span>';
+            : `<span class="practice-badge muted">${t('noNotifications')}</span>`;
     }
 }
 
 function updateLanguageTexts() {
-    const isBg = studentLang === 'bg';
-    const btn = document.getElementById('languageToggleBtn');
-    if (btn) btn.textContent = isBg ? 'EN' : 'BG';
+    const select = document.getElementById('languageSelect');
+    if (select && select.value !== studentLang) select.value = studentLang;
 
-    const greetings = document.querySelector('.greeting p:last-child');
-    if (greetings) {
-        greetings.textContent = isBg
-            ? 'Следи уроците си, пиши бележки на живо и бъди свързан с учителя.'
-            : 'Track your lessons, write live notes, and stay connected with your teacher.';
-    }
+    const logout = document.querySelector('.navbar .logout[href="/"]');
+    if (logout) logout.textContent = t('logout');
+    const eyebrow = document.querySelector('.greeting .section-eyebrow');
+    if (eyebrow) eyebrow.textContent = t('studentWorkspace');
+    const classP = document.querySelector('.greeting p');
+    if (classP) classP.firstChild.textContent = `${t('classLabel')} `;
+    const greetDesc = document.querySelector('.greeting p:last-child');
+    if (greetDesc) greetDesc.textContent = t('heroDesc');
     const heroPill = document.querySelector('.hero-pill');
-    if (heroPill) heroPill.textContent = isBg ? 'Инструменти за учене' : 'Live study tools';
+    if (heroPill) heroPill.textContent = t('liveStudyTools');
+    const attendanceLbl = document.querySelector('.hero-stat-label');
+    if (attendanceLbl) attendanceLbl.textContent = t('attendance');
+    const tabs = {
+        home: 'home', subjects: 'subjects', schedule: 'schedule', homework: 'homework',
+        practice: 'practice', attendance: 'attendance', grades: 'grades', tests: 'tests', notifications: 'notifications'
+    };
+    Object.entries(tabs).forEach(([panel, key]) => {
+        const btn = document.querySelector(`.student-tab[data-panel-btn="${panel}"]`);
+        if (btn) btn.textContent = t(key);
+    });
+    const cards = document.querySelectorAll('.dashboard-grid .card');
+    if (cards[0]) cards[0].querySelector('h3').textContent = t('subjects');
+    if (cards[0]) cards[0].querySelector('button').textContent = t('openSubjects');
+    if (cards[1]) cards[1].querySelector('h3').textContent = t('schedule');
+    if (cards[1]) cards[1].querySelector('button').textContent = t('openSchedule');
+    if (cards[2]) cards[2].querySelector('h3').textContent = t('homework');
+    if (cards[2]) cards[2].querySelector('button').textContent = t('openHomework');
+    if (cards[3]) cards[3].querySelector('h3').textContent = t('practice');
+    if (cards[3]) cards[3].querySelector('button').textContent = t('startPractice');
+    if (cards[4]) cards[4].querySelector('h3').textContent = t('attendance');
+    if (cards[4]) cards[4].querySelector('button').textContent = t('viewAttendance');
+    if (cards[5]) cards[5].querySelector('button').textContent = t('openMessages');
+    if (cards[6]) cards[6].querySelector('h3').textContent = t('tests');
+    if (cards[6]) cards[6].querySelector('button').textContent = t('openTests');
+    const lockTitle = document.querySelector('#classroomLockOverlay h3');
+    if (lockTitle) lockTitle.textContent = t('classroomFocusMode');
+    const lockMsg = document.getElementById('classroomLockMessage');
+    if (lockMsg && !currentClassroomLock) lockMsg.textContent = t('teacherPresenting');
+    const nextBtn = document.getElementById('practiceNextBtn');
+    if (nextBtn) nextBtn.textContent = t('next');
+    const newRoundBtn = document.querySelector('#practiceSection .section-header .action-btn');
+    if (newRoundBtn) newRoundBtn.textContent = t('newRound');
+    const testsSoon = document.querySelector('#focusBoard .focus-item:nth-child(1) .focus-label');
+    if (testsSoon) testsSoon.textContent = t('testsSoon');
+    const hwTomorrow = document.querySelector('#focusBoard .focus-item:nth-child(2) .focus-label');
+    if (hwTomorrow) hwTomorrow.textContent = t('homeworkTomorrow');
+    const studyLoad = document.querySelector('#focusBoard .focus-item:nth-child(3) .focus-label');
+    if (studyLoad) studyLoad.textContent = t('studyLoad');
+    const priority = document.querySelector('#focusBoard .focus-item:nth-child(4) .focus-label');
+    if (priority) priority.textContent = t('priority');
+    const sectionTitles = {
+        '#subjectsSection .section-title': 'subjects',
+        '#scheduleSection .section-title': 'schedule',
+        '#homeworkSection .section-title': 'homework',
+        '#attendanceSection .section-title': 'attendance',
+        '#gradesSection .section-title': 'grades',
+        '#testsSection .section-title': 'tests'
+    };
+    Object.entries(sectionTitles).forEach(([sel, key]) => {
+        const el = document.querySelector(sel);
+        if (el) el.textContent = t(key);
+    });
+    const rewardsTitle = document.querySelector('.rewards-board .section-title');
+    if (rewardsTitle) rewardsTitle.textContent = t('rewards');
+    const rewardsEye = document.querySelector('.rewards-board .section-eyebrow');
+    if (rewardsEye) rewardsEye.textContent = t('motivation');
+    const notificationsTitle = document.querySelector('[data-panel="notifications"] h4');
+    if (notificationsTitle) notificationsTitle.textContent = t('notifications');
+    const botGreeting = document.querySelector('#studyBotBody .study-bot-msg');
+    if (botGreeting) botGreeting.textContent = `Hi, I am ThroneBuddy.`;
+    const botInput = document.getElementById('studyBotInput');
+    if (botInput) botInput.placeholder = '...';
+    const botAskBtn = document.querySelector('.study-bot-input-row button');
+    if (botAskBtn) botAskBtn.textContent = studentLang === 'bg' ? 'Питай' : 'Ask';
+    const testKicker = document.querySelector('.test-kicker');
+    if (testKicker) testKicker.textContent = studentLang === 'bg' ? 'Режим Тест' : 'Exam Mode';
+    const penBtn = document.getElementById('testPenBtn');
+    if (penBtn) penBtn.textContent = studentLang === 'bg' ? 'Химикал' : 'Pen';
+    const clearBtn = document.querySelector('.test-tools .tool-btn:not(.active)');
+    if (clearBtn) clearBtn.textContent = studentLang === 'bg' ? 'Изчисти' : 'Clear';
+    const submitBtn = document.querySelector('.test-tools .action-btn');
+    if (submitBtn) submitBtn.textContent = studentLang === 'bg' ? 'Предай тест' : 'Submit Test';
+    const dirSection = document.getElementById('studentDirectoryList')?.closest('.section-card');
+    if (dirSection) {
+        const e = dirSection.querySelector('.section-eyebrow');
+        const st = dirSection.querySelector('.section-title');
+        const b = dirSection.querySelector('button');
+        if (e) e.textContent = t('directory');
+        if (st) st.textContent = t('users');
+        if (b) b.textContent = t('refresh');
+    }
 }
 
-function toggleStudentLanguage() {
-    studentLang = studentLang === 'en' ? 'bg' : 'en';
+function setStudentLanguage(lang) {
+    studentLang = supportedStudentLangs.includes(lang) ? lang : 'en';
     localStorage.setItem('studentLang', studentLang);
     updateLanguageTexts();
+    renderRewards();
 }
 
-function setClassroomLock(enabled, message = 'Teacher is presenting. Stay on this screen.') {
+function setClassroomLock(enabled, message = '') {
     currentClassroomLock = Boolean(enabled);
     const overlay = document.getElementById('classroomLockOverlay');
     const msg = document.getElementById('classroomLockMessage');
-    if (msg && message) msg.textContent = message;
+    if (msg) msg.textContent = message || t('teacherPresenting');
     if (overlay) overlay.style.display = currentClassroomLock ? 'flex' : 'none';
 }
 
@@ -870,6 +1048,42 @@ function askStudyBot() {
     input.value = '';
 }
 
+async function loadStudentDirectoryUsers() {
+    const list = document.getElementById('studentDirectoryList');
+    if (!list) return;
+    try {
+        if (isDemo && demoData) {
+            const users = demoData.users || [];
+            if (!users.length) {
+                list.innerHTML = '<p class="empty-state">No users found.</p>';
+                return;
+            }
+            list.innerHTML = users.map(u => `
+                <div class="user-card-item">
+                    <h4>${u.displayName || u.name || 'User'}</h4>
+                    <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
+                </div>
+            `).join('');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
+        const users = res.ok ? await res.json() : [];
+        if (!users.length) {
+            list.innerHTML = '<p class="empty-state">No users found.</p>';
+            return;
+        }
+        list.innerHTML = users.map(u => `
+            <div class="user-card-item">
+                <h4>${u.displayName || 'User'}</h4>
+                <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Could not load student directory users:', error);
+        list.innerHTML = '<p class="empty-state">No users found.</p>';
+    }
+}
+
 window.toggleStudyBot = toggleStudyBot;
 window.askStudyBot = askStudyBot;
 window.askStudyBotQuick = askStudyBotQuick;
@@ -878,7 +1092,8 @@ window.switchStudentPanel = switchStudentPanel;
 window.startPracticeGame = startPracticeGame;
 window.nextPracticeQuestion = nextPracticeQuestion;
 window.setPracticeGame = setPracticeGame;
-window.toggleStudentLanguage = toggleStudentLanguage;
+window.setStudentLanguage = setStudentLanguage;
+window.loadStudentDirectoryUsers = loadStudentDirectoryUsers;
 
 if (isDemo) {
     insertDemoBanner();
@@ -898,6 +1113,7 @@ loadRewardsState();
 renderRewards();
 updateLanguageTexts();
 emitStudentPresence('active');
+loadStudentDirectoryUsers();
 
 if (!isDemo) {
     socket.on('attendance-updated', (data) => {

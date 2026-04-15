@@ -22,7 +22,18 @@
                 </div>
             </div>
         </div>
-        <a href="/" class="logout">Logout</a>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <select class="logout" id="parentLanguageSelect" onchange="setParentLanguage(this.value)" aria-label="Language">
+                <option value="en">EN</option>
+                <option value="bg">BG</option>
+                <option value="it">IT</option>
+                <option value="de">DE</option>
+                <option value="el">EL</option>
+                <option value="ro">RO</option>
+                <option value="sr">SR</option>
+            </select>
+            <a href="/" class="logout">Logout</a>
+        </div>
     </nav>
 
     <div class="container">
@@ -108,6 +119,19 @@
             <h4>Notifications</h4>
             <div id="parentNotifications">
                 <p class="empty-state">No notifications yet.</p>
+            </div>
+        </div>
+
+        <div class="card section-card">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Directory</span>
+                    <h3 class="section-title">Users</h3>
+                </div>
+                <button class="action-btn secondary-btn" onclick="loadParentDirectoryUsers()">Refresh</button>
+            </div>
+            <div id="parentDirectoryList">
+                <p class="empty-state">No users found.</p>
             </div>
         </div>
 

@@ -101,17 +101,29 @@ public class UserController {
         boolean emailAuthorized = false;
         boolean egnAuthorized = false;
         if (userEmail != null && !userEmail.isBlank()) {
-            User user = userService.findByEmail(userEmail.trim());
+            User user = userService.getUserByEmail(userEmail.trim());
             emailAuthorized = user != null && user.getRole() == Role.ADMIN;
         }
         if (userEgn != null && !userEgn.isBlank()) {
-            User user = userService.findById(userEgn.trim());
+            User user = userService.getUserByEgn(userEgn.trim());
             egnAuthorized = user != null && user.getRole() == Role.ADMIN;
         }
         if (!keyAuthorized && !emailAuthorized && !egnAuthorized) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/directory")
+    public ResponseEntity<List<Map<String, String>>> getDirectoryUsers() {
+        List<Map<String, String>> directory = userService.getAllUsers().stream()
+            .map(u -> Map.of(
+                "displayName", (u.getDisplayName() == null || u.getDisplayName().isBlank()) ? "User" : u.getDisplayName(),
+                "email", (u.getEmail() == null ? "-" : u.getEmail()),
+                "role", (u.getRole() == null ? "USER" : u.getRole().name())
+            ))
+            .toList();
+        return ResponseEntity.ok(directory);
     }
 
     @GetMapping("/setup")
@@ -185,7 +197,7 @@ public class UserController {
         }
         String validation = validateProfileLink(user);
         if (validation != null) {
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(validation);
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT).body(validation);
         }
         if (!user.getPassword().startsWith("$2a$") && !user.getPassword().startsWith("$2b$")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));

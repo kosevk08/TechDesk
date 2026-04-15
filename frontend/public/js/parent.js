@@ -5,6 +5,7 @@ const socket = io('https://techdesk-frontend.onrender.com');
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
+let parentLang = localStorage.getItem('parentLang') || 'en';
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -703,3 +704,71 @@ async function loadParentNotifications() {
         console.error('Could not load notifications:', error);
     }
 }
+
+function setParentLanguage(lang) {
+    parentLang = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'].includes(lang) ? lang : 'en';
+    const words = {
+        en: { logout: 'Logout', workspace: 'Parent Workspace', directory: 'Directory', users: 'Users', refresh: 'Refresh' },
+        bg: { logout: 'Изход', workspace: 'Родителски профил', directory: 'Директория', users: 'Потребители', refresh: 'Обнови' },
+        it: { logout: 'Esci', workspace: 'Area Genitore', directory: 'Directory', users: 'Utenti', refresh: 'Aggiorna' },
+        de: { logout: 'Abmelden', workspace: 'Elternbereich', directory: 'Verzeichnis', users: 'Benutzer', refresh: 'Aktualisieren' },
+        el: { logout: 'Έξοδος', workspace: 'Χώρος Γονέα', directory: 'Κατάλογος', users: 'Χρήστες', refresh: 'Ανανέωση' },
+        ro: { logout: 'Ieșire', workspace: 'Spațiu Părinte', directory: 'Director', users: 'Utilizatori', refresh: 'Reîmprospătează' },
+        sr: { logout: 'Одјава', workspace: 'Родитељски профил', directory: 'Директоријум', users: 'Корисници', refresh: 'Освежи' }
+    };
+    const w = words[parentLang] || words.en;
+    localStorage.setItem('parentLang', parentLang);
+    const select = document.getElementById('parentLanguageSelect');
+    if (select) select.value = parentLang;
+    const logout = document.querySelector('.navbar .logout[href="/"]');
+    if (logout) logout.textContent = w.logout;
+    const eye = document.querySelector('.greeting .section-eyebrow');
+    if (eye) eye.textContent = w.workspace;
+    const dirEye = document.querySelector('#parentDirectoryList')?.closest('.section-card')?.querySelector('.section-eyebrow');
+    if (dirEye) dirEye.textContent = w.directory;
+    const dirTitle = document.querySelector('#parentDirectoryList')?.closest('.section-card')?.querySelector('.section-title');
+    if (dirTitle) dirTitle.textContent = w.users;
+    const dirBtn = document.querySelector('#parentDirectoryList')?.closest('.section-card')?.querySelector('button');
+    if (dirBtn) dirBtn.textContent = w.refresh;
+}
+
+async function loadParentDirectoryUsers() {
+    const list = document.getElementById('parentDirectoryList');
+    if (!list) return;
+    try {
+        if (isDemo && demoData) {
+            const users = demoData.users || [];
+            if (!users.length) {
+                list.innerHTML = '<p class="empty-state">No users found.</p>';
+                return;
+            }
+            list.innerHTML = users.map(u => `
+                <div class="user-card-item">
+                    <h4>${u.displayName || u.name || 'User'}</h4>
+                    <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
+                </div>
+            `).join('');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
+        const users = res.ok ? await res.json() : [];
+        if (!users.length) {
+            list.innerHTML = '<p class="empty-state">No users found.</p>';
+            return;
+        }
+        list.innerHTML = users.map(u => `
+            <div class="user-card-item">
+                <h4>${u.displayName || 'User'}</h4>
+                <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Could not load parent directory users:', error);
+        list.innerHTML = '<p class="empty-state">No users found.</p>';
+    }
+}
+
+window.setParentLanguage = setParentLanguage;
+window.loadParentDirectoryUsers = loadParentDirectoryUsers;
+setParentLanguage(parentLang);
+loadParentDirectoryUsers();

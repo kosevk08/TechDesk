@@ -23,7 +23,15 @@
             </div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-            <button class="logout" type="button" id="languageToggleBtn" onclick="toggleStudentLanguage()">BG</button>
+            <select class="logout" id="languageSelect" onchange="setStudentLanguage(this.value)" aria-label="Language">
+                <option value="en">EN</option>
+                <option value="bg">BG</option>
+                <option value="it">IT</option>
+                <option value="de">DE</option>
+                <option value="el">EL</option>
+                <option value="ro">RO</option>
+                <option value="sr">SR</option>
+            </select>
             <a href="/" class="logout">Logout</a>
         </div>
     </nav>
@@ -131,6 +139,19 @@
                     </div>
                 </div>
                 <div class="rewards-grid" id="rewardsGrid"></div>
+            </div>
+
+            <div class="card section-card">
+                <div class="section-header">
+                    <div>
+                        <span class="section-eyebrow">Directory</span>
+                        <h3 class="section-title">Users</h3>
+                    </div>
+                    <button class="action-btn secondary-btn" onclick="loadStudentDirectoryUsers()">Refresh</button>
+                </div>
+                <div id="studentDirectoryList">
+                    <p class="empty-state">No users found.</p>
+                </div>
             </div>
         </div>
 

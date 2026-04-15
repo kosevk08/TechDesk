@@ -5,6 +5,7 @@ const user = JSON.parse(localStorage.getItem('user'));
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
+let teacherLang = localStorage.getItem('teacherLang') || 'en';
 let studentNames = [];
 let gradeAutosaveTimer = null;
 let lastGradeHash = null;
@@ -1455,3 +1456,71 @@ if (!isDemo) {
 window.lockClassroom = lockClassroom;
 window.unlockClassroom = unlockClassroom;
 window.syncClassroomPanel = syncClassroomPanel;
+
+function setTeacherLanguage(lang) {
+    teacherLang = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'].includes(lang) ? lang : 'en';
+    const words = {
+        en: { logout: 'Logout', workspace: 'Teacher Workspace', directory: 'Directory', users: 'Users', refresh: 'Refresh' },
+        bg: { logout: 'Изход', workspace: 'Учителски профил', directory: 'Директория', users: 'Потребители', refresh: 'Обнови' },
+        it: { logout: 'Esci', workspace: 'Area Docente', directory: 'Directory', users: 'Utenti', refresh: 'Aggiorna' },
+        de: { logout: 'Abmelden', workspace: 'Lehrerbereich', directory: 'Verzeichnis', users: 'Benutzer', refresh: 'Aktualisieren' },
+        el: { logout: 'Έξοδος', workspace: 'Χώρος Καθηγητή', directory: 'Κατάλογος', users: 'Χρήστες', refresh: 'Ανανέωση' },
+        ro: { logout: 'Ieșire', workspace: 'Spațiu Profesor', directory: 'Director', users: 'Utilizatori', refresh: 'Reîmprospătează' },
+        sr: { logout: 'Одјава', workspace: 'Наставнички профил', directory: 'Директоријум', users: 'Корисници', refresh: 'Освежи' }
+    };
+    const w = words[teacherLang] || words.en;
+    localStorage.setItem('teacherLang', teacherLang);
+    const select = document.getElementById('teacherLanguageSelect');
+    if (select) select.value = teacherLang;
+    const logout = document.querySelector('.navbar .logout[href="/"]');
+    if (logout) logout.textContent = w.logout;
+    const eye = document.querySelector('.greeting .section-eyebrow');
+    if (eye) eye.textContent = w.workspace;
+    const dirEye = document.querySelector('#teacherDirectoryList')?.closest('.section-card')?.querySelector('.section-eyebrow');
+    if (dirEye) dirEye.textContent = w.directory;
+    const dirTitle = document.querySelector('#teacherDirectoryList')?.closest('.section-card')?.querySelector('.section-title');
+    if (dirTitle) dirTitle.textContent = w.users;
+    const dirBtn = document.querySelector('#teacherDirectoryList')?.closest('.section-card')?.querySelector('button');
+    if (dirBtn) dirBtn.textContent = w.refresh;
+}
+
+async function loadTeacherDirectoryUsers() {
+    const list = document.getElementById('teacherDirectoryList');
+    if (!list) return;
+    try {
+        if (isDemo && demoData) {
+            const users = (demoData.users || []);
+            if (!users.length) {
+                list.innerHTML = '<p class="empty-state">No users found.</p>';
+                return;
+            }
+            list.innerHTML = users.map(u => `
+                <div class="user-card-item">
+                    <h4>${u.displayName || u.name || 'User'}</h4>
+                    <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
+                </div>
+            `).join('');
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
+        const users = res.ok ? await res.json() : [];
+        if (!users.length) {
+            list.innerHTML = '<p class="empty-state">No users found.</p>';
+            return;
+        }
+        list.innerHTML = users.map(u => `
+            <div class="user-card-item">
+                <h4>${u.displayName || 'User'}</h4>
+                <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Could not load directory users:', error);
+        list.innerHTML = '<p class="empty-state">No users found.</p>';
+    }
+}
+
+window.setTeacherLanguage = setTeacherLanguage;
+window.loadTeacherDirectoryUsers = loadTeacherDirectoryUsers;
+setTeacherLanguage(teacherLang);
+loadTeacherDirectoryUsers();
