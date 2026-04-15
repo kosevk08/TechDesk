@@ -157,15 +157,16 @@ function updateTeacherPageControls() {
 }
 
 async function loadTeacherPagesMeta() {
-    if (isDemo || !currentViewStudent || !currentViewSubject) {
+    if (isDemo || !currentViewSubject) {
         currentViewMaxPage = 1;
         updateTeacherPageControls();
         return;
     }
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/pages/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}`, {
-            headers: authHeaders()
-        });
+        const url = currentViewStudentEgn
+            ? `${BACKEND_BASE_URL}/api/notebook/pages/${encodeURIComponent(currentViewStudentEgn)}/${encodeURIComponent(currentViewSubject)}`
+            : `${BACKEND_BASE_URL}/api/notebook/student/name/pages/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}`;
+        const res = await fetch(url, { headers: authHeaders() });
         const pages = res.ok ? await res.json() : [];
         currentViewMaxPage = Math.max(1, ...(pages || [1]));
     } catch {
@@ -576,9 +577,10 @@ async function loadTeacherPage() {
         const styleSelect = document.getElementById('notebookStyleSelect');
         if (styleSelect) styleSelect.value = currentNotebookStyle;
 
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`, {
-            headers: authHeaders()
-        });
+        const pageUrl = currentViewStudentEgn
+            ? `${BACKEND_BASE_URL}/api/notebook/student/${encodeURIComponent(currentViewStudentEgn)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`
+            : `${BACKEND_BASE_URL}/api/notebook/student/name/${encodeURIComponent(currentViewStudent)}/${encodeURIComponent(currentViewSubject)}/${currentViewPage}?t=${Date.now()}`;
+        const res = await fetch(pageUrl, { headers: authHeaders() });
         const img = document.getElementById('notebookImage');
         tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
         if (res.ok) {

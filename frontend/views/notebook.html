@@ -269,7 +269,7 @@
         if (!user) window.location.href = '/';
         if (isDemo) document.getElementById('demoBadge').style.display = 'inline';
 
-        const subjectId = localStorage.getItem('currentSubject');
+        let subjectId = localStorage.getItem('currentSubject');
         const canvas = document.getElementById('notebookCanvas');
         const ctx = canvas.getContext('2d');
         let drawing = false;
@@ -420,7 +420,24 @@
                 if (isDemo && demoData) {
                     subject = demoData.subjects.find(s => String(s.id) === String(subjectId)) || demoData.subjects[0];
                 } else {
-                    const res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
+                    if (!subjectId) {
+                        const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`);
+                        const allSubjects = allRes.ok ? await allRes.json() : [];
+                        if (!allSubjects.length) throw new Error('No subjects found');
+                        subjectId = String(allSubjects[0].id);
+                        localStorage.setItem('currentSubject', subjectId);
+                    }
+
+                    let res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
+                    if (!res.ok) {
+                        const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`);
+                        const allSubjects = allRes.ok ? await allRes.json() : [];
+                        if (!allSubjects.length) throw new Error('No subjects found');
+                        subjectId = String(allSubjects[0].id);
+                        localStorage.setItem('currentSubject', subjectId);
+                        res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
+                    }
+                    if (!res.ok) throw new Error('Could not load subject');
                     subject = await res.json();
                 }
 
