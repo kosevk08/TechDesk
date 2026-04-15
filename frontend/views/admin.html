@@ -48,6 +48,7 @@
                     <span class="hero-stat-label">System Status</span>
                     <strong id="adminStatus">Checking...</strong>
                 </div>
+                <button class="action-btn secondary-btn" style="margin-top:10px;" onclick="window.location.href='/owner'">Open Owner Analytics</button>
             </div>
         </section>
 
@@ -87,6 +88,7 @@
                 <select id="teacherSelect"></select>
                 <input type="text" id="teacherSubjectsInput" placeholder="Subjects (comma separated)">
                 <button class="action-btn" onclick="saveTeacherSubjects()">Save</button>
+                <button class="action-btn secondary-btn" onclick="autoAssignSubjectTeachers()">Auto Assign by Subject</button>
                 <span class="assignment-status" id="teacherSubjectStatus">Ready</span>
             </div>
             <div id="teacherList"></div>

@@ -5,6 +5,7 @@ const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let adminLang = localStorage.getItem('adminLang') || 'en';
+const ADMIN_BOOTSTRAP_KEY = 'techdesk-secret-2026';
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -63,12 +64,39 @@ function renderMetrics(users, feedbackCount) {
 }
 
 function normalizeUser(u) {
+    const fromNames = `${String(u.firstName || '').trim()} ${String(u.lastName || '').trim()}`.trim();
     return {
         egn: u.egn || '',
-        displayName: u.displayName || u.fullName || u.name || 'User',
+        displayName: u.displayName || u.fullName || u.name || fromNames || 'User',
         role: u.role || 'USER',
         email: u.email || '-'
     };
+}
+
+function uniqueUsers(users) {
+    const map = new Map();
+    (users || []).forEach((u) => {
+        const key = String(u.egn || u.email || u.displayName || '').trim() || `u-${map.size}`;
+        if (!map.has(key)) map.set(key, u);
+    });
+    return Array.from(map.values());
+}
+
+async function fetchDirectoryUsers() {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory?t=${Date.now()}`, {
+        headers: authHeaders()
+    });
+    if (!res.ok) throw new Error(`/api/user/directory failed: ${res.status}`);
+    const payload = await res.json();
+    return Array.isArray(payload) ? payload.map(normalizeUser) : [];
+}
+
+async function fetchAllUsersAdmin() {
+    const headers = authHeaders({ 'X-Admin-Key': ADMIN_BOOTSTRAP_KEY });
+    const res = await fetch(`${BACKEND_BASE_URL}/api/user/all?t=${Date.now()}`, { headers });
+    if (!res.ok) throw new Error(`/api/user/all failed: ${res.status}`);
+    const payload = await res.json();
+    return Array.isArray(payload) ? payload.map(normalizeUser) : [];
 }
 
 function renderUsers(users) {
@@ -198,14 +226,24 @@ async function loadUsers() {
     if (isDemo && demoData) {
         const users = (demoData.users || []).map(normalizeUser);
         renderUsers(users);
+        populateRoleUsers(users);
         return users;
     }
     try {
-        const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, {
-            headers: authHeaders()
-        });
-        const rawUsers = res.ok ? await res.json() : [];
-        const users = rawUsers.map(normalizeUser);
+        let users = [];
+        try {
+            users = await fetchDirectoryUsers();
+        } catch (primaryError) {
+            console.warn('Primary directory fetch failed, trying /api/user/all fallback:', primaryError);
+        }
+        if (!users.length) {
+            try {
+                users = await fetchAllUsersAdmin();
+            } catch (fallbackError) {
+                console.warn('Fallback /api/user/all failed:', fallbackError);
+            }
+        }
+        users = uniqueUsers(users);
         renderUsers(users);
         populateRoleUsers(users);
         return users;
@@ -314,9 +352,8 @@ async function loadTeachers() {
         });
         let teachers = res.ok ? await res.json() : [];
         if (!teachers.length) {
-            const dirRes = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
-            const dirUsers = dirRes.ok ? await dirRes.json() : [];
-            teachers = dirUsers
+            const users = await loadUsers();
+            teachers = users
                 .filter(u => String(u.role || '').toUpperCase() === 'TEACHER')
                 .map((u) => {
                     const parts = String(u.displayName || 'Teacher User').trim().split(/\s+/);
@@ -368,12 +405,93 @@ async function saveTeacherSubjects() {
     }
 }
 
+function teacherPreferredSubjects(teacher) {
+    const email = String(teacher?.email || '').toLowerCase();
+    const display = `${teacher?.firstName || ''} ${teacher?.lastName || ''}`.toLowerCase();
+    const bag = `${email} ${display}`;
+    const matchers = [
+        { keys: ['math'], subject: 'Maths' },
+        { keys: ['phys'], subject: 'Physics' },
+        { keys: ['chem'], subject: 'Chemistry' },
+        { keys: ['bio'], subject: 'Biology' },
+        { keys: ['eng', 'english'], subject: 'English' },
+        { keys: ['bulgar'], subject: 'Bulgarian Language and Literature' },
+        { keys: ['geo'], subject: 'Geography' },
+        { keys: ['philo'], subject: 'Philosophy' },
+        { keys: ['german'], subject: 'German (A1)' },
+        { keys: ['spanish'], subject: 'Spanish (A1)' },
+        { keys: ['anthro'], subject: 'Social Anthropology' },
+        { keys: ['lit'], subject: 'English Literature' }
+    ];
+    return matchers
+        .filter((m) => m.keys.some((k) => bag.includes(k)))
+        .map((m) => m.subject);
+}
+
+async function autoAssignSubjectTeachers() {
+    const status = document.getElementById('teacherSubjectStatus');
+    try {
+        if (status) status.textContent = 'Assigning...';
+        const [teachersRaw, subjectsRaw] = await Promise.all([loadTeachers(), loadSubjects()]);
+        const teachers = (teachersRaw || []).filter((t) => t && t.egn);
+        const subjectNames = (subjectsRaw || []).map((s) => s.name).filter(Boolean);
+        if (!teachers.length || !subjectNames.length) {
+            if (status) status.textContent = 'Need teachers and subjects first.';
+            return;
+        }
+
+        const updatedMap = new Map();
+        teachers.forEach((t) => {
+            const existing = Array.isArray(t.subjects) ? t.subjects.filter(Boolean) : [];
+            updatedMap.set(t.egn, new Set(existing));
+        });
+
+        subjectNames.forEach((subject, idx) => {
+            const alreadyCovered = teachers.some((t) => (t.subjects || []).map(String).includes(subject));
+            if (alreadyCovered) return;
+            const preferredTeacher = teachers.find((t) => teacherPreferredSubjects(t).includes(subject));
+            const fallbackTeacher = teachers[idx % teachers.length];
+            const chosen = preferredTeacher || fallbackTeacher;
+            if (!chosen) return;
+            updatedMap.get(chosen.egn).add(subject);
+        });
+
+        for (const teacher of teachers) {
+            const nextSubjects = Array.from(updatedMap.get(teacher.egn) || []);
+            await fetch(`${BACKEND_BASE_URL}/api/teacher/subjects`, {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ teacherEgn: teacher.egn, subjects: nextSubjects })
+            });
+        }
+
+        const refreshed = await loadTeachers();
+        renderSubjectCoverage(subjectsRaw, refreshed);
+        if (status) status.textContent = 'Auto assignment complete.';
+    } catch (error) {
+        console.error('Auto assignment failed:', error);
+        if (status) status.textContent = 'Auto assignment failed.';
+    }
+}
+
 async function init() {
     await loadStatus();
     const [users, feedback] = await Promise.all([loadUsers(), loadFeedback()]);
     renderMetrics(users, feedback.length);
     const [teachers, subjects] = await Promise.all([loadTeachers(), loadSubjects()]);
     renderSubjectCoverage(subjects, teachers);
+    if (!users.length && !isDemo) {
+        try {
+            await fetch(`${BACKEND_BASE_URL}/api/user/setup`, {
+                headers: authHeaders({ 'X-Admin-Key': ADMIN_BOOTSTRAP_KEY })
+            });
+            const [freshUsers, freshTeachers, freshSubjects] = await Promise.all([loadUsers(), loadTeachers(), loadSubjects()]);
+            renderMetrics(freshUsers, feedback.length);
+            renderSubjectCoverage(freshSubjects, freshTeachers);
+        } catch (setupError) {
+            console.warn('User setup bootstrap skipped:', setupError);
+        }
+    }
 }
 
 window.loadUsers = loadUsers;
@@ -382,6 +500,7 @@ window.loadTeachers = loadTeachers;
 window.saveTeacherSubjects = saveTeacherSubjects;
 window.saveUserRole = saveUserRole;
 window.setAdminLanguage = setAdminLanguage;
+window.autoAssignSubjectTeachers = autoAssignSubjectTeachers;
 
 init();
 setAdminLanguage(adminLang);

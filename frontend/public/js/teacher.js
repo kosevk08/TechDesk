@@ -12,6 +12,35 @@ let lastGradeHash = null;
 let testAutosaveTimer = null;
 let lastTestHash = null;
 
+function deriveDisplayNameFromEmail(email, fallback = 'Teacher') {
+    if (!email) return fallback;
+    const local = String(email).split('@')[0] || '';
+    const cleaned = local
+        .replace(/[-_.]+/g, ' ')
+        .replace(/\b(student|teacher|parent|admin)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!cleaned) return fallback;
+    return cleaned
+        .split(' ')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+}
+
+function resolveTeacherDisplayName(profile) {
+    if (!profile) return 'Teacher';
+    const firstName = String(profile.firstName || '').trim();
+    const lastName = String(profile.lastName || '').trim();
+    const fullFromNames = `${firstName} ${lastName}`.trim();
+    return (
+        fullFromNames ||
+        String(profile.displayName || '').trim() ||
+        String(profile.fullName || '').trim() ||
+        String(profile.name || '').trim() ||
+        deriveDisplayNameFromEmail(profile.email, 'Teacher')
+    );
+}
+
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
     if (user?.email) headers['X-User-Email'] = user.email;
@@ -30,7 +59,7 @@ if (isDemo) {
 if (isDemo && demoData) {
     document.getElementById('teacherName').textContent = demoData.teacher.name;
 } else {
-    document.getElementById('teacherName').textContent = user.displayName || 'Teacher';
+    document.getElementById('teacherName').textContent = resolveTeacherDisplayName(user);
 }
 
 function insertDemoBanner() {
@@ -578,38 +607,118 @@ async function loadGradeHistory() {
     try {
         if (isDemo && demoData) {
             const grades = demoData.grades;
-            if (!grades.length) {
-                container.innerHTML = '<p class="empty-state">No grades yet.</p>';
-                return;
-            }
-            container.innerHTML = grades.map(g => `
-                <div class="test-card">
-                    <h5>${g.subject}: ${g.value}</h5>
-                    <div class="test-meta">${g.comment || 'No comment'}</div>
-                    <div class="test-meta">Saved: ${g.createdAt ? g.createdAt.replace('T', ' ') : '-'}</div>
-                </div>
-            `).join('');
+            renderTeacherGradeHistory(container, grades);
             return;
         }
         const res = await fetch(`${BACKEND_BASE_URL}/api/grades/student/name/${encodeURIComponent(studentName)}?t=${Date.now()}`, {
             headers: authHeaders()
         });
         const grades = res.ok ? await res.json() : [];
-        if (!grades.length) {
-            container.innerHTML = '<p class="empty-state">No grades yet.</p>';
-            return;
-        }
-        container.innerHTML = grades.map(g => `
-            <div class="test-card">
-                <h5>${g.subject}: ${g.value}</h5>
-                <div class="test-meta">${g.comment || 'No comment'}</div>
-                <div class="test-meta">Saved: ${g.createdAt ? g.createdAt.replace('T', ' ') : '-'}</div>
-            </div>
-        `).join('');
+        renderTeacherGradeHistory(container, grades);
     } catch (error) {
         console.error('Could not load grades:', error);
         container.innerHTML = '<p class="empty-state">Failed to load grades.</p>';
     }
+}
+
+function gradeToneClass(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 'is-mid';
+    if (numeric >= 5.5) return 'is-top';
+    if (numeric >= 4.5) return 'is-good';
+    if (numeric >= 3.5) return 'is-mid';
+    return 'is-risk';
+}
+
+function gradeDateLabel(raw) {
+    if (!raw) return '-';
+    const date = new Date(raw);
+    if (!Number.isNaN(date.getTime())) {
+        return date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return String(raw).replace('T', ' ');
+}
+
+function renderTeacherGradeHistory(container, grades) {
+    if (!Array.isArray(grades) || !grades.length) {
+        const filter = document.getElementById('gradeFilterSubject');
+        if (filter) filter.innerHTML = '<option value="">All subjects</option>';
+        container.innerHTML = '<p class="empty-state">No grades yet.</p>';
+        return;
+    }
+
+    let safeGrades = grades
+        .map((g) => ({
+            subject: g.subject || 'Subject',
+            value: Number(g.value),
+            comment: g.comment || '',
+            createdAt: g.createdAt || null
+        }))
+        .filter((g) => Number.isFinite(g.value))
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+    const filter = document.getElementById('gradeFilterSubject');
+    const subjectOptions = Array.from(new Set(safeGrades.map((g) => g.subject))).sort((a, b) => a.localeCompare(b));
+    if (filter) {
+        const current = filter.value || '';
+        filter.innerHTML = `<option value="">All subjects</option>${subjectOptions.map((s) => `<option value="${s}">${s}</option>`).join('')}`;
+        if (current && subjectOptions.includes(current)) filter.value = current;
+        if (filter.value) safeGrades = safeGrades.filter((g) => g.subject === filter.value);
+    }
+
+    if (!safeGrades.length) {
+        container.innerHTML = '<p class="empty-state">No grades for this subject yet.</p>';
+        return;
+    }
+
+    const overall = safeGrades.reduce((sum, g) => sum + g.value, 0) / Math.max(safeGrades.length, 1);
+    const bySubject = safeGrades.reduce((acc, g) => {
+        if (!acc[g.subject]) acc[g.subject] = [];
+        acc[g.subject].push(g.value);
+        return acc;
+    }, {});
+    const strongest = Object.entries(bySubject)
+        .map(([subject, values]) => ({ subject, avg: values.reduce((s, v) => s + v, 0) / values.length }))
+        .sort((a, b) => b.avg - a.avg)[0];
+
+    container.innerHTML = `
+        <div class="gradebook-stats teacher-grade-stats">
+            <article class="grade-stat-card">
+                <span>Total Entries</span>
+                <strong>${safeGrades.length}</strong>
+            </article>
+            <article class="grade-stat-card">
+                <span>Student Average</span>
+                <strong class="${gradeToneClass(overall)}">${overall.toFixed(2)}</strong>
+            </article>
+            <article class="grade-stat-card">
+                <span>Strongest Subject</span>
+                <strong>${strongest ? strongest.subject : '-'}</strong>
+            </article>
+        </div>
+        <div class="gradebook-table-wrap">
+            <table class="gradebook-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Subject</th>
+                        <th>Grade</th>
+                        <th>Comment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${safeGrades.map((g) => `
+                        <tr>
+                            <td>${gradeDateLabel(g.createdAt)}</td>
+                            <td>${g.subject}</td>
+                            <td><strong class="grade-pill ${gradeToneClass(g.value)}">${g.value.toFixed(2)}</strong></td>
+                            <td>${g.comment || '<span class="empty-inline">No comment</span>'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 async function loadGrades() {

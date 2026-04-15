@@ -1453,28 +1453,7 @@ async function loadStudentGrades() {
         if (isDemo && demoData) {
             const grades = demoData.grades;
             const avg = demoData.averages;
-
-            if (!grades.length) {
-                list.innerHTML = '<p class="empty-state">No grades yet.</p>';
-            } else {
-                list.innerHTML = grades.map(g => `
-                    <div class="test-card">
-                        <h5>${g.subject}: ${g.value}</h5>
-                        <div class="test-meta">${g.comment || 'No comment'}</div>
-                        <div class="test-meta">Added: ${g.createdAt ? g.createdAt.replace('T', ' ') : '-'}</div>
-                    </div>
-                `).join('');
-            }
-
-            const avgEntries = Object.entries(avg);
-            if (avgEntries.length) {
-                averages.innerHTML = avgEntries.map(([subject, value]) => `
-                    <div class="metric-card">
-                        <span class="metric-label">${subject}</span>
-                        <strong class="metric-value">${Number(value).toFixed(2)}</strong>
-                    </div>
-                `).join('');
-            }
+            renderStudentGradebook(list, averages, grades, avg);
             return;
         }
         const [gradesRes, avgRes] = await Promise.all([
@@ -1483,32 +1462,133 @@ async function loadStudentGrades() {
         ]);
         const grades = gradesRes.ok ? await gradesRes.json() : [];
         const avg = avgRes.ok ? await avgRes.json() : {};
-
-        if (!grades.length) {
-            list.innerHTML = '<p class="empty-state">No grades yet.</p>';
-        } else {
-            list.innerHTML = grades.map(g => `
-                <div class="test-card">
-                    <h5>${g.subject}: ${g.value}</h5>
-                    <div class="test-meta">${g.comment || 'No comment'}</div>
-                    <div class="test-meta">Added: ${g.createdAt ? g.createdAt.replace('T', ' ') : '-'}</div>
-                </div>
-            `).join('');
-        }
-
-        const avgEntries = Object.entries(avg);
-        if (avgEntries.length) {
-            averages.innerHTML = avgEntries.map(([subject, value]) => `
-                <div class="metric-card">
-                    <span class="metric-label">${subject}</span>
-                    <strong class="metric-value">${Number(value).toFixed(2)}</strong>
-                </div>
-            `).join('');
-        }
+        renderStudentGradebook(list, averages, grades, avg);
     } catch (error) {
         console.error('Could not load grades:', error);
         list.innerHTML = '<p class="empty-state">Failed to load grades.</p>';
     }
+}
+
+function gradeTone(value) {
+    if (!Number.isFinite(value)) return 'is-mid';
+    if (value >= 5.5) return 'is-top';
+    if (value >= 4.5) return 'is-good';
+    if (value >= 3.5) return 'is-mid';
+    return 'is-risk';
+}
+
+function toLocalGradeDate(raw) {
+    if (!raw) return '-';
+    const date = new Date(raw);
+    if (!Number.isNaN(date.getTime())) {
+        return date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return String(raw).replace('T', ' ');
+}
+
+function renderStudentGradebook(list, averages, grades, avg) {
+    if (!Array.isArray(grades) || !grades.length) {
+        list.innerHTML = '<p class="empty-state">No grades yet.</p>';
+        averages.innerHTML = '';
+        return;
+    }
+
+    const safeGrades = grades
+        .map((g) => ({
+            subject: g.subject || 'Subject',
+            value: Number(g.value),
+            comment: g.comment || '',
+            createdAt: g.createdAt || null
+        }))
+        .filter((g) => Number.isFinite(g.value));
+
+    const total = safeGrades.length;
+    const overall = total ? (safeGrades.reduce((sum, g) => sum + g.value, 0) / total) : 0;
+    const topCount = safeGrades.filter((g) => g.value >= 5.5).length;
+    const riskCount = safeGrades.filter((g) => g.value < 3.5).length;
+
+    const bySubject = new Map();
+    safeGrades.forEach((g) => {
+        if (!bySubject.has(g.subject)) bySubject.set(g.subject, []);
+        bySubject.get(g.subject).push(g);
+    });
+    bySubject.forEach((subjectGrades) => {
+        subjectGrades.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    });
+
+    const sortedSubjects = Array.from(bySubject.keys()).sort((a, b) => a.localeCompare(b));
+    const rowsHtml = sortedSubjects.map((subject) => {
+        const subjectGrades = bySubject.get(subject) || [];
+        const subjectAvg = subjectGrades.reduce((sum, g) => sum + g.value, 0) / Math.max(subjectGrades.length, 1);
+        const lastGrade = subjectGrades[0];
+        const chips = subjectGrades
+            .slice(0, 8)
+            .map((g) => `<span class="grade-chip ${gradeTone(g.value)}">${g.value.toFixed(2)}</span>`)
+            .join('');
+        return `
+            <tr>
+                <td>${subject}</td>
+                <td><strong class="grade-pill ${gradeTone(subjectAvg)}">${subjectAvg.toFixed(2)}</strong></td>
+                <td>${subjectGrades.length}</td>
+                <td>${lastGrade ? `${lastGrade.value.toFixed(2)} · ${toLocalGradeDate(lastGrade.createdAt)}` : '-'}</td>
+                <td><div class="grade-chip-row">${chips || '<span class="empty-inline">-</span>'}</div></td>
+            </tr>
+        `;
+    }).join('');
+
+    list.innerHTML = `
+        <div class="gradebook-stats">
+            <article class="grade-stat-card">
+                <span>Total Grades</span>
+                <strong>${total}</strong>
+            </article>
+            <article class="grade-stat-card">
+                <span>Overall Average</span>
+                <strong class="${gradeTone(overall)}">${overall.toFixed(2)}</strong>
+            </article>
+            <article class="grade-stat-card">
+                <span>High Scores (5.50+)</span>
+                <strong>${topCount}</strong>
+            </article>
+            <article class="grade-stat-card">
+                <span>Needs Focus (&lt;3.50)</span>
+                <strong>${riskCount}</strong>
+            </article>
+        </div>
+        <div class="gradebook-table-wrap">
+            <table class="gradebook-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Average</th>
+                        <th>Count</th>
+                        <th>Latest</th>
+                        <th>Recent Grades</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>
+    `;
+
+    const avgEntries = Object.entries(avg || {});
+    if (!avgEntries.length) {
+        averages.innerHTML = '';
+        return;
+    }
+    averages.innerHTML = `
+        <div class="grade-average-grid">
+            ${avgEntries.map(([subject, value]) => {
+                const numeric = Number(value);
+                return `
+                    <article class="metric-card grade-avg-card">
+                        <span class="metric-label">${subject}</span>
+                        <strong class="metric-value ${gradeTone(numeric)}">${Number.isFinite(numeric) ? numeric.toFixed(2) : '-'}</strong>
+                    </article>
+                `;
+            }).join('')}
+        </div>
+    `;
 }
 
 async function loadStudentNotifications() {

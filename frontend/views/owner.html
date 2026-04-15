@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechDesk - Owner Analytics</title>
+    <link rel="stylesheet" href="/css/teacher.css">
+    <link rel="stylesheet" href="/css/owner.css">
+    <link rel="stylesheet" href="/css/shared.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="brand-block">
+            <div class="brand-lockup">
+                <span class="logo-shell nav-logo-shell">
+                    <img src="/logo-tech-throne.png" alt="Tech Throne logo" class="brand-logo">
+                </span>
+                <div class="brand-copy">
+                    <span class="brand-kicker">Owner Control</span>
+                    <h1>TechDesk</h1>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <a href="/admin" class="logout">Back To Admin</a>
+            <a href="/" class="logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="hero-panel owner-hero">
+            <div class="greeting">
+                <span class="section-eyebrow">Platform Owner Dashboard</span>
+                <h2>TechDesk Business Insights</h2>
+                <p>Track adoption, monitor tenant schools, and manage active subscription plans in one place.</p>
+            </div>
+            <div class="hero-side">
+                <div class="hero-pill">Revenue Pulse</div>
+                <div class="hero-stat">
+                    <span class="hero-stat-label">Estimated Annual Revenue</span>
+                    <strong id="ownerRevenue">...</strong>
+                </div>
+            </div>
+        </section>
+
+        <section class="owner-grid metrics-grid" id="ownerMetrics"></section>
+
+        <section class="card section-card">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Usage Analytics</span>
+                    <h3 class="section-title">Who Uses The Platform Most</h3>
+                </div>
+            </div>
+            <div class="usage-bars" id="usageBars"></div>
+        </section>
+
+        <section class="card section-card">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Commercial Plans</span>
+                    <h3 class="section-title">Subscription Offers</h3>
+                </div>
+            </div>
+            <div class="plan-grid">
+                <article class="plan-card plan-school">
+                    <h4>School Plan</h4>
+                    <strong>€920</strong>
+                    <span>/year per school</span>
+                    <ul>
+                        <li>Digital textbooks</li>
+                        <li>Notebooks for all students</li>
+                        <li>Teacher portal + parent access</li>
+                    </ul>
+                </article>
+                <article class="plan-card plan-premium">
+                    <div class="plan-badge">Most Popular</div>
+                    <h4>Premium Plan</h4>
+                    <strong>€2,200</strong>
+                    <span>/year per school</span>
+                    <ul>
+                        <li>Everything in School Plan</li>
+                        <li>API integration</li>
+                        <li>AI insights + priority support</li>
+                    </ul>
+                </article>
+                <article class="plan-card plan-student">
+                    <h4>Student Plan</h4>
+                    <strong>€4.99</strong>
+                    <span>/month per student</span>
+                    <ul>
+                        <li>Personal account</li>
+                        <li>All textbooks + cloud notebooks</li>
+                        <li>No ads</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <section class="card section-card">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Tenant Schools</span>
+                    <h3 class="section-title">School Plan Mapping</h3>
+                </div>
+                <div class="owner-table-tools">
+                    <label for="ownerPlanFilter">Filter</label>
+                    <select id="ownerPlanFilter" class="owner-plan-select" onchange="onPlanFilterChange(this.value)">
+                        <option value="ALL">All Plans</option>
+                        <option value="SCHOOL">School</option>
+                        <option value="PREMIUM">Premium</option>
+                        <option value="STUDENT">Student</option>
+                    </select>
+                    <button class="owner-export-btn" type="button" onclick="exportSchoolsCsv()">Export CSV</button>
+                </div>
+            </div>
+            <div class="owner-table-wrap">
+                <table class="owner-table">
+                    <thead>
+                        <tr>
+                            <th>School</th>
+                            <th>Plan</th>
+                            <th>Active Users</th>
+                            <th>Annual Value</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schoolPlanBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <div id="ownerToast" class="owner-toast" aria-live="polite"></div>
+
+    <script src="/js/owner.js"></script>
+</body>
+</html>

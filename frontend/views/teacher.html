@@ -223,6 +223,11 @@
 
             <div class="ai-panel">
                 <h4>Student Grade History</h4>
+                <div class="test-row">
+                    <select id="gradeFilterSubject" onchange="loadGradeHistory()">
+                        <option value="">All subjects</option>
+                    </select>
+                </div>
                 <div id="gradeHistoryList"></div>
             </div>
         </div>

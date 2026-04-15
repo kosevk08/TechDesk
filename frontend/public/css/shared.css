@@ -176,3 +176,119 @@ body {
         height: 46px;
     }
 }
+
+.gradebook-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.grade-stat-card {
+    border-radius: 14px;
+    border: 1px solid rgba(47, 122, 151, 0.2);
+    background: linear-gradient(180deg, #ffffff, #eef8ff);
+    padding: 12px 14px;
+}
+
+.grade-stat-card span {
+    display: block;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.grade-stat-card strong {
+    color: #0f305f;
+    font-size: 1.22rem;
+}
+
+.gradebook-table-wrap {
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    border-radius: 14px;
+    overflow: auto;
+    background: #ffffff;
+}
+
+.gradebook-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+}
+
+.gradebook-table thead th {
+    text-align: left;
+    padding: 11px 12px;
+    background: #eef4fb;
+    color: #133561;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.gradebook-table tbody td {
+    padding: 11px 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+    color: #334155;
+    font-size: 0.92rem;
+    vertical-align: top;
+}
+
+.grade-pill {
+    display: inline-flex;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.84rem;
+    line-height: 1;
+}
+
+.grade-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.grade-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.is-top {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.is-good {
+    background: #e0f2fe;
+    color: #0c4a6e;
+}
+
+.is-mid {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.is-risk {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.empty-inline {
+    color: #94a3b8;
+}
+
+.grade-average-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}

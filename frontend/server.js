@@ -23,6 +23,7 @@ app.get('/student', (req, res) => res.sendFile(path.join(__dirname, 'views', 'st
 app.get('/teacher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'teacher.html')));
 app.get('/parent', (req, res) => res.sendFile(path.join(__dirname, 'views', 'parent.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'admin.html')));
+app.get('/owner', (req, res) => res.sendFile(path.join(__dirname, 'views', 'owner.html')));
 app.get('/notebook', (req, res) => res.sendFile(path.join(__dirname, 'views', 'notebook.html')));
 app.get('/attendance', (req, res) => res.sendFile(path.join(__dirname, 'views', 'attendance.html')));
 app.get('/messages', (req, res) => res.sendFile(path.join(__dirname, 'views', 'messages.html')));
