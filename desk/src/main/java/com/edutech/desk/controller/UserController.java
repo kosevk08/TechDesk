@@ -92,10 +92,17 @@ public class UserController {
 
     @GetMapping("/all")
     public ResponseEntity<List<User>> getAllUsers(
-            @RequestHeader(value = "X-Admin-Key", required = false) String key) {
+            @RequestHeader(value = "X-Admin-Key", required = false) String key,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
         String adminSecret = System.getenv("TECHDESK_ADMIN_KEY");
         if (adminSecret == null) adminSecret = "techdesk-secret-2026";
-        if (!adminSecret.equals(key)) {
+        boolean keyAuthorized = adminSecret.equals(key);
+        boolean emailAuthorized = false;
+        if (userEmail != null && !userEmail.isBlank()) {
+            User user = userService.findByEmail(userEmail.trim());
+            emailAuthorized = user != null && user.getRole() == Role.ADMIN;
+        }
+        if (!keyAuthorized && !emailAuthorized) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(userService.getAllUsers());

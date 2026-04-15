@@ -6,7 +6,11 @@ const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 
 function authHeaders(extra = {}) {
-    return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    if (user?.email) {
+        headers['X-User-Email'] = user.email;
+    }
+    return headers;
 }
 
 if (!user || user.role !== 'ADMIN') {

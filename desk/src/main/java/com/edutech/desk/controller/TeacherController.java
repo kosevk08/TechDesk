@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/teacher")
-@CrossOrigin("http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000", "https://techdesk-frontend.onrender.com", "https://techdesk.onrender.com"})
 public class TeacherController {
 
     @Autowired

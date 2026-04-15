@@ -578,7 +578,7 @@
                 clearTimeout(autosaveTimer);
                 autosaveTimer = null;
             }
-            const imageData = canvas.toDataURL();
+            const imageData = canvas.toDataURL('image/jpeg', 0.78);
             try {
                 const request = fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                     method: 'POST',
@@ -607,12 +607,21 @@
                 }
             } catch (err) {
                 console.error('Could not save:', err);
+                if (!silent) {
+                    const msg = document.getElementById('savedMsg');
+                    msg.textContent = 'Save failed';
+                    msg.style.display = 'inline';
+                    setTimeout(() => {
+                        msg.style.display = 'none';
+                        msg.textContent = 'Saved';
+                    }, 2000);
+                }
             }
         }
 
         function saveNotebookKeepalive() {
             if (isDemo || !notebookDirty || !currentSubjectName) return;
-            const imageData = canvas.toDataURL();
+            const imageData = canvas.toDataURL('image/jpeg', 0.78);
             fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                 method: 'POST',
                 keepalive: true,
