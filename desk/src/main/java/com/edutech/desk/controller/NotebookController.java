@@ -239,10 +239,10 @@ public class NotebookController {
 
     private boolean isValidNotebook(Notebook notebook) {
         if (notebook == null || notebook.getSubject() == null) return false;
-        // Reject oversized content (e.g., > 2MB) or suspicious tags
+        // Reject oversized content (e.g., > 8MB) or suspicious payloads
         String content = notebook.getContent();
-        if (content != null && content.length() > 2 * 1024 * 1024) return false;
-        if (notebook.getSubject().length() > 50) return false;
+        if (content != null && content.length() > 8 * 1024 * 1024) return false;
+        if (notebook.getSubject().length() > 100) return false;
         return true;
     }
 

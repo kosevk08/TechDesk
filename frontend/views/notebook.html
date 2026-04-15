@@ -15,6 +15,13 @@
             background: #ffffff;
             color: #1d2433;
         }
+        body.easy-read {
+            font-family: "Verdana", "Tahoma", sans-serif;
+            letter-spacing: 0.02em;
+        }
+        body.calm-mode .textbook-panel {
+            display: none;
+        }
 
         .navbar {
             background: #ffffff;
@@ -110,6 +117,11 @@
             background: #e5e7eb;
             outline: 1px solid #d1d5db;
         }
+        .assist-btn {
+            background: #eef6ff !important;
+            color: #1d4b8f !important;
+            border: 1px solid #cfe1ff !important;
+        }
 
         .color-btn {
             width: 18px;
@@ -149,6 +161,21 @@
             position: absolute;
             inset: 0;
             pointer-events: none;
+        }
+        .focus-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 34px;
+            border-top: 1px solid rgba(44, 126, 255, 0.45);
+            border-bottom: 1px solid rgba(44, 126, 255, 0.45);
+            background: rgba(199, 223, 255, 0.13);
+            z-index: 1;
+            display: none;
+            pointer-events: none;
+        }
+        .focus-line.active {
+            display: block;
         }
 
         .paper.lined {
@@ -237,6 +264,9 @@
                 <button class="color-btn color-blue active" id="btnBlue" onclick="setColor('#1a56db', 'btnBlue')" title="Blue"></button>
                 <button class="color-btn color-black" id="btnBlack" onclick="setColor('#111111', 'btnBlack')" title="Black"></button>
                 <input type="range" id="sizeSlider" min="1" max="20" value="3" title="Size">
+                <button class="assist-btn" id="focusBtn" onclick="toggleFocusMode()">Focus</button>
+                <button class="assist-btn" id="easyReadBtn" onclick="toggleEasyRead()">Easy Read</button>
+                <button class="assist-btn" id="readAloudBtn" onclick="readTextbookAloud()">Read Aloud</button>
                 <button class="add-page-btn" onclick="addPage()">+ Page</button>
                 <button class="save-btn" onclick="saveNotebook()">Save</button>
                 <span class="saved-msg" id="savedMsg">Saved</span>
@@ -244,6 +274,7 @@
 
             <div class="notebook-area" id="notebookArea">
                 <div class="paper lined" id="paperLayer"></div>
+                <div class="focus-line" id="focusLine"></div>
                 <canvas id="notebookCanvas"></canvas>
             </div>
 
@@ -282,10 +313,14 @@
         let currentStyle = 'lined';
         let notebookDirty = false;
         let saveInFlight = null;
+        let focusMode = false;
         const token = localStorage.getItem('token');
 
         function authHeaders(extra = {}) {
-            return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+            const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+            if (user?.email) headers['X-User-Email'] = user.email;
+            if (user?.egn) headers['X-User-Egn'] = user.egn;
+            return headers;
         }
 
         function resizeCanvas() {
@@ -311,6 +346,28 @@
             document.getElementById('penBtn').classList.toggle('active', t === 'pen');
         }
 
+        function toggleFocusMode() {
+            focusMode = !focusMode;
+            document.getElementById('focusLine')?.classList.toggle('active', focusMode);
+            document.getElementById('focusBtn')?.classList.toggle('active', focusMode);
+        }
+
+        function toggleEasyRead() {
+            document.body.classList.toggle('easy-read');
+            document.body.classList.toggle('calm-mode');
+            document.getElementById('easyReadBtn')?.classList.toggle('active');
+        }
+
+        function readTextbookAloud() {
+            const content = document.getElementById('textbookContent');
+            if (!content || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(content.innerText.slice(0, 1200));
+            utterance.rate = 0.95;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+
         function updatePageControls() {
             document.getElementById('pageIndicator').textContent = `Page ${currentPage} / ${maxPage}`;
             document.getElementById('prevBtn').disabled = currentPage <= 1;
@@ -327,7 +384,9 @@
                 return;
             }
             try {
-                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/pages/${user.egn}/${encodeURIComponent(currentSubjectName)}`);
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/pages/${user.egn}/${encodeURIComponent(currentSubjectName)}`, {
+                    headers: authHeaders()
+                });
                 const pages = res.ok ? await res.json() : [];
                 maxPage = Math.max(1, ...(pages || [1]));
             } catch {
@@ -413,7 +472,9 @@
                 return;
             }
             try {
-                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/settings/${user.egn}/${encodeURIComponent(currentSubjectName)}`);
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/settings/${user.egn}/${encodeURIComponent(currentSubjectName)}`, {
+                    headers: authHeaders()
+                });
                 const data = res.ok ? await res.json() : { style: 'lined' };
                 setPaperStyle(data.style || 'lined');
             } catch {
@@ -428,21 +489,21 @@
                     subject = demoData.subjects.find(s => String(s.id) === String(subjectId)) || demoData.subjects[0];
                 } else {
                     if (!subjectId) {
-                        const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`);
+                        const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`, { headers: authHeaders() });
                         const allSubjects = allRes.ok ? await allRes.json() : [];
                         if (!allSubjects.length) throw new Error('No subjects found');
                         subjectId = String(allSubjects[0].id);
                         localStorage.setItem('currentSubject', subjectId);
                     }
 
-                    let res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
+                    let res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`, { headers: authHeaders() });
                     if (!res.ok) {
-                        const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`);
+                        const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`, { headers: authHeaders() });
                         const allSubjects = allRes.ok ? await allRes.json() : [];
                         if (!allSubjects.length) throw new Error('No subjects found');
                         subjectId = String(allSubjects[0].id);
                         localStorage.setItem('currentSubject', subjectId);
-                        res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`);
+                        res = await fetch(`${BACKEND_BASE_URL}/api/subject/${subjectId}`, { headers: authHeaders() });
                     }
                     if (!res.ok) throw new Error('Could not load subject');
                     subject = await res.json();
@@ -470,7 +531,9 @@
         async function loadPage(subjectName, page) {
             try {
                 if (isDemo) return;
-                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`);
+                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`, {
+                    headers: authHeaders()
+                });
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 if (!res.ok) return;
                 const notebook = await res.json();
@@ -551,6 +614,12 @@
 
         canvas.addEventListener('touchend', () => drawing = false);
         canvas.addEventListener('touchcancel', () => drawing = false);
+        canvas.addEventListener('pointermove', (e) => {
+            if (!focusMode) return;
+            const line = document.getElementById('focusLine');
+            if (!line) return;
+            line.style.top = `${Math.max(0, e.offsetY - 17)}px`;
+        });
 
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -571,6 +640,12 @@
             autosaveTimer = setTimeout(() => saveNotebook(true), 700);
         }
 
+        function getCanvasPayload() {
+            const webp = canvas.toDataURL('image/webp', 0.68);
+            if (webp && webp.length < 7 * 1024 * 1024) return webp;
+            return canvas.toDataURL('image/jpeg', 0.58);
+        }
+
         async function saveNotebook(silent = false) {
             if (isDemo || !currentSubjectName) return;
             if (!notebookDirty && silent) return;
@@ -578,7 +653,7 @@
                 clearTimeout(autosaveTimer);
                 autosaveTimer = null;
             }
-            const imageData = canvas.toDataURL('image/jpeg', 0.78);
+            const imageData = getCanvasPayload();
             try {
                 const request = fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                     method: 'POST',
@@ -595,7 +670,8 @@
                     })
                 });
                 saveInFlight = request;
-                await request;
+                const res = await request;
+                if (!res.ok) throw new Error(`Save failed ${res.status}`);
                 saveInFlight = null;
                 notebookDirty = false;
                 maxPage = Math.max(maxPage, currentPage);
@@ -621,7 +697,7 @@
 
         function saveNotebookKeepalive() {
             if (isDemo || !notebookDirty || !currentSubjectName) return;
-            const imageData = canvas.toDataURL('image/jpeg', 0.78);
+            const imageData = getCanvasPayload();
             fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                 method: 'POST',
                 keepalive: true,
