@@ -657,6 +657,13 @@ function populateGradeStudents() {
     });
 }
 
+function populateGradeboardClasses() {
+    const select = document.getElementById('gradeboardClassSelect');
+    if (!select) return;
+    const classes = Array.from(new Set((studentNames || []).map((s) => s.className).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+    select.innerHTML = classes.map((className) => `<option value="${className}">${className}</option>`).join('');
+}
+
 function populateGradeSubjects() {
     const select = document.getElementById('gradeSubject');
     if (!select) return;
@@ -802,6 +809,90 @@ async function loadGradeHistory() {
     }
 }
 
+async function loadClassGradeboard() {
+    const container = document.getElementById('classGradeboardList');
+    const className = document.getElementById('gradeboardClassSelect')?.value;
+    if (!container) return;
+    if (!className) {
+        container.innerHTML = '<p class="empty-state">Select a class first.</p>';
+        return;
+    }
+    container.innerHTML = '<p class="empty-state">Loading class grades...</p>';
+    try {
+        let classGrades = [];
+        if (isDemo && demoData) {
+            classGrades = (demoData.grades || []).map((g) => ({
+                id: g.id || null,
+                studentName: demoData.student?.name || 'Student',
+                subject: g.subject,
+                value: g.value,
+                comment: g.comment,
+                createdAt: g.createdAt
+            }));
+        } else {
+            const res = await fetch(`${BACKEND_BASE_URL}/api/grades/class/${encodeURIComponent(className)}?t=${Date.now()}`, {
+                headers: authHeaders()
+            });
+            classGrades = res.ok ? await res.json() : [];
+        }
+
+        const classStudents = (studentNames || [])
+            .filter((s) => s.className === className)
+            .map((s) => s.fullName)
+            .sort((a, b) => a.localeCompare(b));
+
+        if (!classStudents.length) {
+            container.innerHTML = '<p class="empty-state">No students found in this class.</p>';
+            return;
+        }
+
+        const subjects = Array.from(new Set(classGrades.map((g) => g.subject).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        const gradeMap = new Map();
+        classGrades.forEach((g) => {
+            const key = `${g.studentName}__${g.subject}`;
+            if (!gradeMap.has(key)) gradeMap.set(key, []);
+            gradeMap.get(key).push(Number(g.value));
+        });
+
+        const rows = classStudents.map((studentName) => {
+            const values = classGrades.filter((g) => g.studentName === studentName).map((g) => Number(g.value)).filter(Number.isFinite);
+            const avg = values.length ? (values.reduce((s, v) => s + v, 0) / values.length).toFixed(2) : '-';
+            const cells = subjects.map((subject) => {
+                const vals = (gradeMap.get(`${studentName}__${subject}`) || []).filter(Number.isFinite);
+                if (!vals.length) return '<span class="empty-inline">-</span>';
+                return vals.map((v) => `<span class="grade-pill ${gradeToneClass(v)}">${v.toFixed(2)}</span>`).join(' ');
+            }).map((cellHtml) => `<td>${cellHtml}</td>`).join('');
+            return `
+                <tr>
+                    <td><strong>${studentName}</strong></td>
+                    <td>${avg}</td>
+                    ${cells}
+                </tr>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="gradebook-table-wrap">
+                <table class="gradebook-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Average</th>
+                            ${subjects.map((s) => `<th>${s}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Could not load class gradeboard:', error);
+        container.innerHTML = '<p class="empty-state">Failed to load class gradeboard.</p>';
+    }
+}
+
 function gradeToneClass(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return 'is-mid';
@@ -912,8 +1003,10 @@ async function loadGrades() {
     await loadStudentNames();
     await loadTeacherSubjects();
     populateGradeStudents();
+    populateGradeboardClasses();
     populateGradeSubjects();
     await loadGradeHistory();
+    await loadClassGradeboard();
 }
 
 document.addEventListener('change', (e) => {
@@ -1770,6 +1863,7 @@ window.unlockClassroom = unlockClassroom;
 window.syncClassroomPanel = syncClassroomPanel;
 window.setQuickGrade = setQuickGrade;
 window.deleteGrade = deleteGrade;
+window.loadClassGradeboard = loadClassGradeboard;
 
 function setTeacherLanguage(lang) {
     teacherLang = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'].includes(lang) ? lang : 'en';

@@ -2,8 +2,14 @@ const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const user = JSON.parse(localStorage.getItem('user'));
 const token = localStorage.getItem('token');
+const OWNER_EMAIL = 'admin@edu-school.bg';
 
 if (!user || user.role !== 'ADMIN') {
+    window.location.href = '/';
+}
+
+const isOwnerAccount = !user.demo && String(user.email || '').toLowerCase() === OWNER_EMAIL;
+if (!isOwnerAccount) {
     window.location.href = '/';
 }
 

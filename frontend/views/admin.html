@@ -39,7 +39,7 @@
         <section class="hero-panel">
             <div class="greeting">
                 <span class="section-eyebrow">Administrator Workspace</span>
-                <h2>Welcome, <span id="adminName">Admin</span></h2>
+                <h2><span id="adminGreeting">Welcome,</span> <span id="adminName">Admin</span></h2>
                 <p>Monitor users, review feedback, and keep the system running smoothly.</p>
             </div>
             <div class="hero-side">
@@ -48,7 +48,7 @@
                     <span class="hero-stat-label">System Status</span>
                     <strong id="adminStatus">Checking...</strong>
                 </div>
-                <button class="action-btn secondary-btn" style="margin-top:10px;" onclick="window.location.href='/owner'">Open Owner Analytics</button>
+                <button id="ownerAnalyticsBtn" class="action-btn secondary-btn" style="margin-top:10px; display:none;" onclick="window.location.href='/owner'">Open Owner Analytics</button>
             </div>
         </section>
 

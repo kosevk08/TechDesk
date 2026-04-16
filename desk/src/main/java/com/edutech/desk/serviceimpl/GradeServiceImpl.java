@@ -37,6 +37,12 @@ public class GradeServiceImpl implements GradeService {
     }
 
     @Override
+    public List<Grade> getByStudentEgns(List<String> studentEgns) {
+        if (studentEgns == null || studentEgns.isEmpty()) return List.of();
+        return gradeRepository.findByStudentEgnIn(studentEgns);
+    }
+
+    @Override
     public List<Grade> getByStudentAndSubject(String studentEgn, String subject) {
         return gradeRepository.findByStudentEgnAndSubject(studentEgn, subject);
     }

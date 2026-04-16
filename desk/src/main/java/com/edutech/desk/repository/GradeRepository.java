@@ -9,5 +9,6 @@ import java.util.List;
 public interface GradeRepository extends JpaRepository<Grade, Long> {
     List<Grade> findByStudentEgn(String studentEgn);
     List<Grade> findByStudentEgnAndSubject(String studentEgn, String subject);
+    List<Grade> findByStudentEgnIn(List<String> studentEgns);
     List<Grade> findBySubject(String subject);
 }

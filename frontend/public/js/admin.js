@@ -6,6 +6,7 @@ const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let adminLang = localStorage.getItem('adminLang') || 'en';
 const ADMIN_BOOTSTRAP_KEY = 'techdesk-secret-2026';
+const OWNER_EMAIL = 'admin@edu-school.bg';
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -22,7 +23,30 @@ if (!user || user.role !== 'ADMIN') {
     window.location.href = '/';
 }
 
-document.getElementById('adminName').textContent = user.displayName || 'Admin';
+const adminNameEl = document.getElementById('adminName');
+const adminGreetingEl = document.getElementById('adminGreeting');
+
+function applyAdminGreeting() {
+    const isOwnerAccount = !isDemo && String(user?.email || '').toLowerCase() === OWNER_EMAIL;
+    if (isOwnerAccount) {
+        if (adminGreetingEl) adminGreetingEl.textContent = 'Здравейте,';
+        if (adminNameEl) adminNameEl.textContent = 'собственици';
+        return;
+    }
+    if (adminGreetingEl) adminGreetingEl.textContent = 'Welcome,';
+    if (adminNameEl) adminNameEl.textContent = user.displayName || 'Admin';
+}
+
+applyAdminGreeting();
+
+function applyOwnerButtonAccess() {
+    const ownerBtn = document.getElementById('ownerAnalyticsBtn');
+    if (!ownerBtn) return;
+    const isOwnerAccount = !isDemo && String(user?.email || '').toLowerCase() === OWNER_EMAIL;
+    ownerBtn.style.display = isOwnerAccount ? 'inline-flex' : 'none';
+}
+
+applyOwnerButtonAccess();
 
 async function loadStatus() {
     const statusEl = document.getElementById('adminStatus');

@@ -3,6 +3,9 @@ package com.edutech.desk.controller;
 import com.edutech.desk.controller.response.GradeResponse;
 import com.edutech.desk.entities.Grade;
 import com.edutech.desk.entities.User;
+import com.edutech.desk.entities.Student;
+import com.edutech.desk.entities.Role;
+import com.edutech.desk.repository.StudentRepository;
 import com.edutech.desk.repository.UserRepository;
 import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.GradeService;
@@ -37,6 +40,9 @@ public class GradeController {
 
     @Autowired
     private TeacherService teacherService;
+
+    @Autowired
+    private StudentRepository studentRepository;
 
     @PostMapping
     public ResponseEntity<GradeResponse> addGrade(@RequestBody Map<String, String> body) {
@@ -145,6 +151,28 @@ public class GradeController {
         String studentEgn = nameLookupService.studentEgnByName(name);
         if (studentEgn == null) return ResponseEntity.ok(Map.of());
         return ResponseEntity.ok(gradeService.getStudentAverages(studentEgn));
+    }
+
+    @GetMapping("/class/{className}")
+    public ResponseEntity<List<GradeResponse>> getByClass(@PathVariable String className) {
+        User actor = currentUserService.getUser();
+        if (actor == null || (actor.getRole() != Role.TEACHER && actor.getRole() != Role.ADMIN)) {
+            return ResponseEntity.status(403).build();
+        }
+        List<Student> students = studentRepository.findByClassNameIgnoreCase(className);
+        if (students.isEmpty()) return ResponseEntity.ok(List.of());
+        List<String> egns = students.stream().map(Student::getEgn).toList();
+        List<Grade> grades = gradeService.getByStudentEgns(egns);
+        if (actor.getRole() == Role.TEACHER) {
+            List<String> teacherSubjects = teacherService.getTeacherSubjects(actor.getEgn());
+            grades = grades.stream()
+                .filter(g -> teacherSubjects.stream().anyMatch(s -> s != null && s.equalsIgnoreCase(g.getSubject())))
+                .toList();
+        }
+        List<GradeResponse> responses = grades.stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
     }
 
     private GradeResponse toResponse(Grade grade) {

@@ -10,6 +10,7 @@ public interface GradeService {
     Optional<Grade> getById(Long id);
     void deleteGrade(Long id);
     List<Grade> getByStudent(String studentEgn);
+    List<Grade> getByStudentEgns(List<String> studentEgns);
     List<Grade> getByStudentAndSubject(String studentEgn, String subject);
     Map<String, Double> getStudentAverages(String studentEgn);
 }
