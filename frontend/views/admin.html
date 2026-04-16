@@ -54,7 +54,7 @@
 
         <div class="dashboard-grid" id="adminMetrics"></div>
 
-        <div class="card section-card">
+        <div class="card section-card" id="feedbackSection">
             <div class="section-header">
                 <div>
                     <span class="section-eyebrow">Feedback</span>
@@ -86,7 +86,8 @@
             </div>
             <div class="assignment-form">
                 <select id="teacherSelect"></select>
-                <input type="text" id="teacherSubjectsInput" placeholder="Subjects (comma separated)">
+                <input type="text" id="teacherSubjectsInput" list="subjectSuggestions" placeholder="Subjects (comma separated)">
+                <datalist id="subjectSuggestions"></datalist>
                 <button class="action-btn" onclick="saveTeacherSubjects()">Save</button>
                 <button class="action-btn secondary-btn" onclick="autoAssignSubjectTeachers()">Auto Assign by Subject</button>
                 <span class="assignment-status" id="teacherSubjectStatus">Ready</span>

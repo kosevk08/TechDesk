@@ -7,6 +7,7 @@ import com.edutech.desk.repository.FeedbackRepository;
 import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.NameLookupService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequestMapping("/api/feedback")
 @CrossOrigin(origins = {"http://localhost:3000", "https://techdesk-frontend.onrender.com"})
 public class FeedbackController {
+    private static final String OWNER_EMAIL = "admin@edu-school.bg";
 
     @Autowired
     private FeedbackRepository feedbackRepository;
@@ -49,6 +51,11 @@ public class FeedbackController {
 
     @GetMapping("/all")
     public ResponseEntity<List<Feedback>> all() {
+        User current = currentUserService.getUser();
+        String email = current == null || current.getEmail() == null ? "" : current.getEmail().trim().toLowerCase();
+        if (!OWNER_EMAIL.equals(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(feedbackRepository.findAll());
     }
 }

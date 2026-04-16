@@ -7,6 +7,8 @@ const isDemo = Boolean(user && user.demo);
 let adminLang = localStorage.getItem('adminLang') || 'en';
 const ADMIN_BOOTSTRAP_KEY = 'techdesk-secret-2026';
 const OWNER_EMAIL = 'admin@edu-school.bg';
+let cachedSubjects = [];
+const isOwnerAdminAccount = !isDemo && String(user?.email || '').toLowerCase() === OWNER_EMAIL;
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -27,8 +29,7 @@ const adminNameEl = document.getElementById('adminName');
 const adminGreetingEl = document.getElementById('adminGreeting');
 
 function applyAdminGreeting() {
-    const isOwnerAccount = !isDemo && String(user?.email || '').toLowerCase() === OWNER_EMAIL;
-    if (isOwnerAccount) {
+    if (isOwnerAdminAccount) {
         if (adminGreetingEl) adminGreetingEl.textContent = 'Здравейте,';
         if (adminNameEl) adminNameEl.textContent = 'собственици';
         return;
@@ -42,11 +43,18 @@ applyAdminGreeting();
 function applyOwnerButtonAccess() {
     const ownerBtn = document.getElementById('ownerAnalyticsBtn');
     if (!ownerBtn) return;
-    const isOwnerAccount = !isDemo && String(user?.email || '').toLowerCase() === OWNER_EMAIL;
-    ownerBtn.style.display = isOwnerAccount ? 'inline-flex' : 'none';
+    ownerBtn.style.display = isOwnerAdminAccount ? 'inline-flex' : 'none';
 }
 
 applyOwnerButtonAccess();
+
+function applyFeedbackAccess() {
+    const feedbackSection = document.getElementById('feedbackSection');
+    if (!feedbackSection) return;
+    feedbackSection.style.display = isOwnerAdminAccount ? '' : 'none';
+}
+
+applyFeedbackAccess();
 
 async function loadStatus() {
     const statusEl = document.getElementById('adminStatus');
@@ -72,14 +80,17 @@ function renderMetrics(users, feedbackCount) {
         parent: users.filter(u => u.role === 'PARENT').length,
         admin: users.filter(u => u.role === 'ADMIN').length
     };
-    metrics.innerHTML = [
+    const metricItems = [
         { label: 'Total Users', value: counts.total },
         { label: 'Students', value: counts.student },
         { label: 'Teachers', value: counts.teacher },
         { label: 'Parents', value: counts.parent },
-        { label: 'Admins', value: counts.admin },
-        { label: 'Feedback Reports', value: feedbackCount }
-    ].map(metric => `
+        { label: 'Admins', value: counts.admin }
+    ];
+    if (isOwnerAdminAccount) {
+        metricItems.push({ label: 'Feedback Reports', value: feedbackCount });
+    }
+    metrics.innerHTML = metricItems.map(metric => `
         <div class="metric-card">
             <span class="metric-label">${metric.label}</span>
             <strong class="metric-value">${metric.value}</strong>
@@ -212,11 +223,26 @@ function renderSubjectCoverage(subjects, teachers) {
 async function loadSubjects() {
     try {
         const res = await fetch(`${BACKEND_BASE_URL}/api/subject/all`, { headers: authHeaders() });
-        return res.ok ? await res.json() : [];
+        const subjects = res.ok ? await res.json() : [];
+        cachedSubjects = Array.isArray(subjects) ? subjects : [];
+        populateSubjectSuggestions(cachedSubjects);
+        return cachedSubjects;
     } catch (error) {
         console.error('Could not load subjects:', error);
+        cachedSubjects = [];
+        populateSubjectSuggestions(cachedSubjects);
         return [];
     }
+}
+
+function populateSubjectSuggestions(subjects) {
+    const dataList = document.getElementById('subjectSuggestions');
+    if (!dataList) return;
+    dataList.innerHTML = (subjects || [])
+        .map((s) => String(s?.name || '').trim())
+        .filter(Boolean)
+        .map((name) => `<option value="${name}"></option>`)
+        .join('');
 }
 
 function populateTeacherSelect(teachers) {
@@ -369,6 +395,9 @@ function setAdminLanguage(lang) {
 }
 
 async function loadFeedback() {
+    if (!isOwnerAdminAccount) {
+        return [];
+    }
     if (isDemo) {
         const local = JSON.parse(localStorage.getItem('demo-feedback') || '[]');
         const items = local.length ? local : (demoData?.feedback || []);
@@ -438,7 +467,29 @@ async function saveTeacherSubjects() {
     const input = document.getElementById('teacherSubjectsInput');
     if (!select || !input) return;
     const teacherEgn = select.value;
-    const subjects = input.value.split(',').map(s => s.trim()).filter(Boolean);
+    const availableSubjectNames = (cachedSubjects || [])
+        .map((s) => String(s?.name || '').trim())
+        .filter(Boolean);
+    const subjectByLower = new Map(availableSubjectNames.map((name) => [name.toLowerCase(), name]));
+    const subjects = input.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((raw) => {
+            const exact = subjectByLower.get(raw.toLowerCase());
+            if (exact) return exact;
+            const soft = availableSubjectNames.find((name) => name.toLowerCase().includes(raw.toLowerCase()));
+            return soft || raw;
+        });
+
+    if (!teacherEgn) {
+        if (status) status.textContent = 'Choose teacher first.';
+        return;
+    }
+    if (!subjects.length) {
+        if (status) status.textContent = 'Add at least one subject.';
+        return;
+    }
 
     if (isDemo) {
         status.textContent = 'Saved (demo).';
@@ -453,8 +504,14 @@ async function saveTeacherSubjects() {
             body: JSON.stringify({ teacherEgn, subjects })
         });
         if (!res.ok) throw new Error('Save failed');
+        const updatedTeacher = await res.json();
+        const persistedSubjects = (updatedTeacher?.subjects || subjects).filter(Boolean);
+        input.value = persistedSubjects.join(', ');
+        const selectedOption = select.selectedOptions[0];
+        if (selectedOption) selectedOption.dataset.subjects = persistedSubjects.join(', ');
         status.textContent = 'Saved.';
-        loadTeachers();
+        const [teachers, subjectList] = await Promise.all([loadTeachers(), loadSubjects()]);
+        renderSubjectCoverage(subjectList, teachers);
     } catch (error) {
         console.error('Could not save subjects:', error);
         status.textContent = 'Failed.';
