@@ -75,9 +75,12 @@ function normalizeUser(u) {
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
     const fromNames = `${String(u.firstName || '').trim()} ${String(u.lastName || '').trim()}`.trim();
+    const rawDisplay = String(u.displayName || u.fullName || u.name || '').trim();
+    const genericDisplay = /^user(\s+user)?$/i.test(rawDisplay) || /^unknown$/i.test(rawDisplay);
+    const resolvedDisplay = (!rawDisplay || genericDisplay) ? '' : rawDisplay;
     return {
         egn: u.egn || '',
-        displayName: u.displayName || u.fullName || u.name || fromNames || fromEmail || 'User',
+        displayName: resolvedDisplay || fromNames || fromEmail || 'User',
         role: u.role || 'USER',
         email: u.email || '-'
     };

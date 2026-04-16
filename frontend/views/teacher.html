@@ -138,7 +138,18 @@
         </div>
 
         <div id="notebooksSection" style="display:none;">
-            <h3 class="section-title">📓 Student Notebooks</h3>
+            <div class="section-header">
+                <h3 class="section-title">📓 Student Notebooks</h3>
+                <div class="notebook-filter-actions">
+                    <span id="notebookVisibleCounter" class="notebook-visible-counter">0/0 visible</span>
+                    <button id="notebookLiveOnlyBtn" class="action-btn secondary-btn" type="button" onclick="toggleNotebookLiveOnly()">
+                        Only writing now: OFF
+                    </button>
+                    <button id="notebookOnlineOnlyBtn" class="action-btn secondary-btn" type="button" onclick="toggleNotebookOnlineOnly()">
+                        Online only: OFF
+                    </button>
+                </div>
+            </div>
             <div class="ai-panel section-card">
                 <h4>Live Classroom Activity</h4>
                 <div id="liveActivityList">

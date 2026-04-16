@@ -417,6 +417,51 @@ body.notebook-focus {
     flex-wrap: wrap;
 }
 
+.notebook-live-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.notebook-live-detail {
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.notebook-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notebook-visible-counter {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #245c73;
+    background: rgba(36, 92, 115, 0.1);
+    border: 1px solid rgba(36, 92, 115, 0.18);
+    border-radius: 999px;
+    padding: 8px 10px;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.notebook-visible-counter.is-zero {
+    color: #64748b;
+    background: rgba(100, 116, 139, 0.12);
+    border-color: rgba(100, 116, 139, 0.2);
+}
+
+.notebook-visible-counter.is-active {
+    color: #166534;
+    background: rgba(22, 163, 74, 0.14);
+    border-color: rgba(22, 163, 74, 0.26);
+}
+
+.action-btn.is-active-filter {
+    background: linear-gradient(135deg, #065f46, #0f766e);
+}
+
 .notebook-chip {
     border-radius: 999px;
     padding: 4px 10px;

@@ -173,6 +173,8 @@ let teacherLastY = 0;
 let teacherAutosaveTimer = null;
 const liveActivityMap = new Map();
 const studentPresenceMap = new Map();
+let notebookLiveOnly = false;
+let notebookOnlineOnly = false;
 
 function setTeacherTool(tool) {
     teacherTool = 'pen';
@@ -376,6 +378,7 @@ function markLiveActivity(studentName, subject, page, role = 'STUDENT') {
         updatedAt: Date.now()
     });
     renderLiveActivity();
+    refreshNotebookCardsLiveState();
 }
 
 function renderLiveActivity() {
@@ -405,6 +408,89 @@ function renderLiveActivity() {
             </div>
         `;
     }).join('');
+}
+
+function getNotebookLiveState(studentName, subject) {
+    const key = `${studentName}__${subject}`;
+    const activity = liveActivityMap.get(key);
+    const now = Date.now();
+    if (activity) {
+        const seconds = Math.floor((now - activity.updatedAt) / 1000);
+        if (seconds <= 15) {
+            return { stateClass: 'live', stateLabel: 'Writing now', detail: `Last update: ${seconds}s ago` };
+        }
+        return { stateClass: 'idle', stateLabel: 'Idle', detail: `Last update: ${seconds}s ago` };
+    }
+    const presence = studentPresenceMap.get(studentName);
+    if (presence && presence.state === 'active') {
+        return { stateClass: 'idle', stateLabel: 'Online', detail: 'In workspace' };
+    }
+    return { stateClass: 'idle', stateLabel: 'No signal', detail: 'No activity yet' };
+}
+
+function refreshNotebookCardsLiveState() {
+    const cards = document.querySelectorAll('.notebook-card[data-student][data-subject]');
+    if (!cards.length) {
+        updateNotebookVisibleCounter(0, 0);
+        return;
+    }
+    let visibleCount = 0;
+    const totalCount = cards.length;
+    cards.forEach((card) => {
+        const studentName = card.dataset.student || '';
+        const subject = card.dataset.subject || '';
+        const status = getNotebookLiveState(studentName, subject);
+        const pill = card.querySelector('.notebook-live-pill');
+        const detail = card.querySelector('.notebook-live-detail');
+        if (pill) {
+            pill.classList.remove('live', 'idle');
+            pill.classList.add(status.stateClass);
+            pill.textContent = status.stateLabel;
+        }
+        if (detail) detail.textContent = status.detail;
+        const presence = studentPresenceMap.get(studentName);
+        const isOnline = Boolean(presence && presence.state === 'active');
+        const hideByLive = notebookLiveOnly && status.stateClass !== 'live';
+        const hideByOnline = notebookOnlineOnly && !isOnline;
+        const shouldHide = hideByLive || hideByOnline;
+        card.style.display = shouldHide ? 'none' : '';
+        if (!shouldHide) visibleCount += 1;
+    });
+    updateNotebookVisibleCounter(visibleCount, totalCount);
+}
+
+function updateNotebookLiveOnlyButton() {
+    const btn = document.getElementById('notebookLiveOnlyBtn');
+    if (!btn) return;
+    btn.textContent = `Only writing now: ${notebookLiveOnly ? 'ON' : 'OFF'}`;
+    btn.classList.toggle('is-active-filter', notebookLiveOnly);
+}
+
+function updateNotebookOnlineOnlyButton() {
+    const btn = document.getElementById('notebookOnlineOnlyBtn');
+    if (!btn) return;
+    btn.textContent = `Online only: ${notebookOnlineOnly ? 'ON' : 'OFF'}`;
+    btn.classList.toggle('is-active-filter', notebookOnlineOnly);
+}
+
+function updateNotebookVisibleCounter(visible, total) {
+    const counter = document.getElementById('notebookVisibleCounter');
+    if (!counter) return;
+    counter.textContent = `${visible}/${total} visible`;
+    counter.classList.toggle('is-zero', visible === 0);
+    counter.classList.toggle('is-active', visible > 0);
+}
+
+function toggleNotebookLiveOnly() {
+    notebookLiveOnly = !notebookLiveOnly;
+    updateNotebookLiveOnlyButton();
+    refreshNotebookCardsLiveState();
+}
+
+function toggleNotebookOnlineOnly() {
+    notebookOnlineOnly = !notebookOnlineOnly;
+    updateNotebookOnlineOnlyButton();
+    refreshNotebookCardsLiveState();
 }
 
 socket.on('draw-stroke', (data) => {
@@ -445,6 +531,22 @@ socket.on('student-presence', (data) => {
         updatedAt: data.updatedAt || Date.now()
     });
     renderStudentPresence();
+    refreshNotebookCardsLiveState();
+});
+
+socket.on('notebook-typing', (data) => {
+    if (!data?.studentName || !data?.subject) return;
+    markLiveActivity(data.studentName, data.subject, data.page || 1, data.authorRole || 'STUDENT');
+    if (data.state) {
+        studentPresenceMap.set(data.studentName, {
+            studentName: data.studentName,
+            className: data.className || null,
+            state: data.state === 'inactive' ? 'inactive' : 'active',
+            updatedAt: data.updatedAt || Date.now()
+        });
+        renderStudentPresence();
+    }
+    refreshNotebookCardsLiveState();
 });
 
 async function loadNotifications() {
@@ -775,6 +877,7 @@ if (!isDemo) {
 loadNotifications();
 attachTeacherCanvasEvents();
 setInterval(renderLiveActivity, 3000);
+setInterval(refreshNotebookCardsLiveState, 3000);
 
 async function loadTeacherPage() {
     try {
@@ -856,6 +959,8 @@ function avatarInitials(name) {
 
 async function loadNotebooks() {
     try {
+        updateNotebookLiveOnlyButton();
+        updateNotebookOnlineOnlyButton();
         // Always open notebooks list first, never auto-open a specific notebook.
         document.body.classList.remove('notebook-focus');
         currentViewStudent = null;
@@ -886,6 +991,8 @@ async function loadNotebooks() {
             demoCards.forEach(notebook => {
                 const card = document.createElement('div');
                 card.className = 'notebook-card';
+                card.dataset.student = notebook.studentName;
+                card.dataset.subject = notebook.subject;
                 card.innerHTML = `
                     <div class="notebook-card-head">
                         <span class="notebook-avatar">${avatarInitials(notebook.studentName)}</span>
@@ -897,6 +1004,10 @@ async function loadNotebooks() {
                     <div class="notebook-meta">
                         <span class="notebook-chip">Demo</span>
                         <span class="notebook-chip">Page ${notebook.page || 1}</span>
+                    </div>
+                    <div class="notebook-live-row">
+                        <span class="live-pill notebook-live-pill idle">No signal</span>
+                        <span class="notebook-live-detail">No activity yet</span>
                     </div>
                     <button class="view-btn"
                         data-student="${notebook.studentName}"
@@ -912,6 +1023,7 @@ async function loadNotebooks() {
                     viewNotebook(null, null, btn.dataset.student, btn.dataset.subject);
                 });
             });
+            refreshNotebookCardsLiveState();
             return;
         }
         const response = await fetch(`${BACKEND_BASE_URL}/api/notebook/teacher?t=${Date.now()}`, {
@@ -946,6 +1058,8 @@ async function loadNotebooks() {
             const studentName = notebook.studentName || 'Student';
             const card = document.createElement('div');
             card.className = 'notebook-card';
+            card.dataset.student = studentName;
+            card.dataset.subject = notebook.subject;
             card.innerHTML = `
                 <div class="notebook-card-head">
                     <span class="notebook-avatar">${avatarInitials(studentName)}</span>
@@ -957,6 +1071,10 @@ async function loadNotebooks() {
                 <div class="notebook-meta">
                     <span class="notebook-chip">${notebook.schoolYear || 'N/A'}</span>
                     <span class="notebook-chip">${formatNotebookUpdated(notebook.lastUpdated)}</span>
+                </div>
+                <div class="notebook-live-row">
+                    <span class="live-pill notebook-live-pill idle">No signal</span>
+                    <span class="notebook-live-detail">No activity yet</span>
                 </div>
                 <button class="view-btn"
                     data-id="${notebook.id}"
@@ -974,6 +1092,7 @@ async function loadNotebooks() {
                 viewNotebook(btn.dataset.id, btn.dataset.egn, btn.dataset.student, btn.dataset.subject);
             });
         });
+        refreshNotebookCardsLiveState();
 
     } catch (error) {
         console.error('Could not load notebooks:', error);

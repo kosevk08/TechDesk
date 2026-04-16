@@ -315,12 +315,52 @@
         let saveInFlight = null;
         let focusMode = false;
         const token = localStorage.getItem('token');
+        let typingTimeout = null;
 
         function authHeaders(extra = {}) {
             const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
             if (user?.email) headers['X-User-Email'] = user.email;
             if (user?.egn) headers['X-User-Egn'] = user.egn;
             return headers;
+        }
+
+        function deriveNameFromEmail(email) {
+            if (!email) return 'Student';
+            const local = String(email).split('@')[0] || '';
+            const cleaned = local
+                .replace(/[-_.]+/g, ' ')
+                .replace(/\b(student|teacher|parent|admin)\b/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            if (!cleaned) return 'Student';
+            return cleaned
+                .split(' ')
+                .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+        }
+
+        function getNotebookStudentName() {
+            return user?.displayName || deriveNameFromEmail(user?.email) || 'Student';
+        }
+
+        function emitNotebookTyping(state = 'active') {
+            if (!currentSubjectName || !user?.egn) return;
+            socket.emit('notebook-typing', {
+                studentName: getNotebookStudentName(),
+                studentEgn: user.egn,
+                className: user?.className || null,
+                subject: currentSubjectName,
+                page: currentPage,
+                state,
+                authorRole: user.role || 'STUDENT',
+                updatedAt: Date.now()
+            });
+        }
+
+        function markNotebookInteraction() {
+            emitNotebookTyping('active');
+            if (typingTimeout) clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => emitNotebookTyping('inactive'), 4500);
         }
 
         function resizeCanvas() {
@@ -404,11 +444,12 @@
             await loadPage(currentSubjectName, currentPage);
             localStorage.setItem('currentNotebookPage', String(currentPage));
             socket.emit('page-change', {
-                studentName: user.displayName || 'Student',
+                studentName: getNotebookStudentName(),
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
             });
+            markNotebookInteraction();
         }
 
         async function addPage() {
@@ -418,11 +459,12 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             updatePageControls();
             socket.emit('page-change', {
-                studentName: user.displayName || 'Student',
+                studentName: getNotebookStudentName(),
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
             });
+            markNotebookInteraction();
         }
 
         function renderTextbookFallback(subjectName) {
@@ -554,6 +596,7 @@
                 color: tool === 'eraser' ? null : currentColor,
                 size: document.getElementById('sizeSlider').value,
                 tool,
+                studentName: getNotebookStudentName(),
                 studentEgn: user.egn,
                 subject: currentSubjectName,
                 page: currentPage,
@@ -574,6 +617,7 @@
             }
 
             socket.emit('draw-stroke', strokeData);
+            markNotebookInteraction();
             notebookDirty = true;
             scheduleAutoSave();
         }
@@ -624,11 +668,12 @@
         function clearCanvas() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             socket.emit('clear-canvas', {
-                studentName: user.displayName || 'Student',
+                studentName: getNotebookStudentName(),
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
             });
+            markNotebookInteraction();
             notebookDirty = true;
             scheduleAutoSave();
         }
@@ -745,20 +790,27 @@
         });
 
         loadSubject();
+        emitNotebookTyping('active');
+        setInterval(() => {
+            emitNotebookTyping(document.hidden ? 'inactive' : 'active');
+        }, 15000);
 
         window.addEventListener('beforeunload', () => {
             saveNotebookKeepalive();
+            emitNotebookTyping('inactive');
         });
         window.addEventListener('pagehide', () => {
             saveNotebookKeepalive();
+            emitNotebookTyping('inactive');
         });
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) saveNotebookKeepalive();
+            emitNotebookTyping(document.hidden ? 'inactive' : 'active');
         });
 
         socket.on('draw-stroke', (data) => {
             if (!data) return;
-            if (data.studentName !== (user.displayName || 'Student')) return;
+            if (data.studentName !== getNotebookStudentName()) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
             if (parseInt(data.page, 10) !== parseInt(currentPage, 10)) return;
             if (data.tool === 'eraser') {
@@ -777,7 +829,7 @@
 
         socket.on('clear-canvas', (data) => {
             if (!data) return;
-            if (data.studentName !== (user.displayName || 'Student')) return;
+            if (data.studentName !== getNotebookStudentName()) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
             if (parseInt(data.page, 10) !== parseInt(currentPage, 10)) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -785,7 +837,7 @@
 
         socket.on('page-change', (data) => {
             if (!data) return;
-            if (data.studentName !== (user.displayName || 'Student')) return;
+            if (data.studentName !== getNotebookStudentName()) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
             currentPage = parseInt(data.page, 10);
             maxPage = Math.max(maxPage, currentPage);
