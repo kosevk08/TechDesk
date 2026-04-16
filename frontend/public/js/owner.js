@@ -33,18 +33,34 @@ function byRole(users) {
 }
 
 function schoolSeeds(totalUsers) {
+    const canonicalSchoolName = 'Private Foreign Language High School "Prof. Ivan Apostolov"';
+    const legacyApostolovNames = new Set([
+        'PG Prof. Iv. Apostolov - Sofia',
+        'МГ "Проф.Иван Апостолов"',
+        'MG "Prof. Ivan Apostolov"'
+    ]);
     const local = localStorage.getItem('owner-school-plans');
     if (local) {
         try {
             const parsed = JSON.parse(local);
-            if (Array.isArray(parsed) && parsed.length) return parsed;
+            if (Array.isArray(parsed) && parsed.length) {
+                const normalized = parsed.map((item) => {
+                    if (!item || typeof item !== 'object') return item;
+                    if (legacyApostolovNames.has(item.school)) {
+                        return { ...item, school: canonicalSchoolName };
+                    }
+                    return item;
+                });
+                localStorage.setItem('owner-school-plans', JSON.stringify(normalized));
+                return normalized;
+            }
         } catch (error) {
             console.warn('Bad owner school plan cache', error);
         }
     }
 
     const base = [
-        { school: 'PG Prof. Iv. Apostolov - Sofia', plan: 'PREMIUM', activeUsers: Math.max(120, Math.round(totalUsers * 0.38)), status: 'Active' },
+        { school: canonicalSchoolName, plan: 'PREMIUM', activeUsers: Math.max(120, Math.round(totalUsers * 0.38)), status: 'Active' },
         { school: 'Math Gymnasium Plovdiv', plan: 'SCHOOL', activeUsers: Math.max(80, Math.round(totalUsers * 0.24)), status: 'Active' },
         { school: 'Language School Varna', plan: 'SCHOOL', activeUsers: Math.max(65, Math.round(totalUsers * 0.19)), status: 'Active' },
         { school: 'STEM Hub Burgas', plan: 'STUDENT', activeUsers: Math.max(40, Math.round(totalUsers * 0.11)), status: 'Pilot' },
