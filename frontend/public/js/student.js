@@ -1446,7 +1446,7 @@ async function loadStudentGrades() {
     const list = document.getElementById('studentGradesList');
     const averages = document.getElementById('studentAverages');
     if (!list || !averages) return;
-    list.innerHTML = '<p class="empty-state">Loading grades...</p>';
+    list.innerHTML = `<p class="empty-state">${gt('loadingGrades')}</p>`;
     averages.innerHTML = '';
 
     try {
@@ -1465,8 +1465,44 @@ async function loadStudentGrades() {
         renderStudentGradebook(list, averages, grades, avg);
     } catch (error) {
         console.error('Could not load grades:', error);
-        list.innerHTML = '<p class="empty-state">Failed to load grades.</p>';
+        list.innerHTML = `<p class="empty-state">${gt('gradesFailed')}</p>`;
     }
+}
+
+const GRADEBOOK_I18N = {
+    en: {
+        loadingGrades: 'Loading grades...',
+        gradesFailed: 'Failed to load grades.',
+        noGrades: 'No grades yet.',
+        totalGrades: 'Total Grades',
+        overallAverage: 'Overall Average',
+        highScores: 'High Scores (5.50+)',
+        needsFocus: 'Needs Focus (<3.50)',
+        subject: 'Subject',
+        average: 'Average',
+        count: 'Count',
+        latest: 'Latest',
+        recentGrades: 'Recent Grades'
+    },
+    bg: {
+        loadingGrades: 'Зареждане на оценки...',
+        gradesFailed: 'Грешка при зареждане на оценки.',
+        noGrades: 'Все още няма оценки.',
+        totalGrades: 'Общо оценки',
+        overallAverage: 'Среден успех',
+        highScores: 'Високи оценки (5.50+)',
+        needsFocus: 'Нужда от фокус (<3.50)',
+        subject: 'Предмет',
+        average: 'Средно',
+        count: 'Брой',
+        latest: 'Последна',
+        recentGrades: 'Последни оценки'
+    }
+};
+
+function gt(key) {
+    const bundle = GRADEBOOK_I18N[studentLang] || GRADEBOOK_I18N.en;
+    return bundle[key] || GRADEBOOK_I18N.en[key] || key;
 }
 
 function gradeTone(value) {
@@ -1488,7 +1524,7 @@ function toLocalGradeDate(raw) {
 
 function renderStudentGradebook(list, averages, grades, avg) {
     if (!Array.isArray(grades) || !grades.length) {
-        list.innerHTML = '<p class="empty-state">No grades yet.</p>';
+        list.innerHTML = `<p class="empty-state">${gt('noGrades')}</p>`;
         averages.innerHTML = '';
         return;
     }
@@ -1539,19 +1575,19 @@ function renderStudentGradebook(list, averages, grades, avg) {
     list.innerHTML = `
         <div class="gradebook-stats">
             <article class="grade-stat-card">
-                <span>Total Grades</span>
+                <span>${gt('totalGrades')}</span>
                 <strong>${total}</strong>
             </article>
             <article class="grade-stat-card">
-                <span>Overall Average</span>
+                <span>${gt('overallAverage')}</span>
                 <strong class="${gradeTone(overall)}">${overall.toFixed(2)}</strong>
             </article>
             <article class="grade-stat-card">
-                <span>High Scores (5.50+)</span>
+                <span>${gt('highScores')}</span>
                 <strong>${topCount}</strong>
             </article>
             <article class="grade-stat-card">
-                <span>Needs Focus (&lt;3.50)</span>
+                <span>${gt('needsFocus')}</span>
                 <strong>${riskCount}</strong>
             </article>
         </div>
@@ -1559,11 +1595,11 @@ function renderStudentGradebook(list, averages, grades, avg) {
             <table class="gradebook-table">
                 <thead>
                     <tr>
-                        <th>Subject</th>
-                        <th>Average</th>
-                        <th>Count</th>
-                        <th>Latest</th>
-                        <th>Recent Grades</th>
+                        <th>${gt('subject')}</th>
+                        <th>${gt('average')}</th>
+                        <th>${gt('count')}</th>
+                        <th>${gt('latest')}</th>
+                        <th>${gt('recentGrades')}</th>
                     </tr>
                 </thead>
                 <tbody>${rowsHtml}</tbody>

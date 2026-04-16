@@ -646,6 +646,17 @@
             return canvas.toDataURL('image/jpeg', 0.58);
         }
 
+        function showSaveStatus(text, timeoutMs = 1600) {
+            const msg = document.getElementById('savedMsg');
+            if (!msg) return;
+            msg.textContent = text;
+            msg.style.display = 'inline';
+            setTimeout(() => {
+                msg.style.display = 'none';
+                msg.textContent = 'Saved';
+            }, timeoutMs);
+        }
+
         async function saveNotebook(silent = false) {
             if (isDemo || !currentSubjectName) return;
             if (!notebookDirty && silent) return;
@@ -653,9 +664,9 @@
                 clearTimeout(autosaveTimer);
                 autosaveTimer = null;
             }
-            const imageData = getCanvasPayload();
+            let imageData = getCanvasPayload();
             try {
-                const request = fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
+                let request = fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                     method: 'POST',
                     headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({
@@ -670,28 +681,36 @@
                     })
                 });
                 saveInFlight = request;
-                const res = await request;
+                let res = await request;
+                if (!res.ok) {
+                    // Retry once with lower-quality payload for unstable mobile/network conditions.
+                    imageData = canvas.toDataURL('image/jpeg', 0.46);
+                    request = fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
+                        method: 'POST',
+                        headers: authHeaders({ 'Content-Type': 'application/json' }),
+                        body: JSON.stringify({
+                            studentEgn: user.egn,
+                            subject: currentSubjectName,
+                            schoolYear: '2025-2026',
+                            format: 'A4',
+                            style: currentStyle,
+                            color: currentColor,
+                            content: imageData,
+                            pageNumber: currentPage
+                        })
+                    });
+                    saveInFlight = request;
+                    res = await request;
+                }
                 if (!res.ok) throw new Error(`Save failed ${res.status}`);
                 saveInFlight = null;
                 notebookDirty = false;
                 maxPage = Math.max(maxPage, currentPage);
                 updatePageControls();
-                if (!silent) {
-                    const msg = document.getElementById('savedMsg');
-                    msg.style.display = 'inline';
-                    setTimeout(() => msg.style.display = 'none', 1600);
-                }
+                showSaveStatus(silent ? 'Auto-saved' : 'Saved');
             } catch (err) {
                 console.error('Could not save:', err);
-                if (!silent) {
-                    const msg = document.getElementById('savedMsg');
-                    msg.textContent = 'Save failed';
-                    msg.style.display = 'inline';
-                    setTimeout(() => {
-                        msg.style.display = 'none';
-                        msg.textContent = 'Saved';
-                    }, 2000);
-                }
+                showSaveStatus('Save failed', 2200);
             }
         }
 
