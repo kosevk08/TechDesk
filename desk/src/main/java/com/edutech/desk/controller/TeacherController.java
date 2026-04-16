@@ -6,6 +6,7 @@ import com.edutech.desk.entities.Notebook;
 import com.edutech.desk.entities.Teacher;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.TeacherService;
+import com.edutech.desk.service.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,9 @@ public class TeacherController {
 
     @Autowired
     private NameLookupService nameLookupService;
+
+    @Autowired
+    private CurrentUserService currentUserService;
 
     @GetMapping("/notebooks")
     public ResponseEntity<List<NotebookResponse>> viewAllStudentNotebooks() {
@@ -45,6 +49,13 @@ public class TeacherController {
     @GetMapping("/all")
     public ResponseEntity<List<Teacher>> getAllTeachers() {
         return ResponseEntity.ok(teacherService.getAllTeachers());
+    }
+
+    @GetMapping("/subjects/me")
+    public ResponseEntity<List<String>> getMySubjects() {
+        String egn = currentUserService.getEgn();
+        if (egn == null || egn.isBlank()) return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(teacherService.getTeacherSubjects(egn));
     }
 
     @PostMapping("/subjects")

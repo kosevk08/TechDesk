@@ -46,7 +46,9 @@ let autosaveTimer = null;
 
 async function loadStudentsForDate() {
     const date = document.getElementById('attendanceDate').value;
+    const period = document.getElementById('attendancePeriod')?.value || 'ALL_DAY';
     if (!date) return;
+    Object.keys(attendanceMap).forEach((key) => delete attendanceMap[key]);
 
     let existingRecords = [];
     try {
@@ -65,7 +67,9 @@ async function loadStudentsForDate() {
     } catch (e) {}
 
     const existingMap = {};
-    existingRecords.forEach(r => existingMap[r.studentName] = r.status);
+    existingRecords
+        .filter(r => (r.period || 'ALL_DAY') === period)
+        .forEach(r => existingMap[r.studentName] = r.status);
 
     if (!isDemo && studentNames.length === 0) {
         try {
@@ -120,22 +124,24 @@ function scheduleAttendanceAutosave() {
 
 async function saveAll() {
     const date = document.getElementById('attendanceDate').value;
+    const period = document.getElementById('attendancePeriod')?.value || 'ALL_DAY';
     if (isDemo && demoData) {
         demoData.attendance = Object.entries(attendanceMap).map(([name, status]) => ({
             date,
-            status
+            status,
+            period
         }));
     } else {
         const promises = Object.entries(attendanceMap).map(([studentName, status]) =>
             fetch(`${BACKEND_BASE_URL}/api/attendance/mark`, {
                 method: 'POST',
                 headers: authHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ studentName, date, status })
+                body: JSON.stringify({ studentName, date, status, period })
             })
         );
         await Promise.all(promises);
         Object.entries(attendanceMap).forEach(([studentName, status]) => {
-            socket.emit('attendance-updated', { studentName, status, date });
+            socket.emit('attendance-updated', { studentName, status, date, period });
         });
     }
     const msg = document.getElementById('savedMsg');
@@ -169,7 +175,7 @@ async function loadStudentAttendance(containerId) {
             <div class="summary">
                 <div class="summary-item">
                     <h3>${records.length}</h3>
-                    <p>Total Days</p>
+                    <p>Total Records</p>
                 </div>
                 <div class="summary-item green">
                     <h3>${present}</h3>
@@ -192,6 +198,7 @@ async function loadStudentAttendance(containerId) {
             div.innerHTML = `
                 <div>
                     <h4>${new Date(record.date).toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h4>
+                    <p style="font-size:12px; color:#64748b; margin-top:4px;">Period: ${record.period || 'ALL_DAY'}</p>
                 </div>
                 <span class="${record.status === 'PRESENT' ? 'badge-present' : 'badge-absent'}">
                     ${record.status === 'PRESENT' ? 'Present' :

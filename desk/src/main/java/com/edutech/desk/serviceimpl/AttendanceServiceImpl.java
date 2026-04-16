@@ -32,20 +32,22 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public Attendance markAttendance(String studentEgn, LocalDate date, String status) {
-        Optional<Attendance> existing = attendanceRepository.findByStudentEgnAndDate(studentEgn, date);
+    public Attendance markAttendance(String studentEgn, LocalDate date, String status, String period) {
+        String normalizedPeriod = (period == null || period.isBlank()) ? "ALL_DAY" : period.trim();
+        Optional<Attendance> existing = attendanceRepository.findByStudentEgnAndDateAndPeriod(studentEgn, date, normalizedPeriod);
         Attendance attendance = existing.orElse(new Attendance());
         attendance.setStudentEgn(studentEgn);
         attendance.setDate(date);
         attendance.setStatus(status);
+        attendance.setPeriod(normalizedPeriod);
         Attendance saved = attendanceRepository.save(attendance);
 
-        String message = "Attendance update: " + status + " on " + date;
+        String message = "Attendance update: " + status + " on " + date + " (" + normalizedPeriod + ")";
         notificationService.create(studentEgn, "ATTENDANCE", message);
         com.edutech.desk.entities.User parent = userRepository.findByStudentEgn(studentEgn);
         if (parent != null) {
             notificationService.create(parent.getEgn(), "ATTENDANCE",
-                "Your child has " + status + " on " + date);
+                "Your child has " + status + " on " + date + " (" + normalizedPeriod + ")");
         }
 
         return saved;

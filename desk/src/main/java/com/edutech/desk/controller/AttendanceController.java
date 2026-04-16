@@ -76,7 +76,8 @@ public class AttendanceController {
         }
         LocalDate date = LocalDate.parse(body.get("date"));
         String status = body.get("status");
-        Attendance saved = attendanceService.markAttendance(studentEgn, date, status);
+        String period = body.getOrDefault("period", "ALL_DAY");
+        Attendance saved = attendanceService.markAttendance(studentEgn, date, status, period);
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -85,6 +86,7 @@ public class AttendanceController {
         response.setStudentName(nameLookupService.studentName(attendance.getStudentEgn()));
         response.setDate(attendance.getDate());
         response.setStatus(attendance.getStatus());
+        response.setPeriod(attendance.getPeriod());
         return response;
     }
 }

@@ -20,6 +20,9 @@ public class Attendance {
     @Column(nullable = false)
     private String status;
 
+    @Column(nullable = false)
+    private String period = "ALL_DAY";
+
     public Attendance() {}
 
     public Long getId() { return id; }
@@ -30,4 +33,6 @@ public class Attendance {
     public void setDate(LocalDate date) { this.date = date; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getPeriod() { return period; }
+    public void setPeriod(String period) { this.period = period; }
 }

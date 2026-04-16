@@ -8,6 +8,7 @@ import com.edutech.desk.service.CurrentUserService;
 import com.edutech.desk.service.GradeService;
 import com.edutech.desk.service.NameLookupService;
 import com.edutech.desk.service.NotificationService;
+import com.edutech.desk.service.TeacherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,20 +35,31 @@ public class GradeController {
     @Autowired
     private CurrentUserService currentUserService;
 
+    @Autowired
+    private TeacherService teacherService;
+
     @PostMapping
     public ResponseEntity<GradeResponse> addGrade(@RequestBody Map<String, String> body) {
         String studentName = body.get("studentName");
         String studentEgn = body.get("studentEgn");
+        String subject = body.get("subject");
         if (studentEgn == null && studentName != null) {
             studentEgn = nameLookupService.studentEgnByName(studentName);
         }
         User teacher = currentUserService.getUser();
-        if (studentEgn == null || teacher == null) {
+        if (studentEgn == null || teacher == null || subject == null || subject.isBlank()) {
             return ResponseEntity.badRequest().build();
+        }
+        List<String> teacherSubjects = teacherService.getTeacherSubjects(teacher.getEgn());
+        boolean canGradeSubject = teacherSubjects.stream()
+            .filter(s -> s != null && !s.isBlank())
+            .anyMatch(s -> s.trim().equalsIgnoreCase(subject.trim()));
+        if (!canGradeSubject) {
+            return ResponseEntity.status(403).build();
         }
         Grade grade = new Grade();
         grade.setStudentEgn(studentEgn);
-        grade.setSubject(body.get("subject"));
+        grade.setSubject(subject.trim());
         grade.setValue(Double.parseDouble(body.get("value")));
         grade.setComment(body.getOrDefault("comment", ""));
         grade.setTeacherEgn(teacher.getEgn());

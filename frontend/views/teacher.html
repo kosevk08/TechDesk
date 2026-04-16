@@ -209,8 +209,8 @@
                 <h4>Add Grade</h4>
                 <div class="test-form">
                     <select id="gradeStudent"></select>
-                    <input type="text" id="gradeSubject" placeholder="Subject">
-                    <input type="number" step="0.01" id="gradeValue" placeholder="Grade">
+                    <select id="gradeSubject"></select>
+                    <input type="number" min="2" max="6" step="0.01" id="gradeValue" placeholder="Grade (2.00 - 6.00)">
                     <textarea id="gradeComment" placeholder="Comment (optional)"></textarea>
                     <div class="test-row">
                         <button class="action-btn" onclick="addGrade()">Save Grade</button>

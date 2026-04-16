@@ -7,6 +7,7 @@ const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let teacherLang = localStorage.getItem('teacherLang') || 'en';
 let studentNames = [];
+let teacherSubjects = [];
 let gradeAutosaveTimer = null;
 let lastGradeHash = null;
 let testAutosaveTimer = null;
@@ -363,6 +364,17 @@ function showSection(sectionId) {
     });
 }
 
+function focusNotebooksSection() {
+    const section = document.getElementById('notebooksSection');
+    if (!section) return;
+    section.style.display = 'block';
+    requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const top = Math.max(0, section.getBoundingClientRect().top + window.scrollY - 12);
+        window.scrollTo({ top, behavior: 'smooth' });
+    });
+}
+
 function subjectMatch(a, b) {
     return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
 }
@@ -604,6 +616,23 @@ async function loadStudentNames() {
     }
 }
 
+async function loadTeacherSubjects() {
+    if (isDemo && demoData) {
+        teacherSubjects = Array.from(new Set((demoData.subjects || []).map((s) => s.name).filter(Boolean)));
+        return;
+    }
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/teacher/subjects/me?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        const data = res.ok ? await res.json() : [];
+        teacherSubjects = Array.from(new Set((data || []).map((s) => String(s || '').trim()).filter(Boolean)));
+    } catch (error) {
+        console.error('Could not load teacher subjects:', error);
+        teacherSubjects = [];
+    }
+}
+
 function setGradeStatus(text) {
     const status = document.getElementById('gradeStatus');
     if (status) status.textContent = text;
@@ -628,6 +657,19 @@ function populateGradeStudents() {
     });
 }
 
+function populateGradeSubjects() {
+    const select = document.getElementById('gradeSubject');
+    if (!select) return;
+    select.innerHTML = '';
+    const subjects = teacherSubjects.length ? teacherSubjects : ['Maths'];
+    subjects.forEach((subject) => {
+        const option = document.createElement('option');
+        option.value = subject;
+        option.textContent = subject;
+        select.appendChild(option);
+    });
+}
+
 async function addGrade() {
     const studentName = document.getElementById('gradeStudent').value;
     const subject = document.getElementById('gradeSubject').value.trim();
@@ -636,6 +678,10 @@ async function addGrade() {
 
     if (!studentName || !subject || Number.isNaN(value)) {
         setGradeStatus('Student, subject, and grade are required.');
+        return false;
+    }
+    if (value < 2 || value > 6) {
+        setGradeStatus('Grade must be between 2.00 and 6.00.');
         return false;
     }
 
@@ -826,7 +872,9 @@ function renderTeacherGradeHistory(container, grades) {
 async function loadGrades() {
     showSection('gradesSection');
     await loadStudentNames();
+    await loadTeacherSubjects();
     populateGradeStudents();
+    populateGradeSubjects();
     await loadGradeHistory();
 }
 
@@ -974,8 +1022,7 @@ async function loadNotebooks() {
             const section = document.getElementById('notebooksSection');
             const list = document.getElementById('notebooksList');
             showSection('notebooksSection');
-            section.style.display = 'block';
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            focusNotebooksSection();
             list.innerHTML = '';
 
             const notebookByStudentSubject = new Map();
@@ -1044,8 +1091,7 @@ async function loadNotebooks() {
         const section = document.getElementById('notebooksSection');
         const list = document.getElementById('notebooksList');
         showSection('notebooksSection');
-        section.style.display = 'block';
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        focusNotebooksSection();
         list.className = 'notebook-grid';
         list.innerHTML = '';
 
