@@ -151,3 +151,119 @@ if (toggleBtn && passwordInput) {
         toggleBtn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
     });
 }
+
+function initLogoParticles() {
+    const canvas = document.getElementById('logoParticlesCanvas');
+    const logo = document.querySelector('.hero-logo');
+    const stage = document.querySelector('.logo-stage');
+    if (!canvas || !logo || !stage) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const ctx = canvas.getContext('2d');
+    const pointer = { x: 0, y: 0, active: false };
+    let particles = [];
+    let rafId = null;
+
+    function resize() {
+        const size = 320;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        canvas.style.width = `${size}px`;
+        canvas.style.height = `${size}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function sampleLogoTargets() {
+        const off = document.createElement('canvas');
+        off.width = 220;
+        off.height = 220;
+        const octx = off.getContext('2d');
+        octx.clearRect(0, 0, off.width, off.height);
+        octx.drawImage(logo, 0, 0, off.width, off.height);
+        const data = octx.getImageData(0, 0, off.width, off.height).data;
+        const targets = [];
+        const step = 6;
+        for (let y = 0; y < off.height; y += step) {
+            for (let x = 0; x < off.width; x += step) {
+                const idx = (y * off.width + x) * 4;
+                const alpha = data[idx + 3];
+                if (alpha > 110) {
+                    targets.push({
+                        x: x + 50,
+                        y: y + 50
+                    });
+                }
+            }
+        }
+        return targets;
+    }
+
+    function setupParticles() {
+        const targets = sampleLogoTargets();
+        particles = targets.map((t) => ({
+            x: 160 + (Math.random() - 0.5) * 200,
+            y: 160 + (Math.random() - 0.5) * 200,
+            tx: t.x,
+            ty: t.y,
+            vx: 0,
+            vy: 0,
+            size: Math.random() * 1.8 + 1
+        }));
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, 320, 320);
+        for (const p of particles) {
+            const dx = p.tx - p.x;
+            const dy = p.ty - p.y;
+            p.vx += dx * 0.015;
+            p.vy += dy * 0.015;
+            if (pointer.active) {
+                const rx = p.x - pointer.x;
+                const ry = p.y - pointer.y;
+                const dist = Math.hypot(rx, ry) || 1;
+                if (dist < 62) {
+                    p.vx += (rx / dist) * 0.9;
+                    p.vy += (ry / dist) * 0.9;
+                }
+            }
+            p.vx *= 0.84;
+            p.vy *= 0.84;
+            p.x += p.vx;
+            p.y += p.vy;
+
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.8);
+            grad.addColorStop(0, 'rgba(125, 211, 252, 0.95)');
+            grad.addColorStop(1, 'rgba(48, 170, 186, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * 2.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        rafId = requestAnimationFrame(animate);
+    }
+
+    stage.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        pointer.x = e.clientX - rect.left;
+        pointer.y = e.clientY - rect.top;
+        pointer.active = true;
+    });
+    stage.addEventListener('mouseleave', () => {
+        pointer.active = false;
+    });
+
+    resize();
+    setupParticles();
+    animate();
+    window.addEventListener('resize', () => {
+        resize();
+        setupParticles();
+    });
+    window.addEventListener('beforeunload', () => {
+        if (rafId) cancelAnimationFrame(rafId);
+    });
+}
+
+window.addEventListener('load', initLogoParticles);

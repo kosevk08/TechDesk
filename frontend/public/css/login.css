@@ -146,6 +146,16 @@ body::after {
     justify-content: center;
     min-height: 320px;
     margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.logo-stage canvas {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.95;
 }
 
 .logo-orbit {
@@ -167,6 +177,7 @@ body::after {
     background:
         radial-gradient(circle at top left, rgba(48, 170, 186, 0.22), transparent 36%),
         rgba(5, 8, 15, 0.68);
+    z-index: 2;
 }
 
 .hero-logo {
