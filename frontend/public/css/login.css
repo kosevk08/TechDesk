@@ -54,6 +54,12 @@ body::after {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.navbar,
+.login-container {
+    position: relative;
+    z-index: 2;
+}
+
 .brand-lockup {
     display: inline-flex;
     align-items: center;
@@ -149,13 +155,14 @@ body::after {
     overflow: hidden;
 }
 
-.logo-stage canvas {
-    position: absolute;
-    width: 320px;
-    height: 320px;
+#loginWallpaperCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     pointer-events: none;
-    z-index: 3;
-    opacity: 0.62;
+    z-index: 1;
+    opacity: 0.48;
     mix-blend-mode: screen;
 }
 

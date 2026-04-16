@@ -153,37 +153,40 @@ if (toggleBtn && passwordInput) {
 }
 
 function initLogoParticles() {
-    const canvas = document.getElementById('logoParticlesCanvas');
+    const canvas = document.getElementById('loginWallpaperCanvas');
     const logo = document.querySelector('.hero-logo');
-    const stage = document.querySelector('.logo-stage');
-    if (!canvas || !logo || !stage) return;
+    if (!canvas || !logo) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const ctx = canvas.getContext('2d');
     const pointer = { x: 0, y: 0, active: false };
     let particles = [];
+    let targets = [];
     let rafId = null;
+    let cssW = window.innerWidth;
+    let cssH = window.innerHeight;
 
     function resize() {
-        const size = 320;
+        cssW = window.innerWidth;
+        cssH = window.innerHeight;
         const dpr = window.devicePixelRatio || 1;
-        canvas.width = size * dpr;
-        canvas.height = size * dpr;
-        canvas.style.width = `${size}px`;
-        canvas.style.height = `${size}px`;
+        canvas.width = cssW * dpr;
+        canvas.height = cssH * dpr;
+        canvas.style.width = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    function sampleLogoTargets() {
+    function sampleLogoShape() {
         const off = document.createElement('canvas');
-        off.width = 220;
-        off.height = 220;
+        off.width = 180;
+        off.height = 180;
         const octx = off.getContext('2d');
         octx.clearRect(0, 0, off.width, off.height);
         octx.drawImage(logo, 0, 0, off.width, off.height);
         const data = octx.getImageData(0, 0, off.width, off.height).data;
-        const targets = [];
-        const step = 7;
+        const shapePoints = [];
+        const step = 8;
         for (let y = 0; y < off.height; y += step) {
             for (let x = 0; x < off.width; x += step) {
                 const idx = (y * off.width + x) * 4;
@@ -192,83 +195,107 @@ function initLogoParticles() {
                 const g = data[idx + 1];
                 const b = data[idx + 2];
                 const luminance = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
-                const insideSafeArea = x > 18 && x < off.width - 18 && y > 18 && y < off.height - 18;
-                // Keep only visible/light logo strokes, skip dark background.
+                const insideSafeArea = x > 16 && x < off.width - 16 && y > 16 && y < off.height - 16;
                 if (alpha > 110 && luminance > 95 && insideSafeArea) {
-                    targets.push({
-                        x: x + 50,
-                        y: y + 50
-                    });
+                    shapePoints.push({ x, y });
                 }
             }
         }
-        return targets;
+        if (!shapePoints.length) return [];
+        const minX = Math.min(...shapePoints.map((p) => p.x));
+        const maxX = Math.max(...shapePoints.map((p) => p.x));
+        const minY = Math.min(...shapePoints.map((p) => p.y));
+        const maxY = Math.max(...shapePoints.map((p) => p.y));
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        return shapePoints.map((p) => ({ x: p.x - cx, y: p.y - cy }));
     }
 
-    function setupParticles() {
-        const sampled = sampleLogoTargets();
-        // Keep it noticeable but not distracting.
-        const targets = sampled.filter((_, i) => i % 2 === 0);
+    function buildWallpaperTargets(shape) {
+        const centers = [
+            { x: cssW * 0.18, y: cssH * 0.30, s: 1.05 },
+            { x: cssW * 0.50, y: cssH * 0.22, s: 0.95 },
+            { x: cssW * 0.82, y: cssH * 0.33, s: 1.08 },
+            { x: cssW * 0.34, y: cssH * 0.64, s: 0.92 },
+            { x: cssW * 0.72, y: cssH * 0.68, s: 0.98 }
+        ];
+        const out = [];
+        centers.forEach((c, groupIndex) => {
+            shape.forEach((p, idx) => {
+                if (idx % 2 !== 0) return;
+                out.push({
+                    x: c.x + p.x * c.s,
+                    y: c.y + p.y * c.s,
+                    g: groupIndex
+                });
+            });
+        });
+        return out;
+    }
+
+    function setupParticles(shape) {
+        targets = buildWallpaperTargets(shape);
         particles = targets.map((t) => ({
-            x: 160 + (Math.random() - 0.5) * 200,
-            y: 160 + (Math.random() - 0.5) * 200,
+            x: t.x + (Math.random() - 0.5) * 180,
+            y: t.y + (Math.random() - 0.5) * 160,
             tx: t.x,
             ty: t.y,
             vx: 0,
             vy: 0,
-            size: Math.random() * 1.2 + 1.4
+            size: Math.random() * 1.05 + 1.1
         }));
     }
 
     function animate() {
-        ctx.clearRect(0, 0, 320, 320);
+        ctx.clearRect(0, 0, cssW, cssH);
         for (const p of particles) {
             const dx = p.tx - p.x;
             const dy = p.ty - p.y;
-            p.vx += dx * 0.015;
-            p.vy += dy * 0.015;
+            p.vx += dx * 0.012;
+            p.vy += dy * 0.012;
             if (pointer.active) {
                 const rx = p.x - pointer.x;
                 const ry = p.y - pointer.y;
                 const dist = Math.hypot(rx, ry) || 1;
-                if (dist < 62) {
-                    p.vx += (rx / dist) * 0.9;
-                    p.vy += (ry / dist) * 0.9;
+                if (dist < 90) {
+                    p.vx += (rx / dist) * 0.45;
+                    p.vy += (ry / dist) * 0.45;
                 }
             }
-            p.vx *= 0.84;
-            p.vy *= 0.84;
+            p.vx *= 0.88;
+            p.vy *= 0.88;
             p.x += p.vx;
             p.y += p.vy;
 
             const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.2);
-            grad.addColorStop(0, 'rgba(186, 230, 253, 0.92)');
-            grad.addColorStop(0.55, 'rgba(96, 165, 250, 0.42)');
+            grad.addColorStop(0, 'rgba(186, 230, 253, 0.78)');
+            grad.addColorStop(0.5, 'rgba(96, 165, 250, 0.30)');
             grad.addColorStop(1, 'rgba(48, 170, 186, 0)');
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * 3.2, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size * 2.9, 0, Math.PI * 2);
             ctx.fill();
         }
         rafId = requestAnimationFrame(animate);
     }
 
-    stage.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        pointer.x = e.clientX - rect.left;
-        pointer.y = e.clientY - rect.top;
+    window.addEventListener('mousemove', (e) => {
+        pointer.x = e.clientX;
+        pointer.y = e.clientY;
         pointer.active = true;
     });
-    stage.addEventListener('mouseleave', () => {
+    window.addEventListener('mouseleave', () => {
         pointer.active = false;
     });
 
+    const shape = sampleLogoShape();
+    if (!shape.length) return;
     resize();
-    setupParticles();
+    setupParticles(shape);
     animate();
     window.addEventListener('resize', () => {
         resize();
-        setupParticles();
+        setupParticles(shape);
     });
     window.addEventListener('beforeunload', () => {
         if (rafId) cancelAnimationFrame(rafId);
