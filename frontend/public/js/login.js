@@ -183,12 +183,18 @@ function initLogoParticles() {
         octx.drawImage(logo, 0, 0, off.width, off.height);
         const data = octx.getImageData(0, 0, off.width, off.height).data;
         const targets = [];
-        const step = 6;
+        const step = 7;
         for (let y = 0; y < off.height; y += step) {
             for (let x = 0; x < off.width; x += step) {
                 const idx = (y * off.width + x) * 4;
                 const alpha = data[idx + 3];
-                if (alpha > 110) {
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                const luminance = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+                const insideSafeArea = x > 18 && x < off.width - 18 && y > 18 && y < off.height - 18;
+                // Keep only visible/light logo strokes, skip dark background.
+                if (alpha > 110 && luminance > 95 && insideSafeArea) {
                     targets.push({
                         x: x + 50,
                         y: y + 50
@@ -200,7 +206,9 @@ function initLogoParticles() {
     }
 
     function setupParticles() {
-        const targets = sampleLogoTargets();
+        const sampled = sampleLogoTargets();
+        // Keep it noticeable but not distracting.
+        const targets = sampled.filter((_, i) => i % 2 === 0);
         particles = targets.map((t) => ({
             x: 160 + (Math.random() - 0.5) * 200,
             y: 160 + (Math.random() - 0.5) * 200,
@@ -208,7 +216,7 @@ function initLogoParticles() {
             ty: t.y,
             vx: 0,
             vy: 0,
-            size: Math.random() * 1.8 + 1
+            size: Math.random() * 1.2 + 1.4
         }));
     }
 
@@ -233,12 +241,13 @@ function initLogoParticles() {
             p.x += p.vx;
             p.y += p.vy;
 
-            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.8);
-            grad.addColorStop(0, 'rgba(125, 211, 252, 0.95)');
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.2);
+            grad.addColorStop(0, 'rgba(186, 230, 253, 0.92)');
+            grad.addColorStop(0.55, 'rgba(96, 165, 250, 0.42)');
             grad.addColorStop(1, 'rgba(48, 170, 186, 0)');
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.size * 2.8, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size * 3.2, 0, Math.PI * 2);
             ctx.fill();
         }
         rafId = requestAnimationFrame(animate);

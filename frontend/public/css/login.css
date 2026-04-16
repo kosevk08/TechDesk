@@ -154,8 +154,9 @@ body::after {
     width: 320px;
     height: 320px;
     pointer-events: none;
-    z-index: 0;
-    opacity: 0.95;
+    z-index: 3;
+    opacity: 0.62;
+    mix-blend-mode: screen;
 }
 
 .logo-orbit {
