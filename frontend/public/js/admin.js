@@ -291,13 +291,33 @@ function renderFeedback(items) {
         return;
     }
     list.innerHTML = items.map(item => `
-        <div class="feedback-card-item">
+        <div class="feedback-card-item ${item.resolved ? 'resolved' : ''}">
             <div class="feedback-meta">${item.page || 'Unknown'} • ${new Date(item.createdAt).toLocaleString()}</div>
             <h4>${item.sender || item.userDisplayName || 'User'}</h4>
             <div class="feedback-meta">${item.message}</div>
-            <span class="${badgeClass(item.severity)}">${item.severity || 'Low'}</span>
+            <div class="feedback-actions-row">
+                <span class="${item.resolved ? 'feedback-badge resolved' : badgeClass(item.severity)}">${item.resolved ? 'Resolved' : (item.severity || 'Low')}</span>
+                ${item.resolved
+                    ? `<span class="feedback-meta">Fixed: ${item.resolvedAt ? new Date(item.resolvedAt).toLocaleString() : '-'}</span>`
+                    : `<button class="action-btn secondary-btn" onclick="markFeedbackResolved(${item.id})">Mark as fixed</button>`
+                }
+            </div>
         </div>
     `).join('');
+}
+
+async function markFeedbackResolved(id) {
+    if (!isOwnerAdminAccount || !id || isDemo) return;
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/feedback/${id}/resolve`, {
+            method: 'POST',
+            headers: authHeaders()
+        });
+        if (!res.ok) throw new Error(`Resolve failed ${res.status}`);
+        await loadFeedback();
+    } catch (error) {
+        console.error('Could not resolve feedback:', error);
+    }
 }
 
 async function loadUsers() {
@@ -614,6 +634,7 @@ window.saveTeacherSubjects = saveTeacherSubjects;
 window.saveUserRole = saveUserRole;
 window.setAdminLanguage = setAdminLanguage;
 window.autoAssignSubjectTeachers = autoAssignSubjectTeachers;
+window.markFeedbackResolved = markFeedbackResolved;
 
 init();
 setAdminLanguage(adminLang);

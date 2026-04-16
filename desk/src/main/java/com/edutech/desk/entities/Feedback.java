@@ -35,6 +35,12 @@ public class Feedback {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private boolean resolved = false;
+
+    @Column
+    private LocalDateTime resolvedAt;
+
     @PrePersist
     public void onCreate() {
         if (createdAt == null) {
@@ -59,4 +65,8 @@ public class Feedback {
     public void setRole(String role) { this.role = role; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public boolean isResolved() { return resolved; }
+    public void setResolved(boolean resolved) { this.resolved = resolved; }
+    public LocalDateTime getResolvedAt() { return resolvedAt; }
+    public void setResolvedAt(LocalDateTime resolvedAt) { this.resolvedAt = resolvedAt; }
 }

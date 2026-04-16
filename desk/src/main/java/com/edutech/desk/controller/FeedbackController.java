@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/feedback")
@@ -57,5 +58,21 @@ public class FeedbackController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(feedbackRepository.findAll());
+    }
+
+    @PostMapping("/{id}/resolve")
+    public ResponseEntity<Feedback> markResolved(@PathVariable Long id) {
+        User current = currentUserService.getUser();
+        String email = current == null || current.getEmail() == null ? "" : current.getEmail().trim().toLowerCase();
+        if (!OWNER_EMAIL.equals(email)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        Feedback feedback = feedbackRepository.findById(id).orElse(null);
+        if (feedback == null) {
+            return ResponseEntity.notFound().build();
+        }
+        feedback.setResolved(true);
+        feedback.setResolvedAt(LocalDateTime.now());
+        return ResponseEntity.ok(feedbackRepository.save(feedback));
     }
 }
