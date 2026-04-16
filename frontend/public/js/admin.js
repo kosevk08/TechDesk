@@ -64,10 +64,20 @@ function renderMetrics(users, feedbackCount) {
 }
 
 function normalizeUser(u) {
+    const fromEmail = String(u.email || '')
+        .split('@')[0]
+        .replace(/[-_.]+/g, ' ')
+        .replace(/\b(student|teacher|parent|admin)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
     const fromNames = `${String(u.firstName || '').trim()} ${String(u.lastName || '').trim()}`.trim();
     return {
         egn: u.egn || '',
-        displayName: u.displayName || u.fullName || u.name || fromNames || 'User',
+        displayName: u.displayName || u.fullName || u.name || fromNames || fromEmail || 'User',
         role: u.role || 'USER',
         email: u.email || '-'
     };
@@ -203,6 +213,21 @@ function badgeClass(severity) {
     if (key.includes('high')) return 'feedback-badge high';
     if (key.includes('medium')) return 'feedback-badge medium';
     return 'feedback-badge low';
+}
+
+function humanNameFromEmail(email, fallback = 'Teacher User') {
+    const local = String(email || '')
+        .split('@')[0]
+        .replace(/[-_.]+/g, ' ')
+        .replace(/\b(student|teacher|parent|admin)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!local) return fallback;
+    return local
+        .split(' ')
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ') || fallback;
 }
 
 function renderFeedback(items) {
@@ -356,7 +381,11 @@ async function loadTeachers() {
             teachers = users
                 .filter(u => String(u.role || '').toUpperCase() === 'TEACHER')
                 .map((u) => {
-                    const parts = String(u.displayName || 'Teacher User').trim().split(/\s+/);
+                    const baseName = String(u.displayName || '').trim();
+                    const display = (!baseName || /^user(\s+user)?$/i.test(baseName))
+                        ? humanNameFromEmail(u.email, 'Teacher User')
+                        : baseName;
+                    const parts = display.split(/\s+/);
                     return {
                         egn: u.egn || '',
                         firstName: parts[0] || 'Teacher',

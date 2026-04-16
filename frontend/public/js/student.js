@@ -194,13 +194,15 @@ function deriveNameFromEmail(email) {
 function getCurrentStudentName() {
     return currentStudentDisplayName || user?.displayName || deriveNameFromEmail(user?.email) || 'Student';
 }
-const rewardsStorageKey = `techdesk_rewards_${user?.email || user?.egn || 'student'}`;
+const rewardsStoragePrimaryKey = `techdesk_rewards_${user?.egn || user?.email || 'student'}`;
+const rewardsStorageLegacyKey = `techdesk_rewards_${user?.email || user?.egn || 'student'}`;
 let rewardsState = {
     xp: 0,
     streak: 1,
     testsSubmitted: 0,
     practiceRounds: 0,
-    badges: []
+    badges: [],
+    rewardedTestIds: []
 };
 const testCanvas = document.getElementById('testAnswerCanvas');
 const testCtx = testCanvas ? testCanvas.getContext('2d') : null;
@@ -214,18 +216,32 @@ function authHeaders(extra = {}) {
 
 function loadRewardsState() {
     try {
-        const raw = localStorage.getItem(rewardsStorageKey);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object') return;
-        rewardsState = { ...rewardsState, ...parsed, badges: Array.isArray(parsed.badges) ? parsed.badges : [] };
+        const candidates = [rewardsStoragePrimaryKey, rewardsStorageLegacyKey]
+            .map((key) => localStorage.getItem(key))
+            .filter(Boolean);
+        if (!candidates.length) return;
+        const parsedObjects = candidates
+            .map((raw) => {
+                try { return JSON.parse(raw); } catch { return null; }
+            })
+            .filter((obj) => obj && typeof obj === 'object');
+        if (!parsedObjects.length) return;
+        const merged = parsedObjects.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+        rewardsState = {
+            ...rewardsState,
+            ...merged,
+            badges: Array.isArray(merged.badges) ? merged.badges : [],
+            rewardedTestIds: Array.isArray(merged.rewardedTestIds) ? merged.rewardedTestIds : []
+        };
     } catch {
         // Keep defaults if parsing fails.
     }
 }
 
 function saveRewardsState() {
-    localStorage.setItem(rewardsStorageKey, JSON.stringify(rewardsState));
+    const serialized = JSON.stringify(rewardsState);
+    localStorage.setItem(rewardsStoragePrimaryKey, serialized);
+    localStorage.setItem(rewardsStorageLegacyKey, serialized);
 }
 
 function t(key) {
@@ -447,9 +463,10 @@ async function loadStudentIdentity() {
         if (!res.ok) return;
         const profile = await res.json();
         if (!profile) return;
+        const apiFullName = String(profile.fullName || '').trim();
         const firstName = String(profile.firstName || '').trim();
         const fallbackName = String((profile.firstName || '') + ' ' + (profile.lastName || '')).trim();
-        currentStudentDisplayName = firstName || fallbackName || currentStudentDisplayName;
+        currentStudentDisplayName = apiFullName || fallbackName || firstName || currentStudentDisplayName;
         currentStudentClassName = profile.className || currentStudentClassName;
         const nameEl = document.getElementById('studentName');
         const classEl = document.getElementById('studentClass');
@@ -1198,42 +1215,6 @@ function askStudyBot() {
     input.value = '';
 }
 
-async function loadStudentDirectoryUsers() {
-    const list = document.getElementById('studentDirectoryList');
-    if (!list) return;
-    try {
-        if (isDemo && demoData) {
-            const users = demoData.users || [];
-            if (!users.length) {
-                list.innerHTML = `<p class="empty-state">${t('noUsersFound')}</p>`;
-                return;
-            }
-            list.innerHTML = users.map(u => `
-                <div class="user-card-item">
-                    <h4>${u.displayName || u.name || 'User'}</h4>
-                    <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
-                </div>
-            `).join('');
-            return;
-        }
-        const res = await fetch(`${BACKEND_BASE_URL}/api/user/directory`, { headers: authHeaders() });
-        const users = res.ok ? await res.json() : [];
-        if (!users.length) {
-            list.innerHTML = `<p class="empty-state">${t('noUsersFound')}</p>`;
-            return;
-        }
-        list.innerHTML = users.map(u => `
-            <div class="user-card-item">
-                <h4>${u.displayName || 'User'}</h4>
-                <div class="user-meta">${u.role || 'USER'} • ${u.email || '-'}</div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Could not load student directory users:', error);
-        list.innerHTML = `<p class="empty-state">${t('noUsersFound')}</p>`;
-    }
-}
-
 window.toggleStudyBot = toggleStudyBot;
 window.askStudyBot = askStudyBot;
 window.askStudyBotQuick = askStudyBotQuick;
@@ -1243,7 +1224,6 @@ window.startPracticeGame = startPracticeGame;
 window.nextPracticeQuestion = nextPracticeQuestion;
 window.setPracticeGame = setPracticeGame;
 window.setStudentLanguage = setStudentLanguage;
-window.loadStudentDirectoryUsers = loadStudentDirectoryUsers;
 
 if (isDemo) {
     insertDemoBanner();
@@ -1264,7 +1244,6 @@ renderRewards();
 updateLanguageTexts();
 loadStudentIdentity();
 emitStudentPresence('active');
-loadStudentDirectoryUsers();
 
 if (!isDemo) {
     socket.on('attendance-updated', (data) => {
@@ -1369,11 +1348,48 @@ function renderUpcomingTests(tests) {
     list.innerHTML = tests.map(test => `<li>${test.title} • ${test.dueDate || 'No deadline'}</li>`).join('');
 }
 
+function syncTestRewardsFromTests(tests) {
+    if (!Array.isArray(tests) || !tests.length) return;
+    const submittedIds = tests
+        .filter((test) => String(test.status || '').toUpperCase() !== 'ASSIGNED')
+        .map((test) => String(test.testId))
+        .filter(Boolean);
+
+    rewardsState.testsSubmitted = Math.max(
+        Number(rewardsState.testsSubmitted || 0),
+        submittedIds.length
+    );
+
+    if (!Array.isArray(rewardsState.rewardedTestIds)) {
+        rewardsState.rewardedTestIds = [];
+    }
+    const rewardedSet = new Set(rewardsState.rewardedTestIds.map(String));
+    let changed = false;
+
+    submittedIds.forEach((id) => {
+        if (!rewardedSet.has(id)) {
+            rewardedSet.add(id);
+            rewardsState.xp += 24;
+            changed = true;
+        }
+    });
+
+    rewardsState.rewardedTestIds = Array.from(rewardedSet);
+    if (changed) {
+        if (!rewardsState.badges.includes('First Submission') && rewardsState.testsSubmitted >= 1) {
+            rewardsState.badges.push('First Submission');
+        }
+    }
+    saveRewardsState();
+    renderRewards();
+}
+
 async function loadStudentTests() {
     try {
         if (isDemo && demoData) {
             studentTestsCache = demoData.tests || [];
             studentHomeworkCache = demoData.homework || [];
+            syncTestRewardsFromTests(studentTestsCache);
             renderStudentTests(studentTestsCache);
             renderUpcomingTests(studentTestsCache);
             updateLearningFocus();
@@ -1384,6 +1400,7 @@ async function loadStudentTests() {
         });
         const tests = res.ok ? await res.json() : [];
         studentTestsCache = tests;
+        syncTestRewardsFromTests(studentTestsCache);
         studentHomeworkCache = (tests || [])
             .filter(t => t.dueDate)
             .map(t => ({
