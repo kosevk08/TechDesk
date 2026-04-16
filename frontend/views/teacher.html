@@ -207,10 +207,21 @@
 
             <div class="ai-panel">
                 <h4>Add Grade</h4>
-                <div class="test-form">
-                    <select id="gradeStudent"></select>
-                    <select id="gradeSubject"></select>
-                    <input type="number" min="2" max="6" step="0.01" id="gradeValue" placeholder="Grade (2.00 - 6.00)">
+                <div class="test-form grade-form-modern">
+                    <div class="test-row grade-top-row">
+                        <select id="gradeStudent"></select>
+                        <select id="gradeSubject"></select>
+                    </div>
+                    <div class="grade-entry-row">
+                        <input type="number" min="2" max="6" step="0.01" id="gradeValue" placeholder="Grade (2.00 - 6.00)">
+                        <div class="grade-quick-picks" id="gradeQuickPicks">
+                            <button type="button" class="grade-chip" onclick="setQuickGrade(2)">2</button>
+                            <button type="button" class="grade-chip" onclick="setQuickGrade(3)">3</button>
+                            <button type="button" class="grade-chip" onclick="setQuickGrade(4)">4</button>
+                            <button type="button" class="grade-chip" onclick="setQuickGrade(5)">5</button>
+                            <button type="button" class="grade-chip" onclick="setQuickGrade(6)">6</button>
+                        </div>
+                    </div>
                     <textarea id="gradeComment" placeholder="Comment (optional)"></textarea>
                     <div class="test-row">
                         <button class="action-btn" onclick="addGrade()">Save Grade</button>

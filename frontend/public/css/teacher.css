@@ -742,6 +742,46 @@ body.notebook-focus {
     resize: vertical;
 }
 
+.grade-form-modern {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    padding: 14px;
+    background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.grade-top-row {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.grade-entry-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) 1fr;
+    gap: 12px;
+    align-items: center;
+}
+
+.grade-quick-picks {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.grade-chip {
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    background: #fff;
+    color: #0d1b3e;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.grade-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(13, 27, 62, 0.16);
+}
+
 .test-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -753,6 +793,29 @@ body.notebook-focus {
     font-size: 0.85rem;
     color: #2c5a6a;
     font-weight: 600;
+}
+
+.grade-actions-cell {
+    text-align: right;
+}
+
+.grade-delete-btn {
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    background: rgba(254, 242, 242, 0.95);
+    color: #b91c1c;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.grade-delete-btn:hover {
+    background: rgba(254, 226, 226, 0.95);
+}
+
+.grade-delete-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .test-card {
@@ -959,5 +1022,9 @@ body.notebook-focus {
     .dashboard-grid .card:first-child {
         grid-column: span 1;
         padding: 22px;
+    }
+
+    .grade-entry-row {
+        grid-template-columns: 1fr;
     }
 }

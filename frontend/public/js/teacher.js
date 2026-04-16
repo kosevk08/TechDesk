@@ -670,6 +670,13 @@ function populateGradeSubjects() {
     });
 }
 
+function setQuickGrade(value) {
+    const input = document.getElementById('gradeValue');
+    if (!input) return;
+    input.value = Number(value).toFixed(2);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 async function addGrade() {
     const studentName = document.getElementById('gradeStudent').value;
     const subject = document.getElementById('gradeSubject').value.trim();
@@ -729,6 +736,32 @@ async function addGrade() {
         console.error('Could not save grade:', error);
         setGradeStatus('Failed to save grade.');
         return false;
+    }
+}
+
+async function deleteGrade(gradeId) {
+    if (!gradeId) return;
+    const confirmed = window.confirm('Delete this grade?');
+    if (!confirmed) return;
+    try {
+        setGradeStatus('Deleting grade...');
+        if (isDemo && demoData) {
+            const idx = demoData.grades.findIndex((g) => Number(g.id) === Number(gradeId));
+            if (idx >= 0) demoData.grades.splice(idx, 1);
+            setGradeStatus('Grade deleted.');
+            loadGradeHistory();
+            return;
+        }
+        const res = await fetch(`${BACKEND_BASE_URL}/api/grades/${gradeId}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        if (!res.ok) throw new Error(`Delete failed ${res.status}`);
+        setGradeStatus('Grade deleted.');
+        await loadGradeHistory();
+    } catch (error) {
+        console.error('Could not delete grade:', error);
+        setGradeStatus('Failed to delete grade.');
     }
 }
 
@@ -797,6 +830,7 @@ function renderTeacherGradeHistory(container, grades) {
 
     let safeGrades = grades
         .map((g) => ({
+            id: g.id,
             subject: g.subject || 'Subject',
             value: Number(g.value),
             comment: g.comment || '',
@@ -852,6 +886,7 @@ function renderTeacherGradeHistory(container, grades) {
                         <th>Subject</th>
                         <th>Grade</th>
                         <th>Comment</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -861,6 +896,9 @@ function renderTeacherGradeHistory(container, grades) {
                             <td>${g.subject}</td>
                             <td><strong class="grade-pill ${gradeToneClass(g.value)}">${g.value.toFixed(2)}</strong></td>
                             <td>${g.comment || '<span class="empty-inline">No comment</span>'}</td>
+                            <td class="grade-actions-cell">
+                                <button class="grade-delete-btn" ${g.id ? '' : 'disabled'} onclick="deleteGrade(${Number(g.id || 0)})">Delete</button>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -1730,6 +1768,8 @@ if (!isDemo) {
 window.lockClassroom = lockClassroom;
 window.unlockClassroom = unlockClassroom;
 window.syncClassroomPanel = syncClassroomPanel;
+window.setQuickGrade = setQuickGrade;
+window.deleteGrade = deleteGrade;
 
 function setTeacherLanguage(lang) {
     teacherLang = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'].includes(lang) ? lang : 'en';

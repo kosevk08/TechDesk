@@ -74,6 +74,20 @@ public class GradeController {
         return ResponseEntity.ok(toResponse(saved));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGrade(@PathVariable Long id) {
+        var gradeOpt = gradeService.getById(id);
+        if (gradeOpt.isEmpty()) return ResponseEntity.notFound().build();
+        Grade grade = gradeOpt.get();
+        User actor = currentUserService.getUser();
+        if (actor == null) return ResponseEntity.status(403).build();
+        boolean allowed = actor.getRole() == com.edutech.desk.entities.Role.ADMIN
+            || actor.getEgn().equals(grade.getTeacherEgn());
+        if (!allowed) return ResponseEntity.status(403).build();
+        gradeService.deleteGrade(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/student/{egn}")
     public ResponseEntity<List<GradeResponse>> getByStudent(@PathVariable String egn) {
         List<GradeResponse> responses = gradeService.getByStudent(egn)
@@ -135,6 +149,7 @@ public class GradeController {
 
     private GradeResponse toResponse(Grade grade) {
         GradeResponse response = new GradeResponse();
+        response.setId(grade.getId());
         response.setStudentName(nameLookupService.studentName(grade.getStudentEgn()));
         response.setSubject(grade.getSubject());
         response.setValue(grade.getValue());
