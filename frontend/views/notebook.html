@@ -634,8 +634,20 @@
             [lastX, lastY] = [e.offsetX, e.offsetY];
         });
 
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mouseout', () => drawing = false);
+        function flushNotebookSaveAfterStroke() {
+            if (!notebookDirty || isDemo) return;
+            // Flush immediately when the user lifts the pen/mouse to avoid data loss on quick tab close.
+            saveNotebook(true);
+        }
+
+        canvas.addEventListener('mouseup', () => {
+            drawing = false;
+            flushNotebookSaveAfterStroke();
+        });
+        canvas.addEventListener('mouseout', () => {
+            drawing = false;
+            flushNotebookSaveAfterStroke();
+        });
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -657,8 +669,14 @@
             [lastX, lastY] = [x, y];
         }, { passive: false });
 
-        canvas.addEventListener('touchend', () => drawing = false);
-        canvas.addEventListener('touchcancel', () => drawing = false);
+        canvas.addEventListener('touchend', () => {
+            drawing = false;
+            flushNotebookSaveAfterStroke();
+        });
+        canvas.addEventListener('touchcancel', () => {
+            drawing = false;
+            flushNotebookSaveAfterStroke();
+        });
         canvas.addEventListener('pointermove', (e) => {
             if (!focusMode) return;
             const line = document.getElementById('focusLine');
