@@ -1539,6 +1539,20 @@ function toLocalGradeDate(raw) {
     return String(raw).replace('T', ' ');
 }
 
+function splitGradeComment(commentRaw) {
+    const comment = String(commentRaw || '').trim();
+    if (!comment) return { reason: '', remark: '' };
+    const reasonMatch = comment.match(/Reason:\s*([^\n\r]+)/i);
+    const remarkMatch = comment.match(/Remark:\s*([^\n\r]+)/i);
+    if (reasonMatch || remarkMatch) {
+        return {
+            reason: reasonMatch ? reasonMatch[1].trim() : '',
+            remark: remarkMatch ? remarkMatch[1].trim() : ''
+        };
+    }
+    return { reason: comment, remark: '' };
+}
+
 function renderStudentGradebook(list, averages, grades, avg) {
     if (!Array.isArray(grades) || !grades.length) {
         list.innerHTML = `<p class="empty-state">${gt('noGrades')}</p>`;
@@ -1574,6 +1588,7 @@ function renderStudentGradebook(list, averages, grades, avg) {
         const subjectGrades = bySubject.get(subject) || [];
         const subjectAvg = subjectGrades.reduce((sum, g) => sum + g.value, 0) / Math.max(subjectGrades.length, 1);
         const lastGrade = subjectGrades[0];
+        const parsed = splitGradeComment(lastGrade?.comment || '');
         const chips = subjectGrades
             .slice(0, 8)
             .map((g) => `<span class="grade-chip ${gradeTone(g.value)}">${g.value.toFixed(2)}</span>`)
@@ -1584,6 +1599,8 @@ function renderStudentGradebook(list, averages, grades, avg) {
                 <td><strong class="grade-pill ${gradeTone(subjectAvg)}">${subjectAvg.toFixed(2)}</strong></td>
                 <td>${subjectGrades.length}</td>
                 <td>${lastGrade ? `${lastGrade.value.toFixed(2)} · ${toLocalGradeDate(lastGrade.createdAt)}` : '-'}</td>
+                <td>${parsed.reason || '<span class="empty-inline">-</span>'}</td>
+                <td>${parsed.remark || '<span class="empty-inline">-</span>'}</td>
                 <td><div class="grade-chip-row">${chips || '<span class="empty-inline">-</span>'}</div></td>
             </tr>
         `;
@@ -1616,6 +1633,8 @@ function renderStudentGradebook(list, averages, grades, avg) {
                         <th>${gt('average')}</th>
                         <th>${gt('count')}</th>
                         <th>${gt('latest')}</th>
+                        <th>Reason</th>
+                        <th>Remark</th>
                         <th>${gt('recentGrades')}</th>
                     </tr>
                 </thead>

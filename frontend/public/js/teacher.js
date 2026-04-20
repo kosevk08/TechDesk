@@ -8,8 +8,6 @@ const isDemo = Boolean(user && user.demo);
 let teacherLang = localStorage.getItem('teacherLang') || 'en';
 let studentNames = [];
 let teacherSubjects = [];
-let gradeAutosaveTimer = null;
-let lastGradeHash = null;
 let testAutosaveTimer = null;
 let lastTestHash = null;
 
@@ -688,10 +686,12 @@ async function addGrade() {
     const studentName = document.getElementById('gradeStudent').value;
     const subject = document.getElementById('gradeSubject').value.trim();
     const value = parseFloat(document.getElementById('gradeValue').value);
-    const comment = document.getElementById('gradeComment').value.trim();
+    const reason = document.getElementById('gradeComment').value.trim();
+    const remark = document.getElementById('gradeRemark')?.value.trim() || '';
+    const comment = `Reason: ${reason}${remark ? `\nRemark: ${remark}` : ''}`;
 
-    if (!studentName || !subject || Number.isNaN(value)) {
-        setGradeStatus('Student, subject, and grade are required.');
+    if (!studentName || !subject || Number.isNaN(value) || !reason) {
+        setGradeStatus('Student, subject, grade, and reason are required.');
         return false;
     }
     if (value < 2 || value > 6) {
@@ -716,6 +716,8 @@ async function addGrade() {
             setGradeStatus('Grade saved (demo).');
             document.getElementById('gradeValue').value = '';
             document.getElementById('gradeComment').value = '';
+            const remarkInput = document.getElementById('gradeRemark');
+            if (remarkInput) remarkInput.value = '';
             loadGradeHistory();
             loadNotifications();
             return true;
@@ -735,6 +737,8 @@ async function addGrade() {
         setGradeStatus('Grade saved.');
         document.getElementById('gradeValue').value = '';
         document.getElementById('gradeComment').value = '';
+        const remarkInput = document.getElementById('gradeRemark');
+        if (remarkInput) remarkInput.value = '';
         loadGradeHistory();
         loadNotifications();
         socket.emit('grade-updated', { studentName });
@@ -770,21 +774,6 @@ async function deleteGrade(gradeId) {
         console.error('Could not delete grade:', error);
         setGradeStatus('Failed to delete grade.');
     }
-}
-
-function scheduleGradeAutosave() {
-    if (gradeAutosaveTimer) clearTimeout(gradeAutosaveTimer);
-    gradeAutosaveTimer = setTimeout(async () => {
-        const studentName = document.getElementById('gradeStudent').value;
-        const subject = document.getElementById('gradeSubject').value.trim();
-        const value = document.getElementById('gradeValue').value.trim();
-        if (!studentName || !subject || !value) return;
-        const hash = `${studentName}|${subject}|${value}|${document.getElementById('gradeComment').value.trim()}`;
-        if (hash === lastGradeHash) return;
-        setGradeStatus('Autosaving...');
-        const success = await addGrade();
-        if (success) lastGradeHash = hash;
-    }, 900);
 }
 
 async function loadGradeHistory() {
@@ -1012,14 +1001,6 @@ async function loadGrades() {
 document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'gradeStudent') {
         loadGradeHistory();
-    }
-});
-
-document.addEventListener('input', (e) => {
-    if (!e.target) return;
-    const autosaveIds = new Set(['gradeStudent', 'gradeSubject', 'gradeValue', 'gradeComment']);
-    if (autosaveIds.has(e.target.id)) {
-        scheduleGradeAutosave();
     }
 });
 
