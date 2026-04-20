@@ -13,6 +13,7 @@ public class NotebookResponse {
     private String color;
     private String content;
     private Integer pageNumber;
+    private Boolean teacherLocked;
     private LocalDateTime lastUpdated;
 
     public Long getId() { return id; }
@@ -35,6 +36,8 @@ public class NotebookResponse {
     public void setContent(String content) { this.content = content; }
     public Integer getPageNumber() { return pageNumber; }
     public void setPageNumber(Integer pageNumber) { this.pageNumber = pageNumber; }
+    public Boolean getTeacherLocked() { return teacherLocked; }
+    public void setTeacherLocked(Boolean teacherLocked) { this.teacherLocked = teacherLocked; }
     public LocalDateTime getLastUpdated() { return lastUpdated; }
     public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
 }

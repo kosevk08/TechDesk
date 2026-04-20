@@ -270,6 +270,7 @@
                 <button class="add-page-btn" onclick="addPage()">+ Page</button>
                 <button class="save-btn" onclick="saveNotebook()">Save</button>
                 <span class="saved-msg" id="savedMsg">Saved</span>
+                <span class="saved-msg" id="lockMsg" style="display:none; color:#b91c1c;">Teacher locked this page after correction.</span>
             </div>
 
             <div class="notebook-area" id="notebookArea">
@@ -311,6 +312,7 @@
         let currentPage = 1;
         let maxPage = 1;
         let currentStyle = 'lined';
+        let pageLocked = false;
         let notebookDirty = false;
         let saveInFlight = null;
         let saveQueued = false;
@@ -377,14 +379,36 @@
         }
 
         function setColor(color, btnId) {
+            if (pageLocked) return;
             currentColor = color;
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(btnId).classList.add('active');
         }
 
         function setTool(t) {
+            if (pageLocked) return;
             tool = t;
             document.getElementById('penBtn').classList.toggle('active', t === 'pen');
+        }
+
+        function setPageLockState(locked) {
+            pageLocked = Boolean(locked);
+            const lockMsg = document.getElementById('lockMsg');
+            if (lockMsg) lockMsg.style.display = pageLocked ? 'inline' : 'none';
+            const sizeSlider = document.getElementById('sizeSlider');
+            if (sizeSlider) sizeSlider.disabled = pageLocked;
+            const idsToLock = ['penBtn', 'btnBlue', 'btnBlack'];
+            idsToLock.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.disabled = pageLocked;
+            });
+            const toolbarButtons = Array.from(document.querySelectorAll('.notebook-toolbar button'));
+            toolbarButtons.forEach((btn) => {
+                const label = String(btn.textContent || '').trim().toLowerCase();
+                if (label === 'eraser' || label === 'clear') {
+                    btn.disabled = pageLocked;
+                }
+            });
         }
 
         function toggleFocusMode() {
@@ -571,17 +595,21 @@
             }
         }
 
-        async function loadPage(subjectName, page) {
-    try {
-        if (isDemo) return;
-        resizeCanvas();
-        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`, {
-            headers: authHeaders()
-        });
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (!res.ok) return;
-        const notebook = await res.json();
-        if (notebook?.style) setPaperStyle(notebook.style);
+	        async function loadPage(subjectName, page) {
+	    try {
+	        if (isDemo) return;
+	        resizeCanvas();
+	        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`, {
+	            headers: authHeaders()
+	        });
+	        ctx.clearRect(0, 0, canvas.width, canvas.height);
+	        if (!res.ok) {
+                setPageLockState(false);
+                return;
+            }
+	        const notebook = await res.json();
+            setPageLockState(Boolean(notebook?.teacherLocked));
+	        if (notebook?.style) setPaperStyle(notebook.style);
         if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
             const img = new Image();
             img.onload = () => {
@@ -596,6 +624,7 @@
 }
 
         function draw(x0, y0, x1, y1) {
+            if (pageLocked) return;
             const strokeData = {
                 x0, y0, x1, y1,
                 color: tool === 'eraser' ? null : currentColor,
@@ -628,6 +657,7 @@
         }
 
         canvas.addEventListener('mousedown', (e) => {
+            if (pageLocked) return;
             drawing = true;
             [lastX, lastY] = [e.offsetX, e.offsetY];
         });
@@ -655,6 +685,7 @@
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            if (pageLocked) return;
             const touch = e.touches[0];
             const rect = canvas.getBoundingClientRect();
             drawing = true;
@@ -689,6 +720,10 @@
         });
 
         function clearCanvas() {
+            if (pageLocked) {
+                showSaveStatus('Page locked by teacher', 1800);
+                return;
+            }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             socket.emit('clear-canvas', {
                 studentName: getNotebookStudentName(),
@@ -727,6 +762,7 @@
 
         async function saveNotebook(silent = false) {
             if (isDemo || !currentSubjectName) return;
+            if (pageLocked) return;
             if (!notebookDirty && silent) return;
             if (saveInFlight) {
                 saveQueued = true;
@@ -856,6 +892,9 @@
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 ctx.stroke();
+            }
+            if (String(data.authorRole || '').toUpperCase() === 'TEACHER') {
+                setPageLockState(true);
             }
         });
 

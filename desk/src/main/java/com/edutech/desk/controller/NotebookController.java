@@ -9,6 +9,8 @@ import com.edutech.desk.service.NotebookService;
 import com.edutech.desk.service.TeacherService;
 import com.edutech.desk.serviceimpl.ai.AiStudentGuidanceBuilder;
 import com.edutech.desk.controller.response.AiGuidanceResponse;
+import com.edutech.desk.entities.Role;
+import com.edutech.desk.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -226,6 +228,9 @@ public class NotebookController {
         }
         
         notebook.setStudentEgn(egn);
+        if (isStudentBlockedByTeacherLock(notebook)) {
+            return ResponseEntity.status(423).build();
+        }
         return ResponseEntity.ok(toResponse(processSave(notebook), true));
     }
 
@@ -233,6 +238,9 @@ public class NotebookController {
     public ResponseEntity<NotebookResponse> saveNotebook(@RequestBody Notebook notebook) {
         if (!isValidNotebook(notebook)) {
             return ResponseEntity.badRequest().build();
+        }
+        if (isStudentBlockedByTeacherLock(notebook)) {
+            return ResponseEntity.status(423).build();
         }
         return ResponseEntity.ok(toResponse(processSave(notebook), true));
     }
@@ -250,9 +258,22 @@ public class NotebookController {
         notebook.setLastUpdated(LocalDateTime.now());
         Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
                 notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
+        if (existing.isPresent() && existing.get().isTeacherLocked()) {
+            notebook.setTeacherLocked(true);
+        }
         return existing.isPresent()
                 ? notebookService.updateNotebook(existing.get().getId(), notebook)
                 : notebookService.createNotebook(notebook);
+    }
+
+    private boolean isStudentBlockedByTeacherLock(Notebook notebook) {
+        if (notebook == null) return false;
+        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
+            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
+        if (existing.isEmpty() || !existing.get().isTeacherLocked()) return false;
+        User actor = currentUserService.getUser();
+        if (actor == null) return false;
+        return actor.getRole() == Role.STUDENT && actor.getEgn() != null && actor.getEgn().equals(notebook.getStudentEgn());
     }
 
     private NotebookResponse toResponse(Notebook notebook, boolean includeContent) {
@@ -267,6 +288,7 @@ public class NotebookController {
         response.setColor(notebook.getColor());
         response.setContent(includeContent ? notebook.getContent() : null);
         response.setPageNumber(notebook.getPageNumber());
+        response.setTeacherLocked(notebook.isTeacherLocked());
         response.setLastUpdated(notebook.getLastUpdated());
         return response;
     }

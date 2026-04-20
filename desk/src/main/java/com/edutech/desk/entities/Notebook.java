@@ -37,6 +37,9 @@ public class Notebook {
 
     private LocalDateTime lastUpdated;
 
+    @Column(nullable = false)
+    private boolean teacherLocked = false;
+
     public Notebook() {}
 
     public Long getId() { return id; }
@@ -59,4 +62,6 @@ public class Notebook {
     public void setPageNumber(int pageNumber) { this.pageNumber = pageNumber; }
     public LocalDateTime getLastUpdated() { return lastUpdated; }
     public void setLastUpdated(LocalDateTime lastUpdated) { this.lastUpdated = lastUpdated; }
+    public boolean isTeacherLocked() { return teacherLocked; }
+    public void setTeacherLocked(boolean teacherLocked) { this.teacherLocked = teacherLocked; }
 }
