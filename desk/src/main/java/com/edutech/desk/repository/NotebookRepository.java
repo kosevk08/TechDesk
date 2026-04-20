@@ -11,5 +11,6 @@ public interface NotebookRepository extends JpaRepository<Notebook, Long> {
     List<Notebook> findByStudentEgn(String studentEgn);
     List<Notebook> findBySubjectIn(List<String> subjects);
     Optional<Notebook> findByStudentEgnAndSubjectAndPageNumber(String studentEgn, String subject, int pageNumber);
+    Optional<Notebook> findTopByStudentEgnAndSubjectAndPageNumberOrderByLastUpdatedDescIdDesc(String studentEgn, String subject, int pageNumber);
     List<Notebook> findByStudentEgnAndSubjectOrderByPageNumberAsc(String studentEgn, String subject);
 }

@@ -45,6 +45,6 @@ public class NotebookServiceImpl implements NotebookService {
 
     @Override
     public Optional<Notebook> getByStudentEgnAndSubjectAndPage(String egn, String subject, int page) {
-        return notebookRepository.findByStudentEgnAndSubjectAndPageNumber(egn, subject, page);
+        return notebookRepository.findTopByStudentEgnAndSubjectAndPageNumberOrderByLastUpdatedDescIdDesc(egn, subject, page);
     }
 }
