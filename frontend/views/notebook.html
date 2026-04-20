@@ -313,6 +313,7 @@
         let currentStyle = 'lined';
         let notebookDirty = false;
         let saveInFlight = null;
+        let saveQueued = false;
         let focusMode = false;
         const token = localStorage.getItem('token');
         let typingTimeout = null;
@@ -705,6 +706,10 @@
         async function saveNotebook(silent = false) {
             if (isDemo || !currentSubjectName) return;
             if (!notebookDirty && silent) return;
+            if (saveInFlight) {
+                saveQueued = true;
+                return;
+            }
             if (autosaveTimer) {
                 clearTimeout(autosaveTimer);
                 autosaveTimer = null;
@@ -753,14 +758,19 @@
                 maxPage = Math.max(maxPage, currentPage);
                 updatePageControls();
                 showSaveStatus(silent ? 'Auto-saved' : 'Saved');
+                if (saveQueued) {
+                    saveQueued = false;
+                    if (notebookDirty) scheduleAutoSave();
+                }
             } catch (err) {
+                saveInFlight = null;
                 console.error('Could not save:', err);
                 showSaveStatus('Save failed', 2200);
             }
         }
 
         function saveNotebookKeepalive() {
-            if (isDemo || !notebookDirty || !currentSubjectName) return;
+            if (isDemo || !notebookDirty || !currentSubjectName || saveInFlight) return;
             const imageData = getCanvasPayload();
             fetch(`${BACKEND_BASE_URL}/api/notebook/save`, {
                 method: 'POST',
