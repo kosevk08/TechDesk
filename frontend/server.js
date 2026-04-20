@@ -11,7 +11,7 @@ app.use((req, res, next) => {
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "1; mode=block");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Content-Security-Policy", "default-src 'self' http://localhost:8080 https://techdesk-backend.onrender.com ws://localhost:3000 wss://techdesk-frontend.onrender.com https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com");
+    res.setHeader("Content-Security-Policy", "default-src 'self' http://localhost:8080 https://techdesk-backend.onrender.com ws://localhost:3000 wss://techdesk-frontend.onrender.com https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:;");
     next();
 });
 
