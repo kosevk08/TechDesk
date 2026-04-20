@@ -572,24 +572,28 @@
         }
 
         async function loadPage(subjectName, page) {
-            try {
-                if (isDemo) return;
-                const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`, {
-                    headers: authHeaders()
-                });
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                if (!res.ok) return;
-                const notebook = await res.json();
-                if (notebook?.style) setPaperStyle(notebook.style);
-                if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
-                    const img = new Image();
-                    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    img.src = notebook.content;
-                }
-            } catch (err) {
-                console.error('Could not load page:', err);
-            }
+    try {
+        if (isDemo) return;
+        resizeCanvas();
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/student/${user.egn}/${encodeURIComponent(subjectName)}/${page}`, {
+            headers: authHeaders()
+        });
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!res.ok) return;
+        const notebook = await res.json();
+        if (notebook?.style) setPaperStyle(notebook.style);
+        if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
+            const img = new Image();
+            img.onload = () => {
+                resizeCanvas();
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = notebook.content;
         }
+    } catch (err) {
+        console.error('Could not load page:', err);
+    }
+}
 
         function draw(x0, y0, x1, y1) {
             const strokeData = {
