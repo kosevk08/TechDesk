@@ -292,7 +292,10 @@
     <script>
         const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
         const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-        const socket = io('https://techdesk-frontend.onrender.com');
+        const socket = io('https://techdesk-frontend.onrender.com', {
+            transports: ['websocket'],
+            upgrade: false
+        });
         const user = JSON.parse(localStorage.getItem('user'));
         const demoData = window.DemoData;
         const DEMO_EGNS = ['9000000001', '9000000002', '9000000003'];
@@ -443,6 +446,15 @@
             return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
         }
 
+        function sameNotebookStudent(data) {
+            const meEgn = String(user?.egn || '').trim();
+            const eventEgn = String(data?.studentEgn || '').trim();
+            if (meEgn && eventEgn) return meEgn === eventEgn;
+            const myName = String(getNotebookStudentName() || '').trim().toLowerCase();
+            const eventName = String(data?.studentName || '').trim().toLowerCase();
+            return myName && eventName && myName === eventName;
+        }
+
         async function fetchPages() {
             if (isDemo) {
                 maxPage = 5;
@@ -470,6 +482,7 @@
             localStorage.setItem('currentNotebookPage', String(currentPage));
             socket.emit('page-change', {
                 studentName: getNotebookStudentName(),
+                studentEgn: user?.egn,
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
@@ -485,6 +498,7 @@
             updatePageControls();
             socket.emit('page-change', {
                 studentName: getNotebookStudentName(),
+                studentEgn: user?.egn,
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
@@ -727,6 +741,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             socket.emit('clear-canvas', {
                 studentName: getNotebookStudentName(),
+                studentEgn: user?.egn,
                 subject: currentSubjectName,
                 page: currentPage,
                 authorRole: user.role || 'STUDENT'
@@ -878,7 +893,7 @@
 
         socket.on('draw-stroke', (data) => {
             if (!data) return;
-            if (data.studentName !== getNotebookStudentName()) return;
+            if (!sameNotebookStudent(data)) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
             if (parseInt(data.page, 10) !== parseInt(currentPage, 10)) return;
             if (data.tool === 'eraser') {
@@ -900,7 +915,7 @@
 
         socket.on('clear-canvas', (data) => {
             if (!data) return;
-            if (data.studentName !== getNotebookStudentName()) return;
+            if (!sameNotebookStudent(data)) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
             if (parseInt(data.page, 10) !== parseInt(currentPage, 10)) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -908,7 +923,7 @@
 
         socket.on('page-change', (data) => {
             if (!data) return;
-            if (data.studentName !== getNotebookStudentName()) return;
+            if (!sameNotebookStudent(data)) return;
             if (!subjectMatch(data.subject, currentSubjectName)) return;
             currentPage = parseInt(data.page, 10);
             maxPage = Math.max(maxPage, currentPage);

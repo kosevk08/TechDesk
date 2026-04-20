@@ -1,6 +1,9 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-const socket = io('https://techdesk-frontend.onrender.com');
+const socket = io('https://techdesk-frontend.onrender.com', {
+    transports: ['websocket'],
+    upgrade: false
+});
 const user = JSON.parse(localStorage.getItem('user'));
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
@@ -302,6 +305,7 @@ function drawTeacher(x0, y0, x1, y1) {
         size,
         tool: 'pen',
         studentName: currentViewStudent,
+        studentEgn: currentViewStudentEgn,
         subject: currentViewSubject,
         page: currentViewPage,
         authorRole: 'TEACHER'
@@ -376,6 +380,15 @@ function focusNotebooksSection() {
 
 function subjectMatch(a, b) {
     return a && b && a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function sameStudentLive(data) {
+    const currentEgn = String(currentViewStudentEgn || '').trim();
+    const eventEgn = String(data?.studentEgn || '').trim();
+    if (currentEgn && eventEgn) return currentEgn === eventEgn;
+    const currentName = String(currentViewStudent || '').trim().toLowerCase();
+    const eventName = String(data?.studentName || '').trim().toLowerCase();
+    return currentName && eventName && currentName === eventName;
 }
 
 function markLiveActivity(studentName, subject, page, role = 'STUDENT') {
@@ -506,7 +519,7 @@ function toggleNotebookOnlineOnly() {
 
 socket.on('draw-stroke', (data) => {
     markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
-    if (data.studentName === currentViewStudent &&
+    if (sameStudentLive(data) &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         document.getElementById('liveBadge').style.display = 'inline';
@@ -522,7 +535,7 @@ socket.on('draw-stroke', (data) => {
 
 socket.on('page-change', (data) => {
     markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
-    if (data.studentName === currentViewStudent && subjectMatch(data.subject, currentViewSubject)) {
+    if (sameStudentLive(data) && subjectMatch(data.subject, currentViewSubject)) {
         currentViewPage = data.page;
         currentViewMaxPage = Math.max(currentViewMaxPage, currentViewPage);
         updateTeacherPageControls();
