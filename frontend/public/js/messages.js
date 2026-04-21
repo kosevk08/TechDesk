@@ -134,6 +134,11 @@ async function loadSidebar() {
         [...inbox, ...outbox].forEach(msg => {
             const otherName = msg.mine ? msg.receiverName : msg.senderName;
             if (!otherName) return;
+            const isSystemThread =
+                /^Class\s+/i.test(String(otherName)) ||
+                /^School Announcements$/i.test(String(otherName)) ||
+                /^Group$/i.test(String(otherName));
+            if (isSystemThread) return;
             if (!convMap[otherName] || new Date(msg.sentAt) > new Date(convMap[otherName].sentAt)) {
                 convMap[otherName] = msg;
             }
