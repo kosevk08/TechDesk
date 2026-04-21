@@ -66,8 +66,13 @@
                 <div class="test-row" style="margin-top:8px;">
                     <select id="syncMaterialMode">
                         <option value="textbook">Textbook</option>
-                        <option value="aid">Aid</option>
+                        <option value="workbook">Workbook</option>
                         <option value="worksheets">Worksheets</option>
+                    </select>
+                    <select id="syncMaterialSection">
+                        <option value="core">Core</option>
+                        <option value="practice">Practice</option>
+                        <option value="review">Review</option>
                     </select>
                     <input type="number" id="syncMaterialPage" min="1" step="1" value="1" placeholder="Material page">
                     <button class="action-btn secondary-btn" onclick="syncMaterialFocus()">Sync Material</button>

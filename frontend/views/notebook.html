@@ -322,8 +322,13 @@
                 <span id="materialHeaderTitle">Textbook</span>
                 <div class="material-switch">
                     <button id="matTextbookBtn" class="active" onclick="setLearningMaterial('textbook')">Textbook</button>
-                    <button id="matAidBtn" onclick="setLearningMaterial('aid')">Aid</button>
+                    <button id="matWorkbookBtn" onclick="setLearningMaterial('workbook')">Workbook</button>
                     <button id="matWorksheetsBtn" onclick="setLearningMaterial('worksheets')">Worksheets</button>
+                    <select id="materialSectionSelect" onchange="setMaterialSection(this.value)" style="border:1px solid #d1d5db; border-radius:8px; padding:4px 6px; font-size:0.72rem;">
+                        <option value="core">Core</option>
+                        <option value="practice">Practice</option>
+                        <option value="review">Review</option>
+                    </select>
                     <button onclick="changeMaterialPage(-1)">-</button>
                     <span id="materialPageIndicator" style="font-size:0.72rem; color:#4b5563;">M.Page 1</span>
                     <button onclick="changeMaterialPage(1)">+</button>
@@ -405,6 +410,7 @@
         const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
         let currentMaterialMode = localStorage.getItem('currentMaterialMode') || 'textbook';
         let currentMaterialPage = parseInt(localStorage.getItem('currentMaterialPage') || '1', 10) || 1;
+        let currentMaterialSection = localStorage.getItem('currentMaterialSection') || 'core';
 
         function authHeaders(extra = {}) {
             const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -632,16 +638,16 @@
                 .catch(() => renderTextbookFallback(subjectName));
         }
 
-        function renderAidContent(subjectName) {
+        function renderWorkbookContent(subjectName) {
             const target = document.getElementById('textbookContent');
             if (!target) return;
             target.innerHTML = `
-                <h2>${subjectName} - Study Aid</h2>
-                <p>Focus summary for page ${currentMaterialPage}.</p>
+                <h2>${subjectName} - Учебна тетрадка</h2>
+                <p>Section: <strong>${currentMaterialSection}</strong> • Page ${currentMaterialPage}</p>
                 <ul>
-                    <li>Key idea from current lesson</li>
-                    <li>Most common mistake to avoid</li>
-                    <li>Quick self-check before homework</li>
+                    <li>Task set for guided practice</li>
+                    <li>Write your answers in the notebook panel</li>
+                    <li>Teacher can sync exact page for the whole class</li>
                 </ul>
             `;
         }
@@ -651,13 +657,26 @@
             if (!target) return;
             target.innerHTML = `
                 <h2>${subjectName} - Worksheets</h2>
-                <p>Worksheet page ${currentMaterialPage}.</p>
+                <p>Section: <strong>${currentMaterialSection}</strong> • Page ${currentMaterialPage}.</p>
                 <ol>
                     <li>Practice task 1</li>
                     <li>Practice task 2</li>
                     <li>Reflection task</li>
                 </ol>
             `;
+        }
+
+        function updateMaterialSectionSelect() {
+            const select = document.getElementById('materialSectionSelect');
+            if (select) select.value = currentMaterialSection;
+        }
+
+        function setMaterialSection(section) {
+            const allowed = ['core', 'practice', 'review'];
+            currentMaterialSection = allowed.includes(section) ? section : 'core';
+            localStorage.setItem('currentMaterialSection', currentMaterialSection);
+            updateMaterialSectionSelect();
+            if (currentSubjectName) renderLearningMaterial(currentSubjectName);
         }
 
         function updateMaterialPageIndicator() {
@@ -676,18 +695,20 @@
         function renderLearningMaterial(subjectName) {
             const mode = currentMaterialMode;
             document.getElementById('matTextbookBtn')?.classList.toggle('active', mode === 'textbook');
-            document.getElementById('matAidBtn')?.classList.toggle('active', mode === 'aid');
+            document.getElementById('matWorkbookBtn')?.classList.toggle('active', mode === 'workbook');
             document.getElementById('matWorksheetsBtn')?.classList.toggle('active', mode === 'worksheets');
             const header = document.getElementById('materialHeaderTitle');
-            if (header) header.textContent = mode === 'textbook' ? 'Textbook' : (mode === 'aid' ? 'Aid' : 'Worksheets');
-            if (mode === 'aid') return renderAidContent(subjectName);
+            if (header) header.textContent = mode === 'textbook' ? 'Textbook' : (mode === 'workbook' ? 'Workbook' : 'Worksheets');
+            updateMaterialSectionSelect();
+            if (mode === 'workbook') return renderWorkbookContent(subjectName);
             if (mode === 'worksheets') return renderWorksheetsContent(subjectName);
-                renderLearningMaterial(subjectName);
+            loadTextbookVisual(subjectName);
         }
 
         function setLearningMaterial(mode) {
-            const allowed = ['textbook', 'aid', 'worksheets'];
-            currentMaterialMode = allowed.includes(mode) ? mode : 'textbook';
+            const allowed = ['textbook', 'workbook', 'worksheets'];
+            const normalized = mode === 'aid' ? 'workbook' : mode;
+            currentMaterialMode = allowed.includes(normalized) ? normalized : 'textbook';
             localStorage.setItem('currentMaterialMode', currentMaterialMode);
             updateMaterialPageIndicator();
             if (currentSubjectName) renderLearningMaterial(currentSubjectName);
@@ -1034,6 +1055,7 @@
         });
 
         updateMaterialPageIndicator();
+        updateMaterialSectionSelect();
         loadSubject();
         const backLink = document.getElementById('notebookBackLink');
         if (backLink) {
@@ -1119,8 +1141,11 @@
                 localStorage.setItem('currentNotebookPage', String(Number(data.notebookPage)));
             }
             if (data?.materialMode) {
-                currentMaterialMode = String(data.materialMode);
+                currentMaterialMode = String(data.materialMode) === 'aid' ? 'workbook' : String(data.materialMode);
                 localStorage.setItem('currentMaterialMode', currentMaterialMode);
+            }
+            if (data?.materialSection) {
+                setMaterialSection(String(data.materialSection));
             }
             if (Number(data?.materialPage || 0) > 0) {
                 currentMaterialPage = Number(data.materialPage);
@@ -1168,8 +1193,11 @@
         socket.on('classroom-sync-material', (data) => {
             if (!data) return;
             if (data?.materialMode) {
-                currentMaterialMode = String(data.materialMode);
+                currentMaterialMode = String(data.materialMode) === 'aid' ? 'workbook' : String(data.materialMode);
                 localStorage.setItem('currentMaterialMode', currentMaterialMode);
+            }
+            if (data?.materialSection) {
+                setMaterialSection(String(data.materialSection));
             }
             if (Number(data?.materialPage || 0) > 0) {
                 currentMaterialPage = Number(data.materialPage);

@@ -527,7 +527,11 @@ async function forceNotebookDuringLock(lockState) {
         localStorage.setItem('currentNotebookPage', String(Number(lockState.notebookPage)));
     }
     if (lockState.materialMode) {
-        localStorage.setItem('currentMaterialMode', String(lockState.materialMode));
+        const mode = String(lockState.materialMode) === 'aid' ? 'workbook' : String(lockState.materialMode);
+        localStorage.setItem('currentMaterialMode', mode);
+    }
+    if (lockState.materialSection) {
+        localStorage.setItem('currentMaterialSection', String(lockState.materialSection));
     }
     if (Number(lockState.materialPage || 0) > 0) {
         localStorage.setItem('currentMaterialPage', String(Number(lockState.materialPage)));
@@ -1532,6 +1536,7 @@ if (!isDemo) {
                 subjectId: data?.subjectId || null,
                 notebookPage: Number(data?.notebookPage || 1),
                 materialMode: data?.materialMode || 'textbook',
+                materialSection: data?.materialSection || 'core',
                 materialPage: Number(data?.materialPage || 1),
                 message: data?.message || t('teacherPresenting')
             };
@@ -1570,6 +1575,7 @@ if (!isDemo) {
             ...existing,
             enabled: true,
             materialMode: data?.materialMode || existing.materialMode || 'textbook',
+            materialSection: data?.materialSection || existing.materialSection || 'core',
             materialPage: Number(data?.materialPage || existing.materialPage || 1)
         };
         saveClassroomLockState(merged);

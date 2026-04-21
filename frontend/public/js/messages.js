@@ -581,6 +581,7 @@ if (!isDemo) {
             subjectId: data?.subjectId || null,
             notebookPage: Number(data?.notebookPage || 1),
             materialMode: data?.materialMode || 'textbook',
+            materialSection: data?.materialSection || 'core',
             materialPage: Number(data?.materialPage || 1),
             message: data?.message || 'Teacher focus mode is active.'
         };
