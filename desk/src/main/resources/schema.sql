@@ -172,3 +172,20 @@ CREATE TABLE IF NOT EXISTS feedback (
     role VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS notebook_ai_records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(64) NOT NULL,
+    subject_id VARCHAR(128) NOT NULL,
+    notebook_id VARCHAR(128) NOT NULL,
+    lesson_id VARCHAR(128) NOT NULL,
+    exercise_id VARCHAR(128) NOT NULL,
+    page_id VARCHAR(64) NOT NULL,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    stroke_data_json LONGTEXT,
+    recognized_text LONGTEXT,
+    expected_answer LONGTEXT,
+    solution_steps_json LONGTEXT,
+    recognition_confidence DOUBLE NOT NULL DEFAULT 0.0,
+    analysis_json LONGTEXT
+);
