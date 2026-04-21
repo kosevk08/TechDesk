@@ -33,6 +33,19 @@ async function resolveUserClass() {
     }
     if (user.role === 'STUDENT') {
         userClassName = user.className || null;
+        if (!userClassName) {
+            try {
+                const meRes = await fetch(`${BACKEND_BASE_URL}/api/student/me?t=${Date.now()}`, {
+                    headers: authHeaders()
+                });
+                if (meRes.ok) {
+                    const profile = await meRes.json();
+                    userClassName = profile?.className || null;
+                }
+            } catch (err) {
+                console.warn('Could not resolve student class via /api/student/me:', err);
+            }
+        }
     } else if (user.role === 'PARENT') {
         userClassName = user.childClassName || null;
     } else if (user.role === 'TEACHER') {
@@ -493,6 +506,9 @@ async function sendCurrentMessage() {
             headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ receiverType, receiverName, content })
         });
+        if (!res.ok) {
+            throw new Error(`Send failed ${res.status}`);
+        }
         const savedMsg = await res.json();
         appendMessage(savedMsg);
         input.value = '';
