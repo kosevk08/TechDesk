@@ -572,7 +572,17 @@ function backToList() {
 }
 
 if (!isDemo) {
-    socket.on('classroom-lock', () => {
+    socket.on('classroom-lock', (data) => {
+        const lockState = {
+            enabled: true,
+            className: data?.className || null,
+            onlyNotebook: Boolean(data?.onlyNotebook),
+            subject: data?.subject || null,
+            subjectId: data?.subjectId || null,
+            notebookPage: Number(data?.notebookPage || 1),
+            message: data?.message || 'Teacher focus mode is active.'
+        };
+        localStorage.setItem(CLASSROOM_LOCK_STORAGE_KEY, JSON.stringify(lockState));
         enforceNotebookLockIfNeeded();
     });
 

@@ -47,6 +47,7 @@ io.on('connection', (socket) => {
     socket.on('classroom-lock', (data) => { socket.broadcast.emit('classroom-lock', data); });
     socket.on('classroom-unlock', (data) => { socket.broadcast.emit('classroom-unlock', data); });
     socket.on('classroom-sync-page', (data) => { socket.broadcast.emit('classroom-sync-page', data); });
+    socket.on('classroom-sync-notebook', (data) => { socket.broadcast.emit('classroom-sync-notebook', data); });
     socket.on('student-presence', (data) => { socket.broadcast.emit('student-presence', data); });
 
     socket.on('disconnect', () => { console.log('User disconnected:', socket.id); });

@@ -192,6 +192,14 @@ function deriveNameFromEmail(email) {
     return first.charAt(0).toUpperCase() + first.slice(1);
 }
 
+function escapeHtmlAttr(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function getCurrentStudentName() {
     return currentStudentDisplayName || user?.displayName || deriveNameFromEmail(user?.email) || 'Student';
 }
@@ -515,6 +523,9 @@ async function forceNotebookDuringLock(lockState) {
     if (desiredSubjectId) {
         localStorage.setItem('currentSubject', desiredSubjectId);
     }
+    if (Number(lockState.notebookPage || 0) > 0) {
+        localStorage.setItem('currentNotebookPage', String(Number(lockState.notebookPage)));
+    }
     if (window.location.pathname !== '/notebook') {
         window.location.href = '/notebook';
     }
@@ -611,7 +622,7 @@ function renderDemoHomework() {
     const container = document.getElementById('homeworkList');
     if (!container || !demoData?.homework) return;
     container.innerHTML = demoData.homework.map(hw => `
-        <div class="test-card">
+        <div class="test-card" data-hw-subject="${escapeHtmlAttr(hw.subject)}" data-hw-title="${escapeHtmlAttr(hw.title)}">
             <h5>${hw.subject}: ${hw.title}</h5>
             <div class="test-meta">Due ${hw.dueDate} • ${hw.status}</div>
             <div class="test-meta">${hw.details}</div>
@@ -627,7 +638,7 @@ function renderHomeworkFromCache() {
         return;
     }
     container.innerHTML = studentHomeworkCache.map(hw => `
-        <div class="test-card">
+        <div class="test-card" data-hw-subject="${escapeHtmlAttr(hw.subject)}" data-hw-title="${escapeHtmlAttr(hw.title)}">
             <h5>${hw.subject}: ${hw.title}</h5>
             <div class="test-meta">${hw.dueDate ? `Due ${hw.dueDate}` : 'No deadline'} • ${hw.status || 'Assigned'}</div>
             <div class="test-meta">${hw.details || 'Review notes and prepare your submission.'}</div>
@@ -1513,12 +1524,33 @@ if (!isDemo) {
                 onlyNotebook: Boolean(data?.onlyNotebook),
                 subject: data?.subject || null,
                 subjectId: data?.subjectId || null,
+                notebookPage: Number(data?.notebookPage || 1),
                 message: data?.message || t('teacherPresenting')
             };
             saveClassroomLockState(lockState);
             setClassroomLock(true, lockState.message);
             forceNotebookDuringLock(lockState);
         }
+    });
+
+    socket.on('classroom-sync-notebook', (data) => {
+        const targetClass = data?.className;
+        const myClass = currentStudentClassName || user?.className || null;
+        if (targetClass && myClass && targetClass !== myClass) return;
+        const lockState = {
+            enabled: true,
+            className: targetClass || myClass || null,
+            onlyNotebook: true,
+            subject: data?.subject || null,
+            subjectId: data?.subjectId || null,
+            notebookPage: Number(data?.notebookPage || 1),
+            message: data?.subject
+                ? `Teacher focus mode: open only the ${data.subject} notebook.`
+                : t('teacherPresenting')
+        };
+        saveClassroomLockState(lockState);
+        setClassroomLock(true, lockState.message);
+        forceNotebookDuringLock(lockState);
     });
 
     socket.on('classroom-unlock', (data) => {
@@ -1915,7 +1947,7 @@ async function loadStudentNotifications() {
         if (isDemo && demoData) {
             const notifications = demoData.notifications;
             container.innerHTML = notifications.slice(0, 6).map(n => `
-                <div class="insight-card">
+                <div class="insight-card notification-card" data-message="${String(n.message || '').replace(/"/g, '&quot;')}">
                     <div class="insight-top">
                         <h5>${n.type}</h5>
                         <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
@@ -1923,6 +1955,7 @@ async function loadStudentNotifications() {
                     <p class="insight-copy">${n.message}</p>
                 </div>
             `).join('');
+            attachNotificationActions();
             return;
         }
         const res = await fetch(`${BACKEND_BASE_URL}/api/notifications/me?t=${Date.now()}`, {
@@ -1934,7 +1967,7 @@ async function loadStudentNotifications() {
             return;
         }
         container.innerHTML = notifications.slice(0, 6).map(n => `
-            <div class="insight-card">
+            <div class="insight-card notification-card" data-message="${String(n.message || '').replace(/"/g, '&quot;')}">
                 <div class="insight-top">
                     <h5>${n.type}</h5>
                     <span class="metric-label">${(n.createdAt || '').replace('T', ' ')}</span>
@@ -1942,9 +1975,42 @@ async function loadStudentNotifications() {
                 <p class="insight-copy">${n.message}</p>
             </div>
         `).join('');
+        attachNotificationActions();
     } catch (error) {
         console.error('Could not load notifications:', error);
     }
+}
+
+function attachNotificationActions() {
+    const cards = document.querySelectorAll('.notification-card');
+    cards.forEach((card) => {
+        card.style.cursor = 'pointer';
+        card.onclick = () => {
+            const rawMessage = String(card.dataset.message || '');
+            const text = rawMessage.toLowerCase();
+            const isHomeworkHint = /(homework|домаш|assignment|задача)/i.test(text);
+            if (!isHomeworkHint) return;
+            switchStudentPanel('homework');
+            const homeworkCards = Array.from(document.querySelectorAll('#homeworkList .test-card'));
+            const messageNoPunct = text.replace(/[^\p{L}\p{N}\s:.-]/gu, ' ').replace(/\s+/g, ' ').trim();
+            const messageSubjectHint = messageNoPunct.split(':')[0] || '';
+            const match = homeworkCards.find((el) => {
+                const subject = String(el.dataset.hwSubject || '').toLowerCase();
+                const title = String(el.dataset.hwTitle || '').toLowerCase();
+                if (subject && messageSubjectHint && messageSubjectHint.includes(subject)) return true;
+                if (title && messageNoPunct.includes(title)) return true;
+                return String(el.textContent || '').toLowerCase().includes(messageNoPunct);
+            });
+            if (match) {
+                match.style.outline = '2px solid #2f7a97';
+                match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => { match.style.outline = ''; }, 2000);
+            } else {
+                const list = document.getElementById('homeworkList');
+                if (list) list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+    });
 }
 
 window.loadStudentGrades = loadStudentGrades;

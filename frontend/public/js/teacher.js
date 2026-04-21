@@ -210,12 +210,24 @@ function lockClassroom() {
     socket.emit('classroom-lock', {
         className,
         subject,
+        notebookPage: Number(currentViewPage || 1),
         onlyNotebook: true,
         message: subject
             ? `Teacher focus mode: open only the ${subject} notebook.`
             : 'Teacher focus mode: open only notebook.'
     });
     setClassroomControlStatus('Screens locked.');
+}
+
+function syncNotebookFocus() {
+    const className = user?.className || null;
+    const subject = currentViewSubject || (teacherSubjects && teacherSubjects[0]) || null;
+    socket.emit('classroom-sync-notebook', {
+        className,
+        subject,
+        notebookPage: Number(currentViewPage || 1)
+    });
+    setClassroomControlStatus(`Synced notebook: ${subject || 'subject'} page ${Number(currentViewPage || 1)}.`);
 }
 
 function unlockClassroom() {
@@ -1898,6 +1910,7 @@ if (!isDemo) {
 window.lockClassroom = lockClassroom;
 window.unlockClassroom = unlockClassroom;
 window.syncClassroomPanel = syncClassroomPanel;
+window.syncNotebookFocus = syncNotebookFocus;
 window.setQuickGrade = setQuickGrade;
 window.deleteGrade = deleteGrade;
 window.loadClassGradeboard = loadClassGradeboard;

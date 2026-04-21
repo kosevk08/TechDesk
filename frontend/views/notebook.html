@@ -83,6 +83,31 @@
             letter-spacing: 0.02em;
             border-bottom: 1px solid #e5e7eb;
         }
+        .panel-header.material-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .material-switch {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .material-switch button {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+            color: #1f2937;
+            padding: 4px 8px;
+            font-size: 0.72rem;
+            cursor: pointer;
+        }
+        .material-switch button.active {
+            background: #e8f4fb;
+            border-color: #2f7a97;
+            color: #1b4e67;
+        }
 
         .textbook-content {
             flex: 1;
@@ -293,7 +318,14 @@
 
     <div class="split-container">
         <div class="panel textbook-panel">
-            <div class="panel-header">Textbook</div>
+            <div class="panel-header material-header">
+                <span id="materialHeaderTitle">Textbook</span>
+                <div class="material-switch">
+                    <button id="matTextbookBtn" class="active" onclick="setLearningMaterial('textbook')">Textbook</button>
+                    <button id="matAidBtn" onclick="setLearningMaterial('aid')">Aid</button>
+                    <button id="matWorksheetsBtn" onclick="setLearningMaterial('worksheets')">Worksheets</button>
+                </div>
+            </div>
             <div class="textbook-content" id="textbookContent">
                 <h2 id="textbookTitle">Loading...</h2>
                 <p>Textbook content will appear here.</p>
@@ -368,6 +400,7 @@
         const token = localStorage.getItem('token');
         let typingTimeout = null;
         const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
+        let currentMaterialMode = localStorage.getItem('currentMaterialMode') || 'textbook';
 
         function authHeaders(extra = {}) {
             const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -534,6 +567,7 @@
                 authorRole: user.role || 'STUDENT'
             });
             markNotebookInteraction();
+            renderLearningMaterial(currentSubjectName);
         }
 
         async function addPage() {
@@ -550,6 +584,7 @@
                 authorRole: user.role || 'STUDENT'
             });
             markNotebookInteraction();
+            renderLearningMaterial(currentSubjectName);
         }
 
         function renderTextbookFallback(subjectName) {
@@ -593,6 +628,53 @@
                 .catch(() => renderTextbookFallback(subjectName));
         }
 
+        function renderAidContent(subjectName) {
+            const target = document.getElementById('textbookContent');
+            if (!target) return;
+            target.innerHTML = `
+                <h2>${subjectName} - Study Aid</h2>
+                <p>Focus summary for page ${currentPage}.</p>
+                <ul>
+                    <li>Key idea from current lesson</li>
+                    <li>Most common mistake to avoid</li>
+                    <li>Quick self-check before homework</li>
+                </ul>
+            `;
+        }
+
+        function renderWorksheetsContent(subjectName) {
+            const target = document.getElementById('textbookContent');
+            if (!target) return;
+            target.innerHTML = `
+                <h2>${subjectName} - Worksheets</h2>
+                <p>Worksheet page ${currentPage}.</p>
+                <ol>
+                    <li>Practice task 1</li>
+                    <li>Practice task 2</li>
+                    <li>Reflection task</li>
+                </ol>
+            `;
+        }
+
+        function renderLearningMaterial(subjectName) {
+            const mode = currentMaterialMode;
+            document.getElementById('matTextbookBtn')?.classList.toggle('active', mode === 'textbook');
+            document.getElementById('matAidBtn')?.classList.toggle('active', mode === 'aid');
+            document.getElementById('matWorksheetsBtn')?.classList.toggle('active', mode === 'worksheets');
+            const header = document.getElementById('materialHeaderTitle');
+            if (header) header.textContent = mode === 'textbook' ? 'Textbook' : (mode === 'aid' ? 'Aid' : 'Worksheets');
+            if (mode === 'aid') return renderAidContent(subjectName);
+            if (mode === 'worksheets') return renderWorksheetsContent(subjectName);
+                renderLearningMaterial(subjectName);
+        }
+
+        function setLearningMaterial(mode) {
+            const allowed = ['textbook', 'aid', 'worksheets'];
+            currentMaterialMode = allowed.includes(mode) ? mode : 'textbook';
+            localStorage.setItem('currentMaterialMode', currentMaterialMode);
+            if (currentSubjectName) renderLearningMaterial(currentSubjectName);
+        }
+
         async function loadSettings() {
             if (isDemo) {
                 setPaperStyle('lined');
@@ -615,11 +697,26 @@
                 if (isDemo && demoData) {
                     subject = demoData.subjects.find(s => String(s.id) === String(subjectId)) || demoData.subjects[0];
                 } else {
+                    const lockedSubjectName = localStorage.getItem('currentNotebookLockedSubjectName');
+                    if (lockedSubjectName) {
+                        const allResLocked = await fetch(`${BACKEND_BASE_URL}/api/subject/all`, { headers: authHeaders() });
+                        const allLockedSubjects = allResLocked.ok ? await allResLocked.json() : [];
+                        const foundLocked = (allLockedSubjects || []).find((s) => String(s?.name || '').trim().toLowerCase() === String(lockedSubjectName).trim().toLowerCase());
+                        if (foundLocked?.id != null) {
+                            subjectId = String(foundLocked.id);
+                            localStorage.setItem('currentSubject', subjectId);
+                        }
+                    }
                     if (!subjectId) {
                         const allRes = await fetch(`${BACKEND_BASE_URL}/api/subject/all`, { headers: authHeaders() });
                         const allSubjects = allRes.ok ? await allRes.json() : [];
                         if (!allSubjects.length) throw new Error('No subjects found');
-                        subjectId = String(allSubjects[0].id);
+                        if (lockedSubjectName) {
+                            const foundLocked = allSubjects.find((s) => String(s?.name || '').trim().toLowerCase() === String(lockedSubjectName).trim().toLowerCase());
+                            subjectId = String((foundLocked || allSubjects[0]).id);
+                        } else {
+                            subjectId = String(allSubjects[0].id);
+                        }
                         localStorage.setItem('currentSubject', subjectId);
                     }
 
@@ -641,7 +738,7 @@
                 document.title = `TechDesk - ${subject.name}`;
                 localStorage.setItem('currentNotebookSubject', subject.name);
 
-                loadTextbookVisual(subject.name);
+                renderLearningMaterial(subject.name);
                 await loadSettings();
                 await fetchPages();
                 const rememberedPage = parseInt(localStorage.getItem('currentNotebookPage') || '1', 10);
@@ -991,6 +1088,38 @@
             maxPage = Math.max(maxPage, currentPage);
             updatePageControls();
             loadPage(currentSubjectName, currentPage);
+            renderLearningMaterial(currentSubjectName);
+        });
+
+        socket.on('classroom-lock', (data) => {
+            if (!data) return;
+            if (data?.subject) {
+                localStorage.setItem('currentNotebookLockedSubjectName', String(data.subject));
+            }
+            if (Number(data?.notebookPage || 0) > 0) {
+                localStorage.setItem('currentNotebookPage', String(Number(data.notebookPage)));
+            }
+        });
+
+        socket.on('classroom-unlock', () => {
+            localStorage.removeItem('currentNotebookLockedSubjectName');
+        });
+
+        socket.on('classroom-sync-notebook', async (data) => {
+            if (!data) return;
+            if (data?.subject && !subjectMatch(data.subject, currentSubjectName)) {
+                localStorage.setItem('currentNotebookLockedSubjectName', String(data.subject));
+                localStorage.removeItem('currentSubject');
+                await loadSubject();
+                return;
+            }
+            if (Number(data?.notebookPage || 0) > 0) {
+                currentPage = Number(data.notebookPage);
+                maxPage = Math.max(maxPage, currentPage);
+                updatePageControls();
+                await loadPage(currentSubjectName, currentPage);
+                renderLearningMaterial(currentSubjectName);
+            }
         });
     </script>
 </body>
