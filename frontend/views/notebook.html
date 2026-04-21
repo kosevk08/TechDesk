@@ -1108,9 +1108,6 @@
                 ctx.lineJoin = 'round';
                 ctx.stroke();
             }
-            if (String(data.authorRole || '').toUpperCase() === 'TEACHER') {
-                setPageLockState(true);
-            }
         });
 
         socket.on('clear-canvas', (data) => {
@@ -1157,6 +1154,7 @@
 
         socket.on('classroom-unlock', () => {
             localStorage.removeItem('currentNotebookLockedSubjectName');
+            setPageLockState(false);
             try {
                 const rawLock = localStorage.getItem(CLASSROOM_LOCK_STORAGE_KEY);
                 if (rawLock) {

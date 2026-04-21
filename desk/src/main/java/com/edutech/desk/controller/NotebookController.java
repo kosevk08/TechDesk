@@ -288,22 +288,13 @@ public class NotebookController {
         notebook.setLastUpdated(LocalDateTime.now());
         Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
                 notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
-        if (existing.isPresent() && existing.get().isTeacherLocked()) {
-            notebook.setTeacherLocked(true);
-        }
         return existing.isPresent()
                 ? notebookService.updateNotebook(existing.get().getId(), notebook)
                 : notebookService.createNotebook(notebook);
     }
 
     private boolean isStudentBlockedByTeacherLock(Notebook notebook) {
-        if (notebook == null) return false;
-        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
-            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
-        if (existing.isEmpty() || !existing.get().isTeacherLocked()) return false;
-        User actor = currentUserService.getUser();
-        if (actor == null) return false;
-        return actor.getRole() == Role.STUDENT && actor.getEgn() != null && actor.getEgn().equals(notebook.getStudentEgn());
+        return false;
     }
 
     private NotebookResponse toResponse(Notebook notebook, boolean includeContent) {

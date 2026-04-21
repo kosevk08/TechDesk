@@ -388,7 +388,7 @@ async function saveTeacherOverlay() {
                 color: '#e53e3e',
                 content: merged.toDataURL(),
                 pageNumber: currentViewPage,
-                teacherLocked: true
+                teacherLocked: false
             })
         });
     } catch (error) {
