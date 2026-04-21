@@ -23,6 +23,7 @@ let studentLang = localStorage.getItem('studentLang') || 'en';
 let currentClassroomLock = false;
 let currentStudentDisplayName = 'Student';
 let currentStudentClassName = '-';
+const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
 const supportedStudentLangs = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'];
 const I18N = {
     en: {
@@ -469,6 +470,56 @@ function setClassroomLock(enabled, message = '') {
     if (overlay) overlay.style.display = currentClassroomLock ? 'flex' : 'none';
 }
 
+function readStoredClassroomLock() {
+    try {
+        const raw = localStorage.getItem(CLASSROOM_LOCK_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && parsed.enabled ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+function saveClassroomLockState(lockState) {
+    if (!lockState || !lockState.enabled) {
+        localStorage.removeItem(CLASSROOM_LOCK_STORAGE_KEY);
+        return;
+    }
+    localStorage.setItem(CLASSROOM_LOCK_STORAGE_KEY, JSON.stringify(lockState));
+}
+
+async function resolveSubjectIdByName(subjectName) {
+    if (!subjectName) return null;
+    const normalized = String(subjectName).trim().toLowerCase();
+    if (!normalized) return null;
+    const cached = (studentSubjectsCache || []).find((s) => String(s?.name || '').trim().toLowerCase() === normalized);
+    if (cached?.id != null) return String(cached.id);
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/subject/all?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        const subjects = res.ok ? await res.json() : [];
+        const found = (subjects || []).find((s) => String(s?.name || '').trim().toLowerCase() === normalized);
+        return found?.id != null ? String(found.id) : null;
+    } catch {
+        return null;
+    }
+}
+
+async function forceNotebookDuringLock(lockState) {
+    if (!lockState?.enabled) return;
+    const desiredSubjectId = lockState.subjectId
+        ? String(lockState.subjectId)
+        : await resolveSubjectIdByName(lockState.subject || '');
+    if (desiredSubjectId) {
+        localStorage.setItem('currentSubject', desiredSubjectId);
+    }
+    if (window.location.pathname !== '/notebook') {
+        window.location.href = '/notebook';
+    }
+}
+
 function emitStudentPresence(state = 'active') {
     if (isDemo) return;
     socket.emit('student-presence', {
@@ -748,10 +799,20 @@ function openSubject(subjectId) {
 }
 
 function quickOpenNotebook() {
+    const activeLock = readStoredClassroomLock();
+    if (activeLock?.enabled) {
+        forceNotebookDuringLock(activeLock);
+        return;
+    }
     switchStudentPanel('subjects');
 }
 
 function switchStudentPanel(panelName) {
+    const activeLock = readStoredClassroomLock();
+    if (activeLock?.enabled) {
+        forceNotebookDuringLock(activeLock);
+        return;
+    }
     const panels = document.querySelectorAll('.student-panel[data-panel]');
     const buttons = document.querySelectorAll('.student-tab[data-panel-btn]');
     let found = false;
@@ -1412,6 +1473,11 @@ renderRewards();
 updateLanguageTexts();
 loadStudentIdentity();
 emitStudentPresence('active');
+const initialLock = readStoredClassroomLock();
+if (initialLock?.enabled) {
+    setClassroomLock(true, initialLock.message || t('teacherPresenting'));
+    forceNotebookDuringLock(initialLock);
+}
 
 if (!isDemo) {
     socket.on('attendance-updated', (data) => {
@@ -1441,7 +1507,17 @@ if (!isDemo) {
         const targetClass = data?.className;
         const myClass = currentStudentClassName || user?.className || null;
         if (!targetClass || !myClass || targetClass === myClass) {
-            setClassroomLock(true, data?.message || t('teacherPresenting'));
+            const lockState = {
+                enabled: true,
+                className: targetClass || myClass || null,
+                onlyNotebook: Boolean(data?.onlyNotebook),
+                subject: data?.subject || null,
+                subjectId: data?.subjectId || null,
+                message: data?.message || t('teacherPresenting')
+            };
+            saveClassroomLockState(lockState);
+            setClassroomLock(true, lockState.message);
+            forceNotebookDuringLock(lockState);
         }
     });
 
@@ -1449,6 +1525,7 @@ if (!isDemo) {
         const targetClass = data?.className;
         const myClass = currentStudentClassName || user?.className || null;
         if (!targetClass || !myClass || targetClass === myClass) {
+            saveClassroomLockState(null);
             setClassroomLock(false);
         }
     });

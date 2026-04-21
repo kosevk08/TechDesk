@@ -287,7 +287,7 @@
         <span class="subject-name" id="subjectName">Subject</span>
         <div style="display:flex; align-items:center; gap:8px;">
             <span id="demoBadge" style="display:none; font-size:0.67rem; background:#deaf21; color:#fff; padding:2px 6px; border-radius:8px;">DEMO</span>
-            <a href="/student">← Back</a>
+            <a href="/student" id="notebookBackLink">← Back</a>
         </div>
     </nav>
 
@@ -367,6 +367,7 @@
         let focusMode = false;
         const token = localStorage.getItem('token');
         let typingTimeout = null;
+        const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
 
         function authHeaders(extra = {}) {
             const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -918,6 +919,22 @@
         });
 
         loadSubject();
+        const backLink = document.getElementById('notebookBackLink');
+        if (backLink) {
+            backLink.addEventListener('click', (event) => {
+                try {
+                    const rawLock = localStorage.getItem(CLASSROOM_LOCK_STORAGE_KEY);
+                    if (!rawLock) return;
+                    const lock = JSON.parse(rawLock);
+                    if (lock?.enabled) {
+                        event.preventDefault();
+                        showSaveStatus('Locked by teacher focus mode', 1800);
+                    }
+                } catch {
+                    // no-op
+                }
+            });
+        }
         emitNotebookTyping('active');
         setInterval(() => {
             emitNotebookTyping(document.hidden ? 'inactive' : 'active');

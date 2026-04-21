@@ -206,9 +206,14 @@ function renderStudentPresence() {
 
 function lockClassroom() {
     const className = user?.className || null;
+    const subject = currentViewSubject || (teacherSubjects && teacherSubjects[0]) || null;
     socket.emit('classroom-lock', {
         className,
-        message: 'Teacher presentation mode is active. Please stay focused on this page.'
+        subject,
+        onlyNotebook: true,
+        message: subject
+            ? `Teacher focus mode: open only the ${subject} notebook.`
+            : 'Teacher focus mode: open only notebook.'
     });
     setClassroomControlStatus('Screens locked.');
 }

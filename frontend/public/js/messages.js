@@ -6,6 +6,7 @@ if (!user) window.location.href = '/';
 const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
+const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -24,6 +25,26 @@ else if (user.role === 'STUDENT') backLink.innerHTML = '<a href="/student">← B
 else if (user.role === 'PARENT') backLink.innerHTML = '<a href="/parent">← Back</a>';
 
 let currentChat = null;
+
+function readStoredClassroomLock() {
+    try {
+        const raw = localStorage.getItem(CLASSROOM_LOCK_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && parsed.enabled ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+function enforceNotebookLockIfNeeded() {
+    const lock = readStoredClassroomLock();
+    if (lock?.enabled) {
+        window.location.href = '/notebook';
+    }
+}
+
+enforceNotebookLockIfNeeded();
 
 async function resolveUserClass() {
     if (isDemo && demoData) {
@@ -551,6 +572,14 @@ function backToList() {
 }
 
 if (!isDemo) {
+    socket.on('classroom-lock', () => {
+        enforceNotebookLockIfNeeded();
+    });
+
+    socket.on('classroom-unlock', () => {
+        localStorage.removeItem(CLASSROOM_LOCK_STORAGE_KEY);
+    });
+
     socket.on('private-message', (msg) => {
         if (currentChat?.type === 'private' &&
             (msg.senderName === currentChat.otherName || msg.receiverName === currentChat.otherName)) {
