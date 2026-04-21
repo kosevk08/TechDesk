@@ -1132,6 +1132,20 @@
 
         socket.on('classroom-unlock', () => {
             localStorage.removeItem('currentNotebookLockedSubjectName');
+            try {
+                const rawLock = localStorage.getItem(CLASSROOM_LOCK_STORAGE_KEY);
+                if (rawLock) {
+                    const parsed = JSON.parse(rawLock);
+                    if (parsed && typeof parsed === 'object') {
+                        parsed.enabled = false;
+                        localStorage.setItem(CLASSROOM_LOCK_STORAGE_KEY, JSON.stringify(parsed));
+                    } else {
+                        localStorage.removeItem(CLASSROOM_LOCK_STORAGE_KEY);
+                    }
+                }
+            } catch {
+                localStorage.removeItem(CLASSROOM_LOCK_STORAGE_KEY);
+            }
         });
 
         socket.on('classroom-sync-notebook', async (data) => {
