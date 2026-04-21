@@ -60,7 +60,11 @@
                     <span class="section-eyebrow">Feedback</span>
                     <h3 class="section-title">User Reports</h3>
                 </div>
-                <button class="action-btn secondary-btn" onclick="loadFeedback()">Refresh</button>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button class="action-btn secondary-btn" onclick="showUnresolvedFeedback()">Hide Fixed</button>
+                    <button class="action-btn secondary-btn" onclick="showAllFeedback()">Show All</button>
+                    <button class="action-btn secondary-btn" onclick="loadFeedback()">Refresh</button>
+                </div>
             </div>
             <div id="feedbackList"></div>
         </div>

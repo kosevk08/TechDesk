@@ -793,7 +793,7 @@
             });
             markNotebookInteraction();
             notebookDirty = true;
-            scheduleAutoSave();
+            saveNotebook(true);
         }
 
         let autosaveTimer = null;

@@ -561,8 +561,6 @@ socket.on('clear-canvas', (data) => {
             img.src = '';
             img.style.display = 'none';
         }
-        // Pull the persisted cleared state right away so teacher view matches student instantly.
-        loadTeacherPage();
     }
 });
 

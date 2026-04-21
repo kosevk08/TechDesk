@@ -9,6 +9,8 @@ const ADMIN_BOOTSTRAP_KEY = 'techdesk-secret-2026';
 const OWNER_EMAIL = 'admin@edu-school.bg';
 let cachedSubjects = [];
 const isOwnerAdminAccount = !isDemo && String(user?.email || '').toLowerCase() === OWNER_EMAIL;
+let feedbackFilterMode = 'open';
+let feedbackCache = [];
 
 function authHeaders(extra = {}) {
     const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
@@ -286,11 +288,14 @@ function humanNameFromEmail(email, fallback = 'Teacher User') {
 function renderFeedback(items) {
     const list = document.getElementById('feedbackList');
     if (!list) return;
-    if (!items.length) {
+    const visibleItems = (items || []).filter((item) => (
+        feedbackFilterMode === 'all' ? true : !item?.resolved
+    ));
+    if (!visibleItems.length) {
         list.innerHTML = '<p class="empty-state">No feedback yet.</p>';
         return;
     }
-    list.innerHTML = items.map(item => `
+    list.innerHTML = visibleItems.map(item => `
         <div class="feedback-card-item ${item.resolved ? 'resolved' : ''}">
             <div class="feedback-meta">${item.page || 'Unknown'} • ${new Date(item.createdAt).toLocaleString()}</div>
             <h4>${item.sender || item.userDisplayName || 'User'}</h4>
@@ -304,6 +309,16 @@ function renderFeedback(items) {
             </div>
         </div>
     `).join('');
+}
+
+function showUnresolvedFeedback() {
+    feedbackFilterMode = 'open';
+    renderFeedback(feedbackCache);
+}
+
+function showAllFeedback() {
+    feedbackFilterMode = 'all';
+    renderFeedback(feedbackCache);
 }
 
 async function markFeedbackResolved(id) {
@@ -421,7 +436,8 @@ async function loadFeedback() {
     if (isDemo) {
         const local = JSON.parse(localStorage.getItem('demo-feedback') || '[]');
         const items = local.length ? local : (demoData?.feedback || []);
-        renderFeedback(items);
+        feedbackCache = items;
+        renderFeedback(feedbackCache);
         return items;
     }
     try {
@@ -429,10 +445,12 @@ async function loadFeedback() {
             headers: authHeaders()
         });
         const items = res.ok ? await res.json() : [];
-        renderFeedback(items);
+        feedbackCache = items;
+        renderFeedback(feedbackCache);
         return items;
     } catch (error) {
         console.error('Could not load feedback:', error);
+        feedbackCache = [];
         renderFeedback([]);
         return [];
     }
@@ -635,6 +653,8 @@ window.saveUserRole = saveUserRole;
 window.setAdminLanguage = setAdminLanguage;
 window.autoAssignSubjectTeachers = autoAssignSubjectTeachers;
 window.markFeedbackResolved = markFeedbackResolved;
+window.showUnresolvedFeedback = showUnresolvedFeedback;
+window.showAllFeedback = showAllFeedback;
 
 init();
 setAdminLanguage(adminLang);
