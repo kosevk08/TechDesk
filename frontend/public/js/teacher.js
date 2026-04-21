@@ -207,10 +207,14 @@ function renderStudentPresence() {
 function lockClassroom() {
     const className = user?.className || null;
     const subject = currentViewSubject || (teacherSubjects && teacherSubjects[0]) || null;
+    const materialMode = document.getElementById('syncMaterialMode')?.value || 'textbook';
+    const materialPage = Number(document.getElementById('syncMaterialPage')?.value || 1);
     socket.emit('classroom-lock', {
         className,
         subject,
         notebookPage: Number(currentViewPage || 1),
+        materialMode,
+        materialPage: Number.isFinite(materialPage) && materialPage > 0 ? materialPage : 1,
         onlyNotebook: true,
         message: subject
             ? `Teacher focus mode: open only the ${subject} notebook.`
@@ -228,6 +232,19 @@ function syncNotebookFocus() {
         notebookPage: Number(currentViewPage || 1)
     });
     setClassroomControlStatus(`Synced notebook: ${subject || 'subject'} page ${Number(currentViewPage || 1)}.`);
+}
+
+function syncMaterialFocus() {
+    const className = user?.className || null;
+    const materialMode = document.getElementById('syncMaterialMode')?.value || 'textbook';
+    const rawPage = Number(document.getElementById('syncMaterialPage')?.value || 1);
+    const materialPage = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    socket.emit('classroom-sync-material', {
+        className,
+        materialMode,
+        materialPage
+    });
+    setClassroomControlStatus(`Synced material: ${materialMode} page ${materialPage}.`);
 }
 
 function unlockClassroom() {
@@ -1911,6 +1928,7 @@ window.lockClassroom = lockClassroom;
 window.unlockClassroom = unlockClassroom;
 window.syncClassroomPanel = syncClassroomPanel;
 window.syncNotebookFocus = syncNotebookFocus;
+window.syncMaterialFocus = syncMaterialFocus;
 window.setQuickGrade = setQuickGrade;
 window.deleteGrade = deleteGrade;
 window.loadClassGradeboard = loadClassGradeboard;

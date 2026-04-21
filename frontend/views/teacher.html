@@ -63,6 +63,15 @@
                     <button class="action-btn secondary-btn" onclick="syncNotebookFocus()">Sync Notebook Page</button>
                     <button class="action-btn secondary-btn" onclick="syncClassroomPanel('tests')">Sync Tests</button>
                 </div>
+                <div class="test-row" style="margin-top:8px;">
+                    <select id="syncMaterialMode">
+                        <option value="textbook">Textbook</option>
+                        <option value="aid">Aid</option>
+                        <option value="worksheets">Worksheets</option>
+                    </select>
+                    <input type="number" id="syncMaterialPage" min="1" step="1" value="1" placeholder="Material page">
+                    <button class="action-btn secondary-btn" onclick="syncMaterialFocus()">Sync Material</button>
+                </div>
                 <div class="test-status" id="classroomControlStatus">Ready</div>
                 <div id="studentPresenceList" class="student-presence-list">
                     <p class="empty-state">No live status yet.</p>

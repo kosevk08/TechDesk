@@ -580,6 +580,8 @@ if (!isDemo) {
             subject: data?.subject || null,
             subjectId: data?.subjectId || null,
             notebookPage: Number(data?.notebookPage || 1),
+            materialMode: data?.materialMode || 'textbook',
+            materialPage: Number(data?.materialPage || 1),
             message: data?.message || 'Teacher focus mode is active.'
         };
         localStorage.setItem(CLASSROOM_LOCK_STORAGE_KEY, JSON.stringify(lockState));

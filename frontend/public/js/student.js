@@ -526,6 +526,12 @@ async function forceNotebookDuringLock(lockState) {
     if (Number(lockState.notebookPage || 0) > 0) {
         localStorage.setItem('currentNotebookPage', String(Number(lockState.notebookPage)));
     }
+    if (lockState.materialMode) {
+        localStorage.setItem('currentMaterialMode', String(lockState.materialMode));
+    }
+    if (Number(lockState.materialPage || 0) > 0) {
+        localStorage.setItem('currentMaterialPage', String(Number(lockState.materialPage)));
+    }
     if (window.location.pathname !== '/notebook') {
         window.location.href = '/notebook';
     }
@@ -1525,6 +1531,8 @@ if (!isDemo) {
                 subject: data?.subject || null,
                 subjectId: data?.subjectId || null,
                 notebookPage: Number(data?.notebookPage || 1),
+                materialMode: data?.materialMode || 'textbook',
+                materialPage: Number(data?.materialPage || 1),
                 message: data?.message || t('teacherPresenting')
             };
             saveClassroomLockState(lockState);
@@ -1551,6 +1559,21 @@ if (!isDemo) {
         saveClassroomLockState(lockState);
         setClassroomLock(true, lockState.message);
         forceNotebookDuringLock(lockState);
+    });
+
+    socket.on('classroom-sync-material', (data) => {
+        const targetClass = data?.className;
+        const myClass = currentStudentClassName || user?.className || null;
+        if (targetClass && myClass && targetClass !== myClass) return;
+        const existing = readStoredClassroomLock() || { enabled: true };
+        const merged = {
+            ...existing,
+            enabled: true,
+            materialMode: data?.materialMode || existing.materialMode || 'textbook',
+            materialPage: Number(data?.materialPage || existing.materialPage || 1)
+        };
+        saveClassroomLockState(merged);
+        forceNotebookDuringLock(merged);
     });
 
     socket.on('classroom-unlock', (data) => {
