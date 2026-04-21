@@ -391,11 +391,20 @@ function sameStudentLive(data) {
     return currentName && eventName && currentName === eventName;
 }
 
-function markLiveActivity(studentName, subject, page, role = 'STUDENT') {
+function notebookActivityKey(studentName, subject, studentEgn = '') {
+    const normalizedSubject = String(subject || '').trim().toLowerCase();
+    const normalizedEgn = String(studentEgn || '').trim();
+    const normalizedName = String(studentName || '').trim().toLowerCase();
+    if (normalizedEgn) return `egn:${normalizedEgn}__${normalizedSubject}`;
+    return `name:${normalizedName}__${normalizedSubject}`;
+}
+
+function markLiveActivity(studentName, subject, page, role = 'STUDENT', studentEgn = '') {
     if (!studentName || !subject) return;
-    const key = `${studentName}__${subject}`;
+    const key = notebookActivityKey(studentName, subject, studentEgn);
     liveActivityMap.set(key, {
         studentName,
+        studentEgn: String(studentEgn || '').trim(),
         subject,
         page: Number(page || 1),
         role,
@@ -434,9 +443,10 @@ function renderLiveActivity() {
     }).join('');
 }
 
-function getNotebookLiveState(studentName, subject) {
-    const key = `${studentName}__${subject}`;
-    const activity = liveActivityMap.get(key);
+function getNotebookLiveState(studentName, subject, studentEgn = '', persistedUpdatedAt = '') {
+    const egnKey = notebookActivityKey(studentName, subject, studentEgn);
+    const nameKey = notebookActivityKey(studentName, subject, '');
+    const activity = liveActivityMap.get(egnKey) || liveActivityMap.get(nameKey);
     const now = Date.now();
     if (activity) {
         const seconds = Math.floor((now - activity.updatedAt) / 1000);
@@ -444,6 +454,9 @@ function getNotebookLiveState(studentName, subject) {
             return { stateClass: 'live', stateLabel: 'Writing now', detail: `Last update: ${seconds}s ago` };
         }
         return { stateClass: 'idle', stateLabel: 'Idle', detail: `Last update: ${seconds}s ago` };
+    }
+    if (persistedUpdatedAt) {
+        return { stateClass: 'idle', stateLabel: 'Saved', detail: `Last save: ${formatNotebookUpdated(persistedUpdatedAt)}` };
     }
     const presence = studentPresenceMap.get(studentName);
     if (presence && presence.state === 'active') {
@@ -462,8 +475,10 @@ function refreshNotebookCardsLiveState() {
     const totalCount = cards.length;
     cards.forEach((card) => {
         const studentName = card.dataset.student || '';
+        const studentEgn = card.dataset.egn || '';
         const subject = card.dataset.subject || '';
-        const status = getNotebookLiveState(studentName, subject);
+        const lastUpdated = card.dataset.lastUpdated || '';
+        const status = getNotebookLiveState(studentName, subject, studentEgn, lastUpdated);
         const pill = card.querySelector('.notebook-live-pill');
         const detail = card.querySelector('.notebook-live-detail');
         if (pill) {
@@ -518,7 +533,7 @@ function toggleNotebookOnlineOnly() {
 }
 
 socket.on('draw-stroke', (data) => {
-    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
+    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT', data?.studentEgn || '');
     if (sameStudentLive(data) &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
@@ -538,7 +553,7 @@ socket.on('draw-stroke', (data) => {
 });
 
 socket.on('page-change', (data) => {
-    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
+    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT', data?.studentEgn || '');
     if (sameStudentLive(data) && subjectMatch(data.subject, currentViewSubject)) {
         currentViewPage = data.page;
         currentViewMaxPage = Math.max(currentViewMaxPage, currentViewPage);
@@ -551,7 +566,7 @@ socket.on('page-change', (data) => {
 });
 
 socket.on('clear-canvas', (data) => {
-    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
+    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT', data?.studentEgn || '');
     if (sameStudentLive(data) &&
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
@@ -578,7 +593,7 @@ socket.on('student-presence', (data) => {
 
 socket.on('notebook-typing', (data) => {
     if (!data?.studentName || !data?.subject) return;
-    markLiveActivity(data.studentName, data.subject, data.page || 1, data.authorRole || 'STUDENT');
+    markLiveActivity(data.studentName, data.subject, data.page || 1, data.authorRole || 'STUDENT', data?.studentEgn || '');
     if (data.state) {
         studentPresenceMap.set(data.studentName, {
             studentName: data.studentName,
@@ -1183,7 +1198,9 @@ async function loadNotebooks() {
                 const card = document.createElement('div');
                 card.className = 'notebook-card';
                 card.dataset.student = notebook.studentName;
+                card.dataset.egn = notebook.studentEgn || '';
                 card.dataset.subject = notebook.subject;
+                card.dataset.lastUpdated = notebook.lastUpdated || '';
                 card.innerHTML = `
                     <div class="notebook-card-head">
                         <span class="notebook-avatar">${avatarInitials(notebook.studentName)}</span>
@@ -1249,7 +1266,9 @@ async function loadNotebooks() {
             const card = document.createElement('div');
             card.className = 'notebook-card';
             card.dataset.student = studentName;
+            card.dataset.egn = notebook.studentEgn || '';
             card.dataset.subject = notebook.subject;
+            card.dataset.lastUpdated = notebook.lastUpdated || '';
             card.innerHTML = `
                 <div class="notebook-card-head">
                     <span class="notebook-avatar">${avatarInitials(studentName)}</span>

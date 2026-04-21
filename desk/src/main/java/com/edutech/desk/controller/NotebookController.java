@@ -245,6 +245,36 @@ public class NotebookController {
         return ResponseEntity.ok(toResponse(processSave(notebook), true));
     }
 
+    @DeleteMapping("/page")
+    public ResponseEntity<Map<String, String>> deleteNotebookPage(@RequestBody Map<String, Object> body) {
+        User actor = currentUserService.getUser();
+        if (actor == null || actor.getRole() != Role.ADMIN) {
+            return ResponseEntity.status(403).build();
+        }
+
+        String studentEgn = String.valueOf(body.getOrDefault("studentEgn", "")).trim();
+        String subject = String.valueOf(body.getOrDefault("subject", "")).trim();
+        Object pageRaw = body.get("pageNumber");
+        int pageNumber;
+        try {
+            pageNumber = Integer.parseInt(String.valueOf(pageRaw));
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid pageNumber"));
+        }
+
+        if (studentEgn.isBlank() || subject.isBlank() || pageNumber < 1) {
+            return ResponseEntity.badRequest().body(Map.of("error", "studentEgn, subject, pageNumber are required"));
+        }
+
+        Optional<Notebook> notebook = notebookService.getByStudentEgnAndSubjectAndPage(studentEgn, subject, pageNumber);
+        if (notebook.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        notebookRepository.delete(notebook.get());
+        return ResponseEntity.ok(Map.of("status", "deleted"));
+    }
+
     private boolean isValidNotebook(Notebook notebook) {
         if (notebook == null || notebook.getSubject() == null) return false;
         // Reject oversized content (e.g., > 8MB) or suspicious payloads

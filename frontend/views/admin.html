@@ -125,6 +125,22 @@
                 <span class="assignment-status" id="roleStatus">Ready</span>
             </div>
         </div>
+
+        <div class="card section-card">
+            <div class="section-header">
+                <div>
+                    <span class="section-eyebrow">Notebook Maintenance</span>
+                    <h3 class="section-title">Delete Student Page</h3>
+                </div>
+            </div>
+            <div class="assignment-form">
+                <input type="text" id="deleteNotebookEgn" placeholder="Student EGN">
+                <input type="text" id="deleteNotebookSubject" placeholder="Subject (exact)">
+                <input type="number" id="deleteNotebookPage" placeholder="Page" min="1" step="1">
+                <button class="action-btn" onclick="deleteNotebookPageAdmin()">Delete Page</button>
+                <span class="assignment-status" id="deleteNotebookStatus">Ready</span>
+            </div>
+        </div>
     </div>
 
     <script src="/js/demo-data.js"></script>

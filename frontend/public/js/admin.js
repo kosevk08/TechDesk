@@ -399,6 +399,46 @@ async function saveUserRole() {
     }
 }
 
+async function deleteNotebookPageAdmin() {
+    const egnInput = document.getElementById('deleteNotebookEgn');
+    const subjectInput = document.getElementById('deleteNotebookSubject');
+    const pageInput = document.getElementById('deleteNotebookPage');
+    const status = document.getElementById('deleteNotebookStatus');
+    if (!egnInput || !subjectInput || !pageInput || !status) return;
+
+    const studentEgn = String(egnInput.value || '').trim();
+    const subject = String(subjectInput.value || '').trim();
+    const pageNumber = Number(pageInput.value);
+
+    if (!studentEgn || !subject || !Number.isInteger(pageNumber) || pageNumber < 1) {
+        status.textContent = 'Student EGN, subject and valid page are required.';
+        return;
+    }
+
+    if (isDemo) {
+        status.textContent = 'Delete is disabled in demo mode.';
+        return;
+    }
+
+    const confirmed = window.confirm(`Delete page ${pageNumber} for ${subject} (${studentEgn})?`);
+    if (!confirmed) return;
+
+    try {
+        status.textContent = 'Deleting...';
+        const res = await fetch(`${BACKEND_BASE_URL}/api/notebook/page`, {
+            method: 'DELETE',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ studentEgn, subject, pageNumber })
+        });
+        if (!res.ok) throw new Error(`Delete failed ${res.status}`);
+        status.textContent = 'Page deleted.';
+        pageInput.value = '';
+    } catch (error) {
+        console.error('Could not delete notebook page:', error);
+        status.textContent = 'Delete failed.';
+    }
+}
+
 function setAdminLanguage(lang) {
     adminLang = ['en', 'bg', 'it', 'de', 'el', 'ro', 'sr'].includes(lang) ? lang : 'en';
     const words = {
@@ -655,6 +695,7 @@ window.autoAssignSubjectTeachers = autoAssignSubjectTeachers;
 window.markFeedbackResolved = markFeedbackResolved;
 window.showUnresolvedFeedback = showUnresolvedFeedback;
 window.showAllFeedback = showAllFeedback;
+window.deleteNotebookPageAdmin = deleteNotebookPageAdmin;
 
 init();
 setAdminLanguage(adminLang);
