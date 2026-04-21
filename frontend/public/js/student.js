@@ -787,8 +787,112 @@ function shuffle(list) {
     return arr;
 }
 
+function parseDateValue(value) {
+    if (!value) return 0;
+    const ts = new Date(value).getTime();
+    return Number.isFinite(ts) ? ts : 0;
+}
+
+function buildRecentLearningSignals() {
+    const signals = [];
+
+    (studentTestsCache || []).forEach((test) => {
+        const questions = safeParseQuestions(test.questionsJson).filter(Boolean);
+        const recency = Math.max(
+            parseDateValue(test.updatedAt),
+            parseDateValue(test.createdAt),
+            parseDateValue(test.dueDate)
+        );
+        signals.push({
+            type: 'test',
+            subject: test.subject || 'General',
+            title: test.title || 'Test',
+            recency,
+            dueDate: test.dueDate || '',
+            status: test.status || 'ASSIGNED',
+            questions
+        });
+    });
+
+    (studentHomeworkCache || []).forEach((hw) => {
+        const recency = Math.max(
+            parseDateValue(hw.updatedAt),
+            parseDateValue(hw.createdAt),
+            parseDateValue(hw.dueDate)
+        );
+        signals.push({
+            type: 'homework',
+            subject: hw.subject || 'General',
+            title: hw.title || 'Homework',
+            recency,
+            dueDate: hw.dueDate || '',
+            status: hw.status || 'Assigned',
+            details: hw.details || ''
+        });
+    });
+
+    return signals
+        .filter((s) => s.subject && s.title)
+        .sort((a, b) => b.recency - a.recency);
+}
+
 function buildFlashQuestions() {
     const pool = [];
+    const recentSignals = buildRecentLearningSignals();
+    const recentTop = recentSignals[0] || null;
+    const recentSubjects = Array.from(new Set(recentSignals.map((s) => s.subject))).filter(Boolean);
+    const recentTests = recentSignals.filter((s) => s.type === 'test');
+    const dueSoonSignals = recentSignals
+        .filter((s) => s.dueDate)
+        .sort((a, b) => parseDateValue(a.dueDate) - parseDateValue(b.dueDate));
+
+    if (recentTop) {
+        const distractorSubjects = shuffle(
+            recentSubjects.filter((s) => s !== recentTop.subject)
+        ).slice(0, 3);
+        pool.push({
+            text: 'Which subject contains your most recently assigned material?',
+            correct: recentTop.subject,
+            choices: shuffle([recentTop.subject, ...distractorSubjects]).slice(0, 4)
+        });
+    }
+
+    if (recentTests.length) {
+        const latestTest = recentTests[0];
+        const candidateQuestion = (latestTest.questions || [])[0];
+        if (candidateQuestion) {
+            pool.push({
+                text: `From your latest ${latestTest.subject} test, which prompt is actually assigned?`,
+                correct: candidateQuestion,
+                choices: shuffle([
+                    candidateQuestion,
+                    'No question is assigned yet',
+                    'Only read the test title',
+                    'Skip to another subject'
+                ]).slice(0, 4)
+            });
+        }
+        pool.push({
+            text: `What is the current status of your latest ${latestTest.subject} test "${latestTest.title}"?`,
+            correct: latestTest.status,
+            choices: shuffle([latestTest.status, 'GRADED', 'SUBMITTED', 'ASSIGNED']).slice(0, 4)
+        });
+    }
+
+    if (dueSoonSignals.length) {
+        const nextDue = dueSoonSignals[0];
+        pool.push({
+            text: `Which task should you prioritize first based on nearest due date?`,
+            correct: `${nextDue.subject}: ${nextDue.title}`,
+            choices: shuffle([
+                `${nextDue.subject}: ${nextDue.title}`,
+                'Random old task from another subject',
+                'Only tasks with no due date',
+                'Skip planning for today'
+            ]).slice(0, 4)
+        });
+    }
+
     const bySubject = {};
 
     (studentTestsCache || []).forEach(test => {
@@ -804,7 +908,10 @@ function buildFlashQuestions() {
         pool.push({
             text: `Which subject currently needs the most attention?`,
             correct: subject,
-            choices: shuffle([subject, 'English', 'Maths', 'Physics'].filter((v, i, a) => a.indexOf(v) === i)).slice(0, 4)
+            choices: shuffle([
+                subject,
+                ...(recentSubjects.length ? recentSubjects : ['English', 'Maths', 'Physics'])
+            ].filter((v, i, a) => a.indexOf(v) === i)).slice(0, 4)
         });
         pool.push({
             text: `How many active tasks are currently linked to ${subject}?`,
