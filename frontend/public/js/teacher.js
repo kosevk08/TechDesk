@@ -523,13 +523,17 @@ socket.on('draw-stroke', (data) => {
         subjectMatch(data.subject, currentViewSubject) &&
         parseInt(data.page) === parseInt(currentViewPage)) {
         document.getElementById('liveBadge').style.display = 'inline';
-        tCtx.beginPath();
-        tCtx.moveTo(data.x0, data.y0);
-        tCtx.lineTo(data.x1, data.y1);
-        tCtx.strokeStyle = data.color || '#1a56db';
-        tCtx.lineWidth = data.size || 2;
-        tCtx.lineCap = 'round';
-        tCtx.stroke();
+        if (data.tool === 'eraser') {
+            tCtx.clearRect((data.x1 || 0) - 15, (data.y1 || 0) - 15, 30, 30);
+        } else {
+            tCtx.beginPath();
+            tCtx.moveTo(data.x0, data.y0);
+            tCtx.lineTo(data.x1, data.y1);
+            tCtx.strokeStyle = data.color || '#1a56db';
+            tCtx.lineWidth = data.size || 2;
+            tCtx.lineCap = 'round';
+            tCtx.stroke();
+        }
     }
 });
 
@@ -542,6 +546,22 @@ socket.on('page-change', (data) => {
         document.getElementById('notebookTitle').textContent =
             `${currentViewStudent} - ${currentViewSubject} (Page ${currentViewPage})`;
         tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+        loadTeacherPage();
+    }
+});
+
+socket.on('clear-canvas', (data) => {
+    markLiveActivity(data?.studentName, data?.subject, data?.page, data?.authorRole || 'STUDENT');
+    if (sameStudentLive(data) &&
+        subjectMatch(data.subject, currentViewSubject) &&
+        parseInt(data.page) === parseInt(currentViewPage)) {
+        tCtx.clearRect(0, 0, teacherCanvas.width, teacherCanvas.height);
+        const img = document.getElementById('notebookImage');
+        if (img) {
+            img.src = '';
+            img.style.display = 'none';
+        }
+        // Pull the persisted cleared state right away so teacher view matches student instantly.
         loadTeacherPage();
     }
 });

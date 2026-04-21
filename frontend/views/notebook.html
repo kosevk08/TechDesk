@@ -230,9 +230,54 @@
             cursor: not-allowed;
         }
 
+        @media (max-width: 1024px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-y: auto;
+            }
+            .split-container {
+                height: auto;
+                min-height: calc(100vh - 48px);
+            }
+            .notebook-panel {
+                min-height: calc(100vh - 72px);
+            }
+            .notebook-toolbar {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+            }
+            .page-controls {
+                position: sticky;
+                bottom: 0;
+                z-index: 20;
+            }
+            .notebook-area {
+                min-height: 420px;
+            }
+        }
+
         @media (max-width: 900px) {
             .split-container { grid-template-columns: 1fr; }
             .textbook-panel { display: none; }
+        }
+
+        @media (max-width: 640px) {
+            .notebook-toolbar {
+                gap: 5px;
+                padding: 6px;
+            }
+            .notebook-toolbar button {
+                font-size: 0.7rem;
+                padding: 5px 7px;
+            }
+            #sizeSlider {
+                width: 52px;
+            }
+            .notebook-area {
+                min-height: 360px;
+            }
         }
     </style>
 </head>
@@ -260,7 +305,7 @@
             <div class="notebook-toolbar">
                 <button class="active" id="penBtn" onclick="setTool('pen')">Pen</button>
                 <button onclick="setTool('eraser')">Eraser</button>
-                <button onclick="clearCanvas()">Clear</button>
+                <button onclick="clearCanvas()">Clear Page</button>
                 <button class="color-btn color-blue active" id="btnBlue" onclick="setColor('#1a56db', 'btnBlue')" title="Blue"></button>
                 <button class="color-btn color-black" id="btnBlack" onclick="setColor('#111111', 'btnBlack')" title="Black"></button>
                 <input type="range" id="sizeSlider" min="1" max="20" value="3" title="Size">

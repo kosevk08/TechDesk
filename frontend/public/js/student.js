@@ -204,6 +204,7 @@ let rewardsState = {
     badges: [],
     rewardedTestIds: []
 };
+let rewardsSyncTimer = null;
 const testCanvas = document.getElementById('testAnswerCanvas');
 const testCtx = testCanvas ? testCanvas.getContext('2d') : null;
 
@@ -242,6 +243,47 @@ function saveRewardsState() {
     const serialized = JSON.stringify(rewardsState);
     localStorage.setItem(rewardsStoragePrimaryKey, serialized);
     localStorage.setItem(rewardsStorageLegacyKey, serialized);
+    if (!isDemo) scheduleRewardsSync();
+}
+
+function scheduleRewardsSync() {
+    if (rewardsSyncTimer) clearTimeout(rewardsSyncTimer);
+    rewardsSyncTimer = setTimeout(() => syncRewardsToServer(), 450);
+}
+
+async function syncRewardsToServer() {
+    if (isDemo) return;
+    try {
+        await fetch(`${BACKEND_BASE_URL}/api/student/rewards/me`, {
+            method: 'POST',
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(rewardsState)
+        });
+    } catch (error) {
+        console.warn('Could not sync rewards to server:', error);
+    }
+}
+
+async function loadRewardsFromServer() {
+    if (isDemo) return;
+    try {
+        const res = await fetch(`${BACKEND_BASE_URL}/api/student/rewards/me?t=${Date.now()}`, {
+            headers: authHeaders()
+        });
+        if (!res.ok) return;
+        const serverState = await res.json();
+        rewardsState = {
+            ...rewardsState,
+            ...serverState,
+            badges: Array.isArray(serverState.badges) ? serverState.badges : rewardsState.badges,
+            rewardedTestIds: Array.isArray(serverState.rewardedTestIds) ? serverState.rewardedTestIds : rewardsState.rewardedTestIds
+        };
+        const serialized = JSON.stringify(rewardsState);
+        localStorage.setItem(rewardsStoragePrimaryKey, serialized);
+        localStorage.setItem(rewardsStorageLegacyKey, serialized);
+    } catch (error) {
+        console.warn('Could not load rewards from server:', error);
+    }
 }
 
 function t(key) {
@@ -773,10 +815,28 @@ function buildFlashQuestions() {
 
     (studentTestsCache || []).slice(0, 5).forEach(test => {
         const status = test.status || 'ASSIGNED';
+        const parsedQuestions = safeParseQuestions(test.questionsJson).filter(Boolean);
         pool.push({
             text: `What is the current status of "${test.title}"?`,
             correct: status,
             choices: shuffle([status, 'GRADED', 'SUBMITTED', 'ASSIGNED']).slice(0, 4)
+        });
+        if (parsedQuestions.length) {
+            const qText = parsedQuestions[Math.floor(Math.random() * parsedQuestions.length)];
+            pool.push({
+                text: `From your recent ${test.subject || 'subject'} material, which question did teacher assign?`,
+                correct: qText,
+                choices: shuffle([qText, 'No question assigned', 'Only read the title', 'Skip this section']).slice(0, 4)
+            });
+        }
+    });
+
+    (studentHomeworkCache || []).slice(0, 6).forEach(hw => {
+        if (!hw?.title || !hw?.subject) return;
+        pool.push({
+            text: `Which homework is linked to ${hw.subject}?`,
+            correct: hw.title,
+            choices: shuffle([hw.title, 'No homework', 'Free period', 'Unassigned task']).slice(0, 4)
         });
     });
 
@@ -1240,6 +1300,7 @@ renderHomeworkFromCache();
 startPracticeGame();
 switchStudentPanel('home');
 loadRewardsState();
+loadRewardsFromServer().then(renderRewards);
 renderRewards();
 updateLanguageTexts();
 loadStudentIdentity();

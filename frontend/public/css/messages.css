@@ -336,3 +336,54 @@ body {
     font-size: 0.75rem;
     margin: 5px 0;
 }
+
+@media (max-width: 900px) {
+    body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .navbar {
+        padding: 12px 14px;
+    }
+
+    .messages-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(52vh, 1fr);
+        min-height: calc(100vh - 64px);
+        overflow: visible;
+    }
+
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(78, 100, 118, 0.16);
+        max-height: 36vh;
+    }
+
+    .conversation-list {
+        max-height: 24vh;
+    }
+
+    .chat-panel {
+        min-height: 52vh;
+    }
+
+    .chat-view {
+        min-height: 52vh;
+    }
+
+    .chat-messages {
+        padding: 12px;
+    }
+
+    .message-bubble {
+        max-width: 86%;
+    }
+
+    .chat-input-area {
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    }
+}
