@@ -294,7 +294,15 @@ public class NotebookController {
     }
 
     private boolean isStudentBlockedByTeacherLock(Notebook notebook) {
-        return false;
+        if (notebook == null) return false;
+        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
+            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
+        if (existing.isEmpty() || !existing.get().isTeacherLocked()) return false;
+
+        User actor = currentUserService.getUser();
+        if (actor == null || actor.getRole() != Role.STUDENT) return false;
+        if (actor.getEgn() == null || notebook.getStudentEgn() == null) return false;
+        return actor.getEgn().equals(notebook.getStudentEgn());
     }
 
     private NotebookResponse toResponse(Notebook notebook, boolean includeContent) {

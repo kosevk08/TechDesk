@@ -2,7 +2,6 @@ const user = JSON.parse(localStorage.getItem('user'));
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const socket = io('https://techdesk-frontend.onrender.com');
-const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let studentTestsCache = [];
@@ -218,7 +217,7 @@ const testCanvas = document.getElementById('testAnswerCanvas');
 const testCtx = testCanvas ? testCanvas.getContext('2d') : null;
 
 function authHeaders(extra = {}) {
-    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    const headers = { ...extra };
     if (user?.email) headers['X-User-Email'] = user.email;
     if (user?.egn) headers['X-User-Egn'] = user.egn;
     return headers;
@@ -1527,7 +1526,7 @@ if (!isDemo) {
     socket.on('classroom-lock', (data) => {
         const targetClass = data?.className;
         const myClass = currentStudentClassName || user?.className || null;
-        if (!targetClass || !myClass || targetClass === myClass) {
+        if (targetClass && myClass && targetClass === myClass) {
             const lockState = {
                 enabled: true,
                 className: targetClass || myClass || null,
@@ -1585,7 +1584,7 @@ if (!isDemo) {
     socket.on('classroom-unlock', (data) => {
         const targetClass = data?.className;
         const myClass = currentStudentClassName || user?.className || null;
-        if (!targetClass || !myClass || targetClass === myClass) {
+        if (targetClass && myClass && targetClass === myClass) {
             saveClassroomLockState(null);
             setClassroomLock(false);
         }

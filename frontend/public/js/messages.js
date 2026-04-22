@@ -3,13 +3,12 @@ const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techde
 const socket = io('https://techdesk-frontend.onrender.com');
 const user = JSON.parse(localStorage.getItem('user'));
 if (!user) window.location.href = '/';
-const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
 
 function authHeaders(extra = {}) {
-    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    const headers = { ...extra };
     if (user?.email) headers['X-User-Email'] = user.email;
     if (user?.egn) headers['X-User-Egn'] = user.egn;
     return headers;
@@ -573,6 +572,9 @@ function backToList() {
 
 if (!isDemo) {
     socket.on('classroom-lock', (data) => {
+        const myClass = userClassName || user?.className || null;
+        const targetClass = data?.className;
+        if (!targetClass || !myClass || targetClass !== myClass) return;
         const lockState = {
             enabled: true,
             className: data?.className || null,
@@ -589,7 +591,10 @@ if (!isDemo) {
         enforceNotebookLockIfNeeded();
     });
 
-    socket.on('classroom-unlock', () => {
+    socket.on('classroom-unlock', (data) => {
+        const myClass = userClassName || user?.className || null;
+        const targetClass = data?.className;
+        if (!targetClass || !myClass || targetClass !== myClass) return;
         localStorage.removeItem(CLASSROOM_LOCK_STORAGE_KEY);
     });
 

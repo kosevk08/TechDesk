@@ -7,6 +7,7 @@ import com.edutech.desk.repository.NotebookAiRecordRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -69,12 +70,12 @@ public class NotebookAiPipelineService {
         record.setExerciseId(valueOrFallback(request.getExerciseId(), "unknown-exercise"));
         record.setPageId(valueOrFallback(request.getPageId(), "unknown-page"));
         record.setTimestamp(LocalDateTime.now());
-        record.setStrokeDataJson(writeJsonSafe(request.getStrokeData()));
+        record.setStrokeDataJson(toJsonStrokeData(request.getStrokeData()));
         record.setRecognizedText(valueOrFallback(response.getRecognizedText(), ""));
         record.setExpectedAnswer(valueOrFallback(request.getExpectedAnswer(), ""));
-        record.setSolutionStepsJson(writeJsonSafe(request.getSolutionSteps()));
+        record.setSolutionStepsJson(toJsonStringList(request.getSolutionSteps()));
         record.setRecognitionConfidence(response.getRecognitionConfidence() == null ? 0.0 : response.getRecognitionConfidence());
-        record.setAnalysisJson(writeJsonSafe(Map.of(
+        record.setAnalysisJson(toJsonMap(Map.of(
             "progressStatus", response.getProgressStatus(),
             "lastCorrectStep", response.getLastCorrectStep(),
             "totalSteps", response.getTotalSteps(),
@@ -102,15 +103,79 @@ public class NotebookAiPipelineService {
         return response;
     }
 
-    private String writeJsonSafe(Object value) {
-        if (value == null) return "{}";
-        String text = String.valueOf(value);
-        return text.isBlank() ? "{}" : text;
+    private String toJsonStrokeData(List<NotebookAiAnalyzeRequest.StrokePoint> points) {
+        if (points == null || points.isEmpty()) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < points.size(); i++) {
+            NotebookAiAnalyzeRequest.StrokePoint p = points.get(i);
+            if (i > 0) sb.append(',');
+            sb.append('{')
+                .append("\"x\":").append(numberOrNull(p.getX())).append(',')
+                .append("\"y\":").append(numberOrNull(p.getY())).append(',')
+                .append("\"pressure\":").append(numberOrNull(p.getPressure())).append(',')
+                .append("\"t\":").append(longOrNull(p.getT())).append(',')
+                .append("\"strokeStart\":").append(boolOrNull(p.getStrokeStart())).append(',')
+                .append("\"strokeEnd\":").append(boolOrNull(p.getStrokeEnd())).append(',')
+                .append("\"zoneId\":\"").append(escapeJson(valueOrFallback(p.getZoneId(), ""))).append("\"")
+                .append('}');
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
+    private String toJsonStringList(List<String> values) {
+        if (values == null || values.isEmpty()) return "[]";
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append('"').append(escapeJson(valueOrFallback(values.get(i), ""))).append('"');
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
+    private String toJsonMap(Map<String, Object> map) {
+        if (map == null || map.isEmpty()) return "{}";
+        StringBuilder sb = new StringBuilder("{");
+        int i = 0;
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (i++ > 0) sb.append(',');
+            sb.append('"').append(escapeJson(entry.getKey())).append('"').append(':');
+            Object value = entry.getValue();
+            if (value instanceof Number || value instanceof Boolean) {
+                sb.append(String.valueOf(value));
+            } else {
+                sb.append('"').append(escapeJson(String.valueOf(value))).append('"');
+            }
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
     private String valueOrFallback(String value, String fallback) {
         if (value == null) return fallback;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? fallback : trimmed;
+    }
+
+    private String escapeJson(String value) {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
+    }
+
+    private String numberOrNull(Double value) {
+        return value == null ? "null" : String.valueOf(value);
+    }
+
+    private String longOrNull(Long value) {
+        return value == null ? "null" : String.valueOf(value);
+    }
+
+    private String boolOrNull(Boolean value) {
+        return value == null ? "null" : String.valueOf(value);
     }
 }

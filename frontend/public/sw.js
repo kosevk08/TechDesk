@@ -67,16 +67,14 @@ self.addEventListener('sync', (event) => {
 async function syncStrokesToServer() {
   const db = await openDatabase();
   const strokes = await getAllStrokes(db);
-  const token = await getToken(db);
 
-  if (strokes.length > 0 && token) {
+  if (strokes.length > 0) {
     try {
         const backendUrl = location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
         const response = await fetch(`${backendUrl}/api/notebook/sync-strokes`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(strokes)
       });
@@ -115,10 +113,7 @@ function getAllStrokes(db) {
 }
 
 function getToken(db) {
-  return new Promise(res => {
-    const tx = db.transaction('meta', 'readonly');
-    tx.objectStore('meta').get('auth_token').onsuccess = (e) => res(e.target.result);
-  });
+  return new Promise(res => res(null));
 }
 
 function clearStrokes(db) {

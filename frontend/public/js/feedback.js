@@ -4,7 +4,6 @@
 
     const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
     const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
-    const token = localStorage.getItem('token');
 
     const launch = document.createElement('div');
     launch.className = 'feedback-launch';
@@ -107,7 +106,6 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                     ...(user?.email ? { 'X-User-Email': user.email } : {}),
                     ...(user?.egn ? { 'X-User-Egn': user.egn } : {})
                 },

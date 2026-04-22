@@ -405,7 +405,6 @@
         let saveInFlight = null;
         let saveQueued = false;
         let focusMode = false;
-        const token = localStorage.getItem('token');
         let typingTimeout = null;
         const CLASSROOM_LOCK_STORAGE_KEY = 'techdesk_classroom_lock';
         let currentMaterialMode = localStorage.getItem('currentMaterialMode') || 'textbook';
@@ -413,10 +412,17 @@
         let currentMaterialSection = localStorage.getItem('currentMaterialSection') || 'core';
 
         function authHeaders(extra = {}) {
-            const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+            const headers = { ...extra };
             if (user?.email) headers['X-User-Email'] = user.email;
             if (user?.egn) headers['X-User-Egn'] = user.egn;
             return headers;
+        }
+
+        function lockEventMatchesMyClass(data) {
+            const targetClass = String(data?.className || '').trim();
+            const myClass = String(user?.className || '').trim();
+            if (!targetClass || !myClass) return false;
+            return targetClass === myClass;
         }
 
         function deriveNameFromEmail(email) {
@@ -1130,6 +1136,7 @@
         });
 
         socket.on('classroom-lock', (data) => {
+            if (String(user?.role || '').toUpperCase() === 'STUDENT' && !lockEventMatchesMyClass(data)) return;
             if (!data) return;
             if (data?.subject) {
                 localStorage.setItem('currentNotebookLockedSubjectName', String(data.subject));
@@ -1152,7 +1159,8 @@
             }
         });
 
-        socket.on('classroom-unlock', () => {
+        socket.on('classroom-unlock', (data) => {
+            if (String(user?.role || '').toUpperCase() === 'STUDENT' && !lockEventMatchesMyClass(data)) return;
             localStorage.removeItem('currentNotebookLockedSubjectName');
             setPageLockState(false);
             try {

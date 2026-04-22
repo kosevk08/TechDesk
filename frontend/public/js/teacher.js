@@ -5,7 +5,6 @@ const socket = io('https://techdesk-frontend.onrender.com', {
     upgrade: false
 });
 const user = JSON.parse(localStorage.getItem('user'));
-const token = localStorage.getItem('token');
 const demoData = window.DemoData;
 const isDemo = Boolean(user && user.demo);
 let teacherLang = localStorage.getItem('teacherLang') || 'en';
@@ -44,7 +43,7 @@ function resolveTeacherDisplayName(profile) {
 }
 
 function authHeaders(extra = {}) {
-    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    const headers = { ...extra };
     if (user?.email) headers['X-User-Email'] = user.email;
     if (user?.egn) headers['X-User-Egn'] = user.egn;
     return headers;

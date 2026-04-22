@@ -1,7 +1,6 @@
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const BACKEND_BASE_URL = isLocalhost ? 'http://localhost:8080' : 'https://techdesk-backend.onrender.com';
 const user = JSON.parse(localStorage.getItem('user'));
-const token = localStorage.getItem('token');
 const OWNER_EMAIL = 'admin@edu-school.bg';
 
 if (!user || user.role !== 'ADMIN') {
@@ -24,7 +23,7 @@ let ownerPlanFilter = 'ALL';
 let ownerToastTimer = null;
 
 function authHeaders(extra = {}) {
-    const headers = token ? { ...extra, Authorization: `Bearer ${token}` } : { ...extra };
+    const headers = { ...extra };
     if (user?.email) headers['X-User-Email'] = user.email;
     if (user?.egn) headers['X-User-Egn'] = user.egn;
     return headers;
