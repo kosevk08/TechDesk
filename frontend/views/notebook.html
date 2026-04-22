@@ -810,7 +810,9 @@
                 return;
             }
 	        const notebook = await res.json();
-            setPageLockState(Boolean(notebook?.teacherLocked));
+            // Do not keep legacy persistent DB lock on page load.
+            // Classroom focus lock is controlled by live classroom events.
+            setPageLockState(false);
 	        if (notebook?.style) setPaperStyle(notebook.style);
         if (notebook && notebook.content && notebook.content.startsWith('data:image')) {
             const img = new Image();

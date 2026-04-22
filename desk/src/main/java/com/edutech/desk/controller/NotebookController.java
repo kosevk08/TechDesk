@@ -286,6 +286,8 @@ public class NotebookController {
 
     private Notebook processSave(Notebook notebook) {
         notebook.setLastUpdated(LocalDateTime.now());
+        // Keep lock state ephemeral (classroom live mode), not persisted in DB pages.
+        notebook.setTeacherLocked(false);
         Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
                 notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
         return existing.isPresent()
@@ -294,15 +296,7 @@ public class NotebookController {
     }
 
     private boolean isStudentBlockedByTeacherLock(Notebook notebook) {
-        if (notebook == null) return false;
-        Optional<Notebook> existing = notebookService.getByStudentEgnAndSubjectAndPage(
-            notebook.getStudentEgn(), notebook.getSubject(), notebook.getPageNumber());
-        if (existing.isEmpty() || !existing.get().isTeacherLocked()) return false;
-
-        User actor = currentUserService.getUser();
-        if (actor == null || actor.getRole() != Role.STUDENT) return false;
-        if (actor.getEgn() == null || notebook.getStudentEgn() == null) return false;
-        return actor.getEgn().equals(notebook.getStudentEgn());
+        return false;
     }
 
     private NotebookResponse toResponse(Notebook notebook, boolean includeContent) {
@@ -317,7 +311,7 @@ public class NotebookController {
         response.setColor(notebook.getColor());
         response.setContent(includeContent ? notebook.getContent() : null);
         response.setPageNumber(notebook.getPageNumber());
-        response.setTeacherLocked(notebook.isTeacherLocked());
+        response.setTeacherLocked(false);
         response.setLastUpdated(notebook.getLastUpdated());
         return response;
     }
