@@ -1,5 +1,17 @@
 const loginSuccessOverlay = document.getElementById('loginSuccessOverlay');
 
+function clearStaleClassroomState() {
+    const keys = [
+        'techdesk_classroom_lock',
+        'currentNotebookLockedSubjectName',
+        'currentNotebookPage',
+        'currentMaterialMode',
+        'currentMaterialSection',
+        'currentMaterialPage'
+    ];
+    keys.forEach((key) => localStorage.removeItem(key));
+}
+
 function routeForRole(user) {
     if (user.role === 'TEACHER') return '/teacher';
     if (user.role === 'STUDENT') return '/student';
@@ -38,6 +50,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
         if (response.ok) {
             const user = await response.json();
+            // Fresh login must start from a clean classroom state on this device.
+            clearStaleClassroomState();
             localStorage.setItem('user', JSON.stringify(user));
             playLoginSuccessAndRedirect(routeForRole(user));
         } else {
@@ -76,6 +90,7 @@ function seedDemoProfile(profile) {
         childName: profile.childName || null,
         childClassName: profile.childClassName || null
     };
+    clearStaleClassroomState();
     localStorage.setItem('user', JSON.stringify(demoUser));
     localStorage.setItem('token', 'demo-token');
     playLoginSuccessAndRedirect(profile.route);
